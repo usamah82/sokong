@@ -1,0 +1,16 @@
+---
+description: Route work through this repo's skills, feature folders, and human gates
+alwaysApply: true
+---
+
+Before non-trivial work, read and follow `.cursor/skills/repo-workflow/SKILL.md`. Then read `.cursor/skills/using-agent-skills/SKILL.md` and the one skill that matches the phase.
+
+Do not paste a skill into the chat and skip its steps. Do not invent a router agent that calls other agents.
+
+This repo's feature tracker is `context/requirements/features/<slug>/`. Do not create root `tasks/plan.md` or `tasks/todo.md`.
+
+Do not write code for a feature whose status is not `plan-approved` or `implementing`. Spec approval is a human action, recorded in that feature's README.
+
+ADRs live in `context/decisions/`. Continue the number sequence. Do not delete an ADR.
+
+The check for a change is `bin/ci` from the repository root.

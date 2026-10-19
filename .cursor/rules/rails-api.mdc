@@ -1,0 +1,15 @@
+---
+description: Rails API conventions for the backend app
+globs: backend/**/*.{rb,yml,erb}
+alwaysApply: false
+---
+
+The app in `backend/` is an API-only Rails 8.1 app. Module name is `Backend`. Local and test databases are SQLite. There is no web or mobile client in this repo yet.
+
+Keep HTTP behavior in controllers thin. Put domain logic in models or plain objects under `backend/app/`. Cover HTTP behavior with integration tests.
+
+When a Rails API is unclear, follow `source-driven-development` and cite the Rails guide or the API docs you checked. Do not guess framework behavior.
+
+Record a contract change (path, verb, status, body) in the feature folder that caused it. Do not version the API until a second client exists. That decision is in `context/decisions/0003-start-with-a-rails-api.md`.
+
+`config/master.key` and anything under `storage/` stay uncommitted. CORS stays closed until a real client origin is named.

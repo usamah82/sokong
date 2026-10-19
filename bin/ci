@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Repository gate. GitHub Actions and agents should run this, not a one-off test command.
+set -euo pipefail
+cd "$(dirname "$0")/../backend"
+exec bin/ci "$@"
