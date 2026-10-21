@@ -4,7 +4,7 @@ globs: backend/**/*.{rb,yml,erb}
 alwaysApply: false
 ---
 
-The app in `backend/` is an API-only Rails 8.1 app. Module name is `Backend`. Local and test databases are SQLite. There is no web or mobile client in this repo yet.
+The app in `backend/` is the Rails API for Sokong. Read `context/product/concepts.md` before inventing a domain object. Module name is `Backend`. Local and test databases are SQLite. There is no web or mobile client in this repo yet.
 
 Keep HTTP behavior in controllers thin. Put domain logic in models or plain objects under `backend/app/`. Cover HTTP behavior with integration tests.
 

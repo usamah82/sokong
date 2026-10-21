@@ -1,6 +1,8 @@
 # Agent-orchestrated Rails API
 
-This repository is the system of record for building a product with coding agents. The product domain is not chosen yet. The first runtime is a Rails API. Web and mobile clients are later siblings, not part of this tree.
+This repository is the system of record for Sokong, a program that supports family units, measured with Mara. The introduction is [context/product/sokong-and-mara.pdf](context/product/sokong-and-mara.pdf). The feature catalog is [context/product/master-feature-list.md](context/product/master-feature-list.md). No feature has a PRD yet.
+
+The first runtime is a Rails API. Web and mobile clients will share it, and neither client is in this tree yet.
 
 Agents do not share a chat. They share this repo: specs, decisions, how-tos, postmortems, and code. You run the sequence. A spec session does not implement, and the session that writes the code does not approve the merge.
 

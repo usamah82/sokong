@@ -12,7 +12,10 @@ Then follow the upstream skill that `repo-workflow` names for this phase. Skills
 
 ## Hard stops
 
-- Do not invent a product, a user, or a client. The domain is unset. See `context/product/vision.md`.
+- The product is Sokong, assessed with Mara. Read `context/product/vision.md` and `context/product/concepts.md`.
+- Do not add a feature that is not in `context/product/master-feature-list.md`.
+- Do not start a feature PRD unless a human names the feature and the questions that block it are answered in `context/product/open-questions.md`.
+- Do not answer those questions yourself.
 - Do not write code unless the feature status is `plan-approved` or `implementing`.
 - Do not plan or code in the session that just wrote the spec.
 - Do not open a production deploy. Hosting is undecided.

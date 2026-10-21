@@ -61,7 +61,7 @@ These are real. The scaffold does not pretend they are done.
 
 7. **CI runs where a GitHub repo exists.** The workflow is `.github/workflows/ci.yml`. Until this project is on GitHub, the gate you can trust is `bin/ci` locally.
 
-8. **The product domain is empty.** Agents will fill that silence with a plausible app if a prompt lets them. `context/product/vision.md` forbids that. The first feature interview has to establish who it is for.
+8. **The product is named, and several definitions are not.** Sokong and Mara are in `context/product/`. Agents must not fill `context/product/open-questions.md` with a guess. A PRD starts from `context/product/master-feature-list.md` only after a human picks the row and the questions that block it are answered.
 
 9. **Two clients will freeze a sloppy API.** Web and mobile are not scaffolded. The contract is written in the feature spec before the controller, and it stays unversioned until a second client needs a break.
 
@@ -94,14 +94,14 @@ Status names and file paths are in `repo-workflow`.
 
 - Pinned skills, references, and personas
 - `repo-workflow`, always-on project rule, Rails rule
-- Context index, three ADRs, templates, prompts, definition of done
+- Context index, four ADRs, the Sokong introduction, the feature catalog, templates, prompts, definition of done
 - Rails API, `GET /up`, integration test, `bin/ci`
 - Root GitHub Actions workflow and Dependabot config aimed at `backend/`
 
 ## What to do when the first real feature shows up
 
-1. Start an interview session with the prompt in `prompts.md`. Answer one question at a time.
-2. Confirm the intent file.
+1. Pick a row in `context/product/master-feature-list.md`. Answer the open questions that block it.
+2. Start an interview session with the prompt in `prompts.md`. Answer one question at a time. Confirm the intent file.
 3. Run spec, then plan, each in a new session, and approve both.
 4. Let a coding agent implement the first task and open a pull request.
 5. Run a review session that has not seen the coding chat.

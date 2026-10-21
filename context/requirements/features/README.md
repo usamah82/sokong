@@ -2,6 +2,6 @@
 
 | Slug | Status | Spec |
 |---|---|---|
-| — | — | No features yet |
+| — | — | No PRD yet. The catalog is [../../product/master-feature-list.md](../../product/master-feature-list.md). |
 
-When you add one, copy `_template/` and add a row.
+When a human picks a feature, copy `_template/` and add a row.

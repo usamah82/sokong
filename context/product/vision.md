@@ -1,13 +1,18 @@
 # Vision
 
-The product domain is not chosen. There is no user, no promise, and no name yet. Do not invent one in a spec or a UI.
+Sokong is the product. Mara is how it measures.
 
-What exists today is a place to build that product with agents:
+A country becomes great through good people. Good people grow up in family units, and they later start family units of their own. Mara measures a nation by how its family units are doing, not by a slogan or by GDP alone. Sokong is the long work of finding family units that are struggling or deteriorating, learning their story, and supporting them until they thrive.
 
-- A Rails 8.1 API in `backend/`, so web and mobile clients can share one contract later.
-- A context tree, so a new agent can continue without the previous chat.
-- The [agent-skills](https://github.com/addyosmani/agent-skills) workflows, pinned, plus one repo skill that says where files go.
+The app is the record and the coordination layer for that work. Community members, community workers, benefactors, facilitators, and nation planners use it. A family uses it to enrol and to see what happens next. Web and mobile clients will share one Rails API. Neither client exists yet. The API's only behavior today is `GET /up`.
 
-The first real feature starts when a human can say who it is for and what changes for them. Until then, the only behavior the API owes anyone is `GET /up`.
+The line on the source document is "Good People, Great Country." Sokong means "to support." Mara means "to move forward."
 
-Web and mobile clients are intentionally absent. Adding either before an approved API contract would freeze a guess.
+Read next:
+
+- [sokong-and-mara.pdf](sokong-and-mara.pdf) is the introduction. It is not a PRD.
+- [concepts.md](concepts.md) is the reading an agent should trust.
+- [master-feature-list.md](master-feature-list.md) is the catalog. No row is an approved spec.
+- [open-questions.md](open-questions.md) is what is still unsettled.
+
+Do not invent a second product. Do not turn a catalog row into a spec until a human picks that feature and the questions that block it are answered.
