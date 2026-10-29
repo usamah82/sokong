@@ -1,6 +1,6 @@
 # Sokong and Mara
 
-Source: [sokong-and-mara.pdf](sokong-and-mara.pdf), 146 pages, stored 2026-10-21. That file is an introduction to an idea. It says itself that the framework and the program are "sort of" defined, and it ends with loose ends. This note is the working reading. Where the source uses two rules for the same word, both rules are kept and the conflict is listed in [open-questions.md](open-questions.md). Nothing here is a PRD.
+Source: [sokong-and-mara.pdf](sokong-and-mara.pdf), 146 pages, stored 2026-10-21. That file is an introduction to an idea. It says itself that the framework and the program are "sort of" defined, and it ends with loose ends. This note is the working reading. Where the source uses two rules for the same word, the human answer in [open-questions.md](open-questions.md) is the one to follow. Nothing here is a PRD.
 
 ## The claim
 
@@ -40,38 +40,42 @@ The source is wary of scoring a person's inner worth. Awareness, intention, and 
 
 ### The four boxes, in order
 
-A family that wants to thrive aims at four things, in this order. The later two are unreachable without the earlier two. Accumulated wealth is the least important of the four.
+A family that wants to thrive aims at four things, in this order. Accumulated wealth is the least important of the four. A community worker checks the boxes. The family can always see their own four. Contesting a wrong check is later work, F37, and is not in the first version ([Q5](open-questions.md)).
 
-1. Good family unit. The heads practice integrity, action, and selflessness.
-2. Fulfilled basic needs. A roof and food are the examples the source names. The worked story also treats unpaid rent, utilities, and care for a disabled child as basic needs. The closed list is not written down.
-3. Dependable generation. The next generation can stand on their own and can be relied on as the next good people. Good education is the means the source names. Imprinting the three values by example comes before the certificate.
-4. Accumulated wealth. Income stays above expenses after basic needs, so the family can absorb a calamity, take an opportunity, retire, and give the next generation a head start. Wealth that is legitimate, earned, and used for the family. A dependable generation without wealth is better than wealth with a neglected generation.
+1. Good family unit. The heads practice integrity, action, and selflessness. A community worker marks the box from face-to-face contact and from regular visits and chats. The bar is that the family as a whole, on average, is adopting the three values. Clearing this box also clears dependable generation.
+2. Fulfilled basic needs. A roof and food are the examples the source names. The worked story also treats unpaid rent, utilities, and care for a disabled child as basic needs. There is no universal closed list. The locality sets what counts, and one family unit's needs can differ from another's ([Q7](open-questions.md)). Clearing this box also clears accumulated wealth, unless the family keeps the wealth and goes without necessities rather than sell optional possessions.
+3. Dependable generation. The next generation can stand on their own and can be relied on as the next good people. Good education is the means the source names. Imprinting the three values by example comes before the certificate. By default this box cannot stay checked once good family unit is cleared.
+4. Accumulated wealth. Income stays above expenses after basic needs, so the family can absorb a calamity, take an opportunity, retire, and give the next generation a head start. Wealth that is legitimate, earned, and used for the family. A dependable generation without wealth is better than wealth with a neglected generation. By default this box cannot stay checked once basic necessities are cleared. The exception is the family that keeps the wealth and goes without necessities.
 
 ### Status words
 
-The source defines three statuses, and then uses them in a second way during the worked story.
+Status on screen comes from the four boxes. The generation-by-wealth table is the source's definition of the generation and wealth words. It does not set the status. That choice is [Q4](open-questions.md).
 
-The definition table:
+The rule in [Q4](open-questions.md):
 
-| Status | Generation | Wealth |
+- Deteriorating, whenever good family unit and basic necessities are not both checked.
+- Struggling, when those two are both checked and the last two are not both checked.
+- Thriving, when all four are checked.
+
+Sarah at six months, with only basic needs checked, is Deteriorating. At a year and a half, with the first two checked, she is Struggling. At two years, with the first three checked, she is still Struggling. At seven years, with all four checked, she is Thriving.
+
+The source table, kept so the generation and wealth words still have a meaning:
+
+| Status word in the source | Generation | Wealth |
 |---|---|---|
 | Thriving | Dependable. The next generation can carry on and can carry others. | Accumulated. Excess after basic needs. |
 | Struggling | Independent. They can stand alone, and may not be able to carry others. | Minimal. Little buffer. The next generation starts from scratch. |
 | Deteriorating | Broken. The next generation still needs help, while the retiring generation will need them too. | Negative. Debt or a poverty trap. |
 
-The worked story of Sarah uses ordered checkboxes instead. The family stays deteriorating until both "good family unit" and "fulfilled basic needs" are true. It becomes struggling at that point, even while the generation is not yet dependable and there is no accumulated wealth. It becomes thriving only when all four boxes are checked.
-
 Current status is not the same thing as direction. A deteriorating family that is climbing toward struggling is turning the right way. A thriving family sliding toward struggling is turning the wrong way. Sitting still in deteriorating is not the right turn.
 
 The path of one family unit is described as about 30 to 40 years, from formation to retirement. The far end of a good path is continuous legacy and generational wealth. Each family has its own route. The four boxes are the generalized route.
-
-Which of the two status rules is operational is [Q4](open-questions.md).
 
 ### What Mara is for
 
 If the share of thriving family units can be shown, a leader can be asked what the share is, why, what they will do, and whether it rose while they were responsible. Grand announcements of investment or GDP do not answer that. The source calls this the cure for garbage-in, garbage-out politics.
 
-The same source also says the database it imagines holds struggling and deteriorating families, and says "let's not worry about how we populate" it. A percentage of thriving families in a nation requires the families who are not in the program. Those two pictures are [Q1](open-questions.md).
+The percentage counts every family unit in the locality, including families Sokong does not track ([Q1](open-questions.md)). Sokong tracks families that need support, so its database alone cannot produce the percentage. That percentage is not required for the features that run the program. F24 is the feature that would need the families outside Sokong, and it waits.
 
 ## Sokong, the program
 
@@ -83,7 +87,7 @@ Enrolment (self, or reported by someone else)
       → disqualified (record kept)
       → qualified
           → track and assist, for years
-              → graduated (all four boxes)
+              → graduated (thriving)
               → dropped out (record kept within privacy limits)
 ```
 
@@ -91,7 +95,7 @@ Enrolment (self, or reported by someone else)
 
 High volume, quick.
 
-Anyone can enrol. Self-enrolment is preferred because it records consent. Someone else, a community member, may enrol a family and leave their own contact so a worker can follow up. Enrolment asks for a family profile (who is in it, and basic needs), a location, and a phone number when there is one. It should be possible from a phone, without an office, a form, office hours, or an official who can reject it early. The person who enrolled should be able to see progress.
+Anyone can enrol. Self-enrolment is preferred because it records consent. Someone else, a community member, may enrol a family and leave their own contact so a worker can follow up. Data entered on a family's behalf, such as by a teacher, is stored when it is needed to help, and it is available to the community workers who decide the next step. Each fact has a source. The strongest record is what the responsible community worker has seen and verified on the visit ([Q8](open-questions.md)). Enrolment asks for a family profile (who is in it, and basic needs), a location, and a phone number when there is one. It should be possible from a phone, without an office, a form, office hours, or an official who can reject it early. The person who enrolled should be able to see progress.
 
 Qualification requires a face-to-face visit. The visit is there to build trust, bring a basket of basic necessities, take explicit consent and a verifiable identity when the family did not self-enrol, and fill in the story. The enrolment form is only the tip. The first visit in the story is usually within a week.
 
@@ -103,9 +107,9 @@ Long. The source's simulation takes seven years, and it also shows a version whe
 
 Two repeating activities:
 
-Track. A worker stays in touch. A visit every quarter, and never a gap longer than six months, plus unscheduled visits when something happens. Show up, bring a basket, ask how they are. Listen for events the family discloses, and for events from outside (the source names school, hospital, police, court, tax, and social security). Some events hit one family. Some hit a whole locality, such as a flood. Then reassess: what help was given, did it work, what is next, has the path become thriving.
+Track. A worker stays in touch. A visit every quarter, and never a gap longer than six months, plus unscheduled visits when something happens. Show up, bring a basket, ask how they are. Listen for events the family discloses, and for events from outside (the source names school, hospital, police, court, tax, and social security). In the first version the worker types those outside events. A feed from an agency is later work ([Q10](open-questions.md)). Some events hit one family. Some hit a whole locality, such as a flood. Then reassess: what help was given, did it work, what is next, has the path become thriving.
 
-Assist. Work the four boxes in order. Do not chase wealth while basic needs are open. When all four are checked, the family has graduated.
+Assist. Work the four boxes in order. Do not chase wealth while basic needs are open. Help is given by people and organizations. Whenever it is given, the app records it, so the same help is not given twice and help can move toward units that have not received it ([Q3](open-questions.md)). The family graduates when all four boxes are checked, which is the Thriving status.
 
 A family drops out when they no longer want to be in the program, they cannot be reached, the workers lose them because the caseload won, or the heads retire and the unit dissolves into the next generation's units. Keep the record as far as privacy rules allow, so later work can be audited and improved.
 
@@ -124,9 +128,11 @@ The assistance examples in the source are counseling, alimony and enforcement, c
 
 A person lives in three family units over a life: the one they are born into, the one they build, and the one they retire into. Sarah, in the simulation, is a child in her mother's unit and is expected to start her own later. The record has to be able to show that. How a person sits in two units at once is not specified.
 
+A person the source lists as outside a family unit is still a family unit in the first version: a unit of one, or a larger unit such as an orphanage ([Q11](open-questions.md)). Labels applied to a person, such as Good, Self-sufficient, and Broken, are not part of the record ([Q16](open-questions.md)).
+
 ### Locality
 
-Work should happen inside one locality. The reasons given are familiarity, the ability to stay in contact for years, ownership by local leaders, and a bond that outlasts a viral donation. A nationwide program grows locality by locality. The source does not define the boundary of a locality. That is [Q6](open-questions.md).
+Work should happen inside one locality. The reasons given are familiarity, the ability to stay in contact for years, ownership by local leaders, and a bond that outlasts a viral donation. A nationwide program grows locality by locality. The boundary is whatever the community workers using the app choose for that place, from a housing block up to a district ([Q6](open-questions.md)).
 
 ### What the database is imagined to answer
 
@@ -138,11 +144,13 @@ For a family: one place to ask, instead of a different counter for school, food,
 
 For a benefactor: a specific family or a specific need (food, materials, time, a skill), and a way to avoid a fake charity.
 
-For a facilitator: stop duplicating the verification, stop all helping the same family, stop all missing the same family, and move surplus help to a locality that has none.
+For a facilitator: stop duplicating the verification, stop all helping the same family, stop all missing the same family, and move surplus help to a locality that has none. Organizations share one list of family units. When two registrations look like the same unit, the program tells them, so overlapping help can be spread ([Q9](open-questions.md)). When the families who qualify outnumber the help, workers and facilitators choose who receives it. The record can highlight units that have gone without help. It does not choose ([Q12](open-questions.md)). A benefactor or a facilitator is verified by the community workers of that locality before an offer is matched ([Q13](open-questions.md)).
 
 ### Government
 
-The source leaves government out of the early argument on purpose. The claim is that people can start Sokong without waiting for a ministry. Government is still one of the four parts of a country, a natural benefactor, a source of external events, and the home of nation planners. Whether the first real operator is a community, a representative's office, or a state program is [Q2](open-questions.md).
+The source leaves government out of the early argument on purpose. The claim is that people can start Sokong without waiting for a ministry. Government is still one of the four parts of a country, a natural benefactor, a source of external events, and the home of nation planners.
+
+The framework is universal. Malay names are the author's language. The first version is for community workers organizing a locality, and it does not decide a host. The later aim is that the community owns the locality's data, and a government queries it up to a limit and assists as a benefactor. That split is F36, not the first version ([Q2](open-questions.md)).
 
 ### The worked story
 
@@ -175,11 +183,14 @@ The closing slides list work the author had not done. They are product questions
 
 ## Working assumptions
 
-These keep the catalog coherent. They are not accepted decisions. A human answer in [open-questions.md](open-questions.md) replaces them.
+Accepted answers live in [open-questions.md](open-questions.md). The lines below are the ones an agent needs beside the catalog. Do not reopen an answer.
 
-1. The app records and coordinates. Counseling, cash, housing, school places, and jobs are delivered by people and organizations outside the app.
-2. Until Q4 is answered, the Sarah story's ordered boxes are the status rule to talk about, and the 3×3 table remains the definition of the generation and wealth words.
-3. Until Q1 is answered, the catalog includes reports about families inside Sokong. It does not claim a national percentage of thriving families.
-4. Until Q10 is answered, events from a school or a hospital are typed by a person.
-5. Until Q11 is answered, a person who is not in a family unit is outside the product.
-6. Until Q14 is answered, a national campaign and a school curriculum are outside the app.
+1. The app records help and coordinates it. Counseling, cash, housing, school places, and jobs are delivered by people and organizations. The first version records that delivery when a community worker types it. A systematic feed is later.
+2. Status is Deteriorating unless the first two boxes are both checked, Struggling unless all four are checked, and Thriving when all four are checked. Clearing good family unit also clears dependable generation. Clearing basic necessities also clears accumulated wealth, unless the family keeps the wealth and goes without necessities. The family can see the four boxes. A community worker checks them. Contesting a check is F37.
+3. Reports about families inside Sokong do not claim the locality-wide percentage. That percentage counts every family in the locality, and F24 is deferred.
+4. A community worker types an event from a school or a hospital in the first version.
+5. A person outside a typical household is a family unit of one, or a unit such as an orphanage.
+6. A national campaign and a school curriculum are outside the app. So is prevention.
+7. Benefactors and facilitators are verified by the locality's community workers. Scarce help is ordered by workers and facilitators, not by the software.
+8. One list of family units is the record organizations share. Likely duplicates are raised back to them.
+9. Web and mobile copy can be localized into any language. The first locale is English.

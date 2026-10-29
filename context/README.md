@@ -8,7 +8,7 @@ This tree is the product memory. Read it before planning or coding. Write back b
 | `product/sokong-and-mara.pdf` | The introduction. Not a PRD. |
 | `product/concepts.md` | Mara, Sokong, the roles, and the worked story. |
 | `product/master-feature-list.md` | Catalog. No row is an approved spec. |
-| `product/open-questions.md` | Unsettled definitions. Agents do not answer these by guessing. |
+| `product/open-questions.md` | Human answers from 2026-10-28. Agents do not reopen them. |
 | `workflow/operating-model.md` | What is feasible, what is missing, and how a feature moves. |
 | `workflow/prompts.md` | The prompt for each fresh agent session. |
 | `workflow/definition-of-done.md` | The standing bar for every change. |

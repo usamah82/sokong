@@ -61,9 +61,9 @@ These are real. The scaffold does not pretend they are done.
 
 7. **CI runs where a GitHub repo exists.** The workflow is `.github/workflows/ci.yml`. Until this project is on GitHub, the gate you can trust is `bin/ci` locally.
 
-8. **The product is named, and several definitions are not.** Sokong and Mara are in `context/product/`. Agents must not fill `context/product/open-questions.md` with a guess. A PRD starts from `context/product/master-feature-list.md` only after a human picks the row and the questions that block it are answered.
+8. **The product questions have human answers.** Sokong and Mara are in `context/product/`. Answers from 2026-10-28 are in `open-questions.md`. Agents must not reopen one with a guess. F24, F34, F36, and F37 are deferred on purpose. A PRD starts from `context/product/master-feature-list.md` only after a human picks the row.
 
-9. **Two clients will freeze a sloppy API.** Web and mobile are not scaffolded. The contract is written in the feature spec before the controller, and it stays unversioned until a second client needs a break.
+9. **Two clients will freeze a sloppy API.** The web client is Nuxt and the mobile client is Flutter (ADR-0005). Neither is scaffolded. The contract is written in the feature spec before the controller, and it stays unversioned until a second client needs a break.
 
 10. **Upstream skills will drift.** Update on purpose with `scripts/sync-agent-skills.sh`. Do not edit vendored skills. Put repo rules in `repo-workflow`.
 

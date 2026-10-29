@@ -4,82 +4,86 @@ Catalog only. No row is a PRD, and none has a folder under `context/requirements
 
 "Deck" means the behavior is in [sokong-and-mara.pdf](sokong-and-mara.pdf). "Gap" means the deck requires it, or names it as a loose end, and does not describe it as a product behavior. Concepts are in [concepts.md](concepts.md).
 
-The proposed first cluster, not an approval, is the record a phone enrolment needs: F01, F02, F03, F04, F05. It is blocked by Q2, Q6, and Q8. Assessment (F08) is a separate PRD, blocked by Q4 and Q5.
+The proposed first cluster, not an approval, is the record a phone enrolment needs: F01, F02, F03, F04, F05. The questions that blocked it are answered. Assessment (F08) is a separate PRD, and its questions are answered too.
+
+F24 is deferred. The share counts every family in the locality, and Sokong only tracks families that need support, so the other features do not wait on it. F36 is the ownership question Q2 set aside. F37 is contesting a checkbox, which Q5 set aside. The first locale is English, and both clients are localizable (Q15, ADR-0006).
 
 ## A. Place and people
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
-| F01 | Localities | Create the boundary the work happens inside, and see which community it is. | Deck | Q2, Q6 |
-| F02 | Accounts and roles | Sign in as a community member, worker, benefactor, facilitator, planner, or a person in a family. See only what that role may see. | Deck | Q2, Q5, Q8 |
-| F03 | Family unit record | Record who is in the unit, how they are related, how to reach them, and where they stay, including a missing address or papers. A person can move from the unit they were born into, to one they start, to one they retire into. | Deck | Q6, Q11 |
+| F01 | Localities | Create the boundary the work happens inside, and see which community it is. The boundary is the one the community workers choose, from a housing block up to a district. | Deck | — |
+| F02 | Accounts and roles | Sign in as a community member, worker, benefactor, facilitator, planner, or a person in a family. See only what that role may see. A family can see its own four checkboxes. The first operator is the community worker. Hosting is not decided. | Deck | — |
+| F03 | Family unit record | Record who is in the unit, how they are related, how to reach them, and where they stay, including a missing address or papers. A person can move from the unit they were born into, to one they start, to one they retire into. A unit may be one person, or an institution such as an orphanage. | Deck | — |
 
 ## B. Getting into the program
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
-| F04 | Enrolment | A family enrols itself, or a community member enrols them and leaves their own contact. The form is short: who is in the unit, basic needs, location, phone if there is one. No office and no early rejection. | Deck | Q7, Q8 |
-| F05 | Enrolment progress | The person who submitted can see who has looked, what they said, and when the first visit is. | Deck | Q8 |
-| F06 | Verification visit | A worker schedules a face-to-face visit, aims for within a week, records the basket taken, the consent, and the identity check, and writes the story the form could not hold. | Deck | Q3, Q8 |
-| F07 | Qualification and the scam record | Mark the family qualified or disqualified. Keep a disqualified record and match a later enrolment against basic details and contact so a scam cannot re-enter. | Deck | Q9 |
+| F04 | Enrolment | A family enrols itself, or a community member enrols them and leaves their own contact. The form is short: who is in the unit, the needs that count for this locality and this family, location, phone if there is one. On-behalf data needed to help is stored, sourced, and shown to community workers. No office and no early rejection. | Deck | — |
+| F05 | Enrolment progress | The person who submitted can see who has looked, what they said, and when the first visit is. | Deck | — |
+| F06 | Verification visit | A worker schedules a face-to-face visit, aims for within a week, records the basket taken, the consent, and the identity check, and writes the story the form could not hold. Facts the worker has seen and verified outrank the enrolment. | Deck | — |
+| F07 | Qualification and the scam record | Mark the family qualified or disqualified. Keep a disqualified record and match a later enrolment against basic details and contact so a scam cannot re-enter. Registrations from other organizations land in the same list. | Deck | — |
 
 ## C. The Mara record
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
-| F08 | Assessment | Record the four boxes in priority order, the generation word, the wealth word, and the status. Keep every past assessment. | Deck | Q4, Q5, Q7 |
+| F08 | Assessment | Record the four boxes in priority order, the generation word, the wealth word, and the status derived in Q4. The community worker checks the boxes. The family can see them. Clearing good family unit also clears dependable generation. Clearing basic necessities also clears accumulated wealth, unless the family keeps the wealth and goes without necessities. Keep every past assessment. | Deck | — |
 | F09 | Story | Append the path: careers, school, births, assets, help already given, decisions the family made. | Deck | — |
 | F10 | Starting point, opportunities, calamities | Record the external facts separately from status, so a fall is not stored as a moral failure. | Deck | — |
-| F11 | Direction | Show whether the latest status is a step up, a step down, or no move, not only the current label. | Deck | Q4 |
+| F11 | Direction | Show whether the latest status is a step up, a step down, or no move, not only the current label. | Deck | — |
 
 ## D. Staying with the family
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
 | F12 | Visit rhythm | Plan the next visit at or before three months, and never allow a planned gap past six months. Record an unscheduled visit. | Deck | — |
-| F13 | Events | Record an event the family discloses, and an event a worker learns from outside. Mark an event that hits the whole locality. | Deck, and a loose end for disasters | Q10 |
-| F14 | Reassessment | After help, record whether it worked, why, and the next step, then update the boxes. | Deck | Q4 |
-| F15 | Graduation and dropout | Close the case as thriving when all four boxes are checked, or as dropped out, with the reason. Keep the history. When the unit dissolves, point at the next units. | Deck | Q4 |
-| F16 | Worker caseload | Show a worker's families, the visits that are late, and the registrations still waiting. Show a leader when the workers are losing families. | Deck | Q2 |
+| F13 | Events | Record an event the family discloses, and an event a worker learns from outside and types in. Mark an event that hits the whole locality. | Deck, and a loose end for disasters | — |
+| F14 | Reassessment | After help, record whether it worked, why, and the next step, then update the boxes. | Deck | — |
+| F15 | Graduation and dropout | Close the case as thriving when all four boxes are checked, or as dropped out, with the reason. Keep the history. When the unit dissolves, point at the next units. | Deck | — |
+| F16 | Worker caseload | Show a worker's families, the visits that are late, and the registrations still waiting. Show a leader when the workers are losing families. The first operator is the community worker. | Deck | — |
 
 ## E. Help
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
-| F17 | Needs | Publish what this family still lacks, against the four boxes, without exposing the rest of the story. | Deck | Q3, Q5, Q9 |
-| F18 | Offers | A benefactor offers something specific: money, food, materials, time, a skill, a pro bono service. | Deck | Q3, Q13 |
-| F19 | Match | Connect an offer to a qualified family in a locality, and show when that family already received the same kind of help. | Deck | Q9, Q12, Q13 |
-| F20 | Facilitator handoff | A facilitator sees qualified families a worker has named, pools offers, and records what was passed on. | Deck | Q9 |
-| F21 | Suggested next box | Given the assessment, name the earliest unchecked box and the kinds of help the deck associates with it. A person still chooses the help. | Deck | Q3, Q4, Q12 |
-| F22 | Family request | A family already in the program asks for a particular kind of help, in one place. | Loose end, and the "request for help" scene | Q3 |
+| F17 | Needs | Publish what this family still lacks, against the four boxes, without exposing the rest of the story. The family can already see its own boxes. | Deck | — |
+| F18 | Offers | A benefactor offers something specific: money, food, materials, time, a skill, a pro bono service. The offer can be matched only after a community worker for that locality has verified the benefactor. | Deck | — |
+| F19 | Match | Connect an offer to a qualified family in a locality, and show when that family already received the same kind of help, so help is not repeated and can be spread. | Deck | — |
+| F20 | Facilitator handoff | A facilitator sees qualified families a worker has named, pools offers, and records what was passed on. The facilitator is verified by the locality's community workers first. | Deck | — |
+| F21 | Suggested next box | Given the assessment, name the earliest unchecked box and the kinds of help the deck associates with it. A person still chooses the help. | Deck | — |
+| F22 | Family request | A family already in the program asks for a particular kind of help, in one place. The request is recorded. The help itself is given outside the app. | Loose end, and the "request for help" scene | — |
 
 ## F. The locality, seen from above
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
-| F23 | Caseload outcomes | For families inside Sokong, show counts of qualified, struggling, deteriorating, thriving, graduated, and dropped out, and how those counts moved. | Deck | Q4 |
-| F24 | Nation measure | Report the share of thriving family units in a locality, including families who are not in the program. | Deck | Q1, Q4 |
-| F25 | Planner evidence | Tie a claimed budget or a built facility to the families and the help the record actually shows. | Deck | Q1, Q2 |
-| F26 | Scarce help | When qualified families outnumber offers, record the order and who set it. | Loose end | Q12 |
+| F23 | Caseload outcomes | For families inside Sokong, show counts of qualified, struggling, deteriorating, thriving, graduated, and dropped out, and how those counts moved. | Deck | — |
+| F24 | Nation measure | Report the share of thriving family units in a locality, including families who are not in the program. Deferred. Sokong's caseload cannot compute it. | Deck | — |
+| F25 | Planner evidence | Tie a claimed budget or a built facility to the families and the help the record actually shows. This is the caseload, not the locality-wide percentage. | Deck | — |
+| F26 | Scarce help | When qualified families outnumber offers, highlight units that have gone without help. Community workers and facilitators set the order. Record the order and who set it. | Loose end | — |
 
 ## G. Trust
 
 | ID | Feature | What someone can do | Source | Blocked by |
 |---|---|---|---|---|
-| F27 | Consent and retention | Record who consented, to what, and when. Keep dropped and disqualified records only as far as the privacy rule that gets written down. A family can ask what is held. | Deck names PDPA and GDPR as open | Q8 |
-| F28 | Partner verification | Check a benefactor or a facilitator before their offer can be matched, and keep a record of a fake charity. | Loose end | Q13 |
-| F29 | Separate books | Let an organization keep its own recipient list and still coordinate, if it will not join a shared list. | Loose end | Q9 |
-| F30 | Notifications | Tell the worker, the person who enrolled, and the family when a registration is seen, a visit is set, or a visit is late. | Deck, the Sarah story | Q8 |
+| F27 | Consent and retention | Record who consented, to what, and when. On-behalf data needed to help is stored before that consent, with its source, for community workers. Keep dropped and disqualified records only as far as the privacy rule that gets written down. A family can ask what is held. | Deck names PDPA and GDPR as open | — |
+| F28 | Partner verification | The community workers of a locality check a benefactor or a facilitator before their offer can be matched, and keep a record of a fake charity. | Loose end | — |
+| F29 | Likely duplicates | Keep one list of family units across organizations. When a new registration looks like an existing unit, tell the organizations that help may overlap so it can be spread. | Loose end | — |
+| F30 | Notifications | Tell the worker, the person who enrolled, and the family when a registration is seen, a visit is set, or a visit is late. | Deck, the Sarah story | — |
 
 ## H. Held until you say otherwise
 
 | ID | Feature | Why it is held |
 |---|---|---|
-| F31 | People outside a family unit | Q11. The loose ends name them. The body of the deck says the unit of the program is the family. |
-| F32 | Prevention before a family is deteriorating | Q14. Named as unfinished thinking, with no mechanism. |
-| F33 | Teaching the three values | Q14. Curriculum, marriage courses, counseling as a national program, and a campaign. Likely a movement, not this app. |
-| F34 | Live feeds from agencies | Q10. Named as event sources. A person can type an event under F13 without a feed. |
+| F31 | People outside a family unit | Answered by Q11 and folded into F03. A unit of one person, or a unit such as an orphanage. Not a separate record. |
+| F32 | Prevention before a family is deteriorating | Out of this app (Q14). |
+| F33 | Teaching the three values | Out of this app (Q14). Curriculum, marriage courses, counseling as a national program, and a campaign. |
+| F34 | Live feeds from agencies | Not in the first version (Q10). A worker types the event under F13. Q3 still wants a systematic feed later, such as a government disbursement. |
 | F35 | Poor connectivity on a visit | Not in the deck. Field visits in the story happen in low-cost housing. Raise it if the first locality cannot assume a signal. |
+| F36 | Local custody and a government query | Q2 set this aside so the first version can be usable. The community owns the locality's data and organizes the work. A government queries up to a limit still to be defined, and assists as a benefactor. |
+| F37 | Contest a checkbox | Q5. The family can see the four boxes. A later feature can let them contest a check and resolve it with the community worker. The first version does not. |
 
 ## What is not a feature
 
@@ -100,5 +104,7 @@ F01 Localities
 F12 Visit rhythm and F16 Caseload sit on F06 and F03
 F17 Needs, F18 Offers, F19 Match, F20 Handoff sit on F07 and F08
 F23 Caseload outcomes sit on F08 and F15
-F24 Nation measure sits on Q1, and is not required to enrol the first family
+F24 Nation measure is deferred. It counts families Sokong does not track, and it is not required to enrol the first family
+F36 Local custody waits until a human asks for that PRD
+F37 Contesting a checkbox waits until a human asks for that PRD
 ```
