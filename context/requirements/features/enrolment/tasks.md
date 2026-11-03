@@ -11,14 +11,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Introduce string UUID primary keys and the locality fit rule. `Locality.claim(place_name:, point:)` returns the locality the spec would assign, or creates one when nothing fits. No HTTP route yet.
 
 **Acceptance criteria:**
-- [ ] A normalized name match and a point inside a circle both fit. Among the matches, a locality with a `locality_assignments` row wins over one with none. In that pool, the shortest haversine distance wins. Equal distance, or no point to measure, uses the earliest `created_at`. A fitting locality with no center is ordered after every fitting locality that has a numeric distance.
-- [ ] No match creates a locality whose name is the trimmed, whitespace-collapsed place name, with a null center and a null radius.
-- [ ] Ids are 36-character strings set on create. Claim does not update an existing locality's name, center, or radius.
+- [x] A normalized name match and a point inside a circle both fit. Among the matches, a locality with a `locality_assignments` row wins over one with none. In that pool, the shortest haversine distance wins. Equal distance, or no point to measure, uses the earliest `created_at`. A fitting locality with no center is ordered after every fitting locality that has a numeric distance.
+- [x] No match creates a locality whose name is the trimmed, whitespace-collapsed place name, with a null center and a null radius.
+- [x] Ids are 36-character strings set on create. Claim does not update an existing locality's name, center, or radius.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/models/locality_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: none. The model test is the check.
+- [x] Tests pass: `cd backend && bin/rails test test/models/locality_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: none. The model test is the check.
 
 **Dependencies:** None
 
