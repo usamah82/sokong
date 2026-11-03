@@ -2,6 +2,6 @@
 
 | Slug | Status | Spec |
 |---|---|---|
-| — | — | No PRD yet. The catalog is [../../product/master-feature-list.md](../../product/master-feature-list.md). |
+| [enrolment](enrolment/) | spec-approved | [spec.md](enrolment/spec.md) approved 2026-11-03. Catalog rows: F01–F05, sliced in that spec. |
 
 When a human picks a feature, copy `_template/` and add a row.

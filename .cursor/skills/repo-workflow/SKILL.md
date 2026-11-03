@@ -34,6 +34,7 @@ Copy `context/requirements/features/_template/` to `context/requirements/feature
 | Interview | `interview-me` | `intent.md`. One question per turn. Stop when the human confirms the intent. |
 | Shape a vague idea | `idea-refine` | Notes in `intent.md` until the human picks a direction. |
 | Spec | `spec-driven-development` | `spec.md`. Then stop. |
+| Design | `frontend-ui-engineering` | When the spec has a screen: `design.md`, `design/preview.html`, and 390px screenshots. Then stop. Status stays `spec-draft`. |
 | Plan | `planning-and-task-breakdown` | `plan.md` and `tasks.md`. Then stop for plan approval if more than one task remains. |
 | Implement | `incremental-implementation` and `test-driven-development` | Code, tests, and checked tasks. One task at a time. |
 | API shape | `api-and-interface-design` | Contract notes in `spec.md` before the controller exists. |
@@ -63,6 +64,7 @@ Stop the turn, even if you could keep going:
 
 - After the interview's confirmed intent. Do not write the spec in that same turn.
 - After `spec.md` is saved. Do not plan or write code. This matches `spec-driven-development`.
+- After the design screenshots, when the spec has a screen. Do not plan or write product code. A picture that changes behavior is written back into `spec.md`. Status stays `spec-draft` until the human approves the spec.
 - After the plan, when more than one task is left. A single small task may be implemented in a later turn of the same session only if the human already approved the spec and asked you to build it.
 - Before merging. A review from a fresh session recommends. The human merges.
 - Before any production deploy.

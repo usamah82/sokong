@@ -38,7 +38,7 @@ A single "software factory" agent that interviews, codes, and reviews itself wil
 Human gates that stay, even later:
 
 1. Confirm the interview (`intent-confirmed`).
-2. Approve the spec (`spec-approved`) before anyone plans or codes.
+2. Approve the spec (`spec-approved`) before anyone plans or codes. When the spec has a screen, accept the design screenshots first. Status stays `spec-draft` until that approval.
 3. Approve the plan when there is more than one task.
 4. Merge the pull request. A review agent recommends.
 5. Deploy to production. No agent holds production credentials by default.
@@ -78,7 +78,8 @@ you have an idea
   → interview session writes intent.md and stops
   → you confirm
   → spec session writes spec.md and stops
-  → you approve
+  → when the spec has a screen, a design session writes design.md and screenshots and stops
+  → you approve the spec and, when they exist, the screens
   → plan session writes plan.md and tasks.md and stops
   → you approve
   → coding session implements one task, opens a PR
@@ -102,7 +103,7 @@ Status names and file paths are in `repo-workflow`.
 
 1. Pick a row in `context/product/master-feature-list.md`. Answer the open questions that block it.
 2. Start an interview session with the prompt in `prompts.md`. Answer one question at a time. Confirm the intent file.
-3. Run spec, then plan, each in a new session, and approve both.
+3. Run spec, then design when the spec has a screen, then plan, each in a new session, and approve each.
 4. Let a coding agent implement the first task and open a pull request.
 5. Run a review session that has not seen the coding chat.
 6. Merge only when `bin/ci` is green and the review has no unresolved correctness or security findings.

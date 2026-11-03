@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sokong enrolment</title>
+  <style>
+    :root {
+      --paper: #f3f0e8;
+      --sheet: #fffcf7;
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #d4cec3;
+      --accent: #1e3a2f;
+      --accent-ink: #fffcf7;
+      --error: #8c1d1d;
+      --space: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.45 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .phone {
+      width: 390px;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 20px var(--space) 32px;
+      background: var(--sheet);
+    }
+
+    .mark {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .step {
+      margin: 20px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 4px 0 20px;
+      font-size: 22px;
+      line-height: 1.25;
+      font-weight: 650;
+    }
+
+    fieldset {
+      margin: 0 0 20px;
+      padding: 0;
+      border: 0;
+    }
+
+    legend, .label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .choice, .check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 0 0 10px;
+    }
+
+    .choice input, .check input { margin-top: 3px; }
+
+    .consent {
+      margin: 0 0 20px;
+      padding: 12px;
+      background: var(--paper);
+      font-size: 15px;
+    }
+
+    label.field { display: block; margin: 0 0 16px; }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fff;
+      color: inherit;
+      font: inherit;
+    }
+
+    textarea { min-height: 4.8em; resize: vertical; }
+
+    input:focus, textarea:focus, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .error {
+      margin: 8px 0 0;
+      color: var(--error);
+      font-size: 14px;
+    }
+
+    input[aria-invalid="true"] { border-color: var(--error); }
+
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      font: inherit;
+      font-weight: 650;
+    }
+
+    .primary {
+      flex: 1;
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .secondary {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    button.block {
+      display: block;
+      width: 100%;
+      margin: 0 0 16px;
+    }
+
+    .person {
+      margin: 0 0 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    .confirm h1 { margin-bottom: 12px; }
+
+    .confirm p { margin: 0 0 12px; }
+
+    .email {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main class="phone" id="app"></main>
+  <script>
+    const screens = {
+      "stage-1": { stage: 1, mode: "self" },
+      "stage-1-on-behalf": { stage: 1, mode: "behalf" },
+      "stage-1-error": { stage: 1, mode: "self", phone: "Mary at the shop", error: true },
+      "stage-2": {
+        stage: 2,
+        place: "Block 4",
+        suggested: true,
+        familyPhone: "+60 12-345 6789",
+        head: {
+          name: "Aminah",
+          age: "34",
+          gender: "female",
+          description: "Runs a food stall at night. Two younger children are often at home.",
+          working: true,
+          job: "Food stall",
+          amount: "800"
+        }
+      },
+      "stage-3": { stage: 3 },
+      "stage-3-member": {
+        stage: 3,
+        member: {
+          name: "Sarah",
+          age: "15",
+          gender: "female",
+          education: true
+        }
+      },
+      "stage-4": {
+        stage: 4,
+        find: "Blue door beside the food stall. Ask for Aminah.",
+        help: ["food", "school_supplies"]
+      },
+      confirmation: {
+        stage: "done",
+        email: "mary@school.example"
+      }
+    };
+
+    const params = new URLSearchParams(location.search);
+    const preset = screens[params.get("screen")] || { stage: 1, mode: "self" };
+    const state = {
+      stage: preset.stage,
+      mode: preset.mode || "self",
+      phone: preset.phone || "",
+      email: preset.email || "",
+      error: Boolean(preset.error),
+      place: preset.place || "",
+      suggested: Boolean(preset.suggested),
+      familyPhone: preset.familyPhone || "",
+      head: preset.head || { gender: "unspecified" },
+      member: preset.member || null,
+      find: preset.find || "",
+      help: preset.help || [],
+      other: ""
+    };
+
+    const helpOptions = [
+      ["food", "Food"],
+      ["clothing", "Clothing"],
+      ["school_supplies", "School supplies"],
+      ["help_applying", "Help applying to a body (for example social security, welfare, or a tithe body)"]
+    ];
+
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"]/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"
+      }[ch]));
+    }
+
+    function consent() {
+      return state.mode === "behalf"
+        ? "This case is valid and will be checked at a visit. It may not be enrolled unless the family consents then."
+        : "Submission means the family consents. That consent is confirmed at the verification visit.";
+    }
+
+    function genderField(name, selected) {
+      const options = [
+        ["male", "Male"],
+        ["female", "Female"],
+        ["unspecified", "Unspecified"]
+      ];
+      return `<fieldset>
+        <legend>Gender</legend>
+        ${options.map(([value, label]) => `<label class="choice">
+          <input type="radio" name="${name}" value="${value}" ${selected === value ? "checked" : ""}>
+          <span>${label}</span>
+        </label>`).join("")}
+      </fieldset>`;
+    }
+
+    function personFields(prefix, person) {
+      const working = Boolean(person.working);
+      return `
+        <label class="field">Name
+          <input type="text" value="${esc(person.name)}">
+        </label>
+        <label class="field">Age
+          <input type="text" inputmode="numeric" value="${esc(person.age)}">
+        </label>
+        ${genderField(prefix + "-gender", person.gender || "unspecified")}
+        <label class="field">Description
+          <textarea>${esc(person.description)}</textarea>
+        </label>
+        <label class="check">
+          <input type="checkbox" ${person.education ? "checked" : ""}>
+          <span>In education</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" ${working ? "checked" : ""} data-working="${prefix}">
+          <span>Working</span>
+        </label>
+        <div data-job="${prefix}" ${working ? "" : "hidden"}>
+          <label class="field">Job
+            <input type="text" value="${esc(person.job)}">
+          </label>
+          <label class="field">Rough monthly amount
+            <input type="text" inputmode="numeric" value="${esc(person.amount)}">
+          </label>
+        </div>`;
+    }
+
+    function shell(step, title, body, actions) {
+      return `
+        <p class="mark">Sokong</p>
+        ${step ? `<p class="step">Step ${step} of 4</p><h1>${title}</h1>` : `<h1>${title}</h1>`}
+        ${body}
+        ${actions || ""}`;
+    }
+
+    function render() {
+      const app = document.getElementById("app");
+      if (state.stage === "done") {
+        app.innerHTML = `<div class="confirm">
+          <p class="mark">Sokong</p>
+          <h1>This case is in. No visit is set.</h1>
+          <p>Sign up with this email to see who has looked and whether a visit is set.</p>
+          <p class="email">${esc(state.email)}</p>
+        </div>`;
+        return;
+      }
+
+      if (state.stage === 1) {
+        app.innerHTML = shell(1, "Who is enrolling", `
+          <fieldset>
+            <legend>Enrolment</legend>
+            <label class="choice">
+              <input type="radio" name="mode" value="self" ${state.mode === "self" ? "checked" : ""}>
+              <span>This is my family</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mode" value="behalf" ${state.mode === "behalf" ? "checked" : ""}>
+              <span>I am enrolling this family for them</span>
+            </label>
+          </fieldset>
+          <p class="consent">${consent()}</p>
+          <label class="field">Your phone
+            <input type="tel" id="phone" value="${esc(state.phone)}" aria-invalid="${state.error ? "true" : "false"}">
+            ${state.error ? `<p class="error">Enter a phone number, for example +60 12-345 6789.</p>` : ""}
+          </label>
+          <label class="field">Email, optional
+            <input type="email" id="email" value="${esc(state.email)}">
+          </label>
+        `, `<div class="actions"><button class="primary" id="next" type="button">Next</button></div>`);
+      }
+
+      if (state.stage === 2) {
+        app.innerHTML = shell(2, "The family", `
+          <label class="field">Place
+            <input type="text" value="${esc(state.place)}">
+          </label>
+          <button class="secondary block" type="button">Use my current location</button>
+          ${state.suggested ? `
+            <p class="hint">This place was suggested from your current location.</p>
+            <p class="hint">You can name a different place if you are not with the family.</p>
+          ` : ""}
+          <label class="field">Family phone, optional
+            <input type="tel" value="${esc(state.familyPhone)}">
+          </label>
+          <h2 class="label">Head of the family</h2>
+          ${personFields("head", state.head)}
+        `, `<div class="actions">
+          <button class="secondary" id="back" type="button">Back</button>
+          <button class="primary" id="next" type="button">Next</button>
+        </div>`);
+      }
+
+      if (state.stage === 3) {
+        const member = state.member
+          ? `<section class="person">
+              <h2 class="label">Person</h2>
+              ${personFields("member", state.member)}
+              <button class="secondary block" type="button">Remove</button>
+            </section>`
+          : `<p class="hint">You can add other people, or continue if the head is the only person.</p>`;
+        app.innerHTML = shell(3, "Other people in the family", `
+          ${member}
+          <button class="secondary block" id="add" type="button">Add a person</button>
+        `, `<div class="actions">
+          <button class="secondary" id="back" type="button">Back</button>
+          <button class="primary" id="next" type="button">Next</button>
+        </div>`);
+      }
+
+      if (state.stage === 4) {
+        app.innerHTML = shell(4, "Notes for the community worker", `
+          <label class="field">How to find them
+            <textarea>${esc(state.find)}</textarea>
+          </label>
+          <fieldset>
+            <legend>Help</legend>
+            ${helpOptions.map(([value, label]) => `<label class="check">
+              <input type="checkbox" ${state.help.includes(value) ? "checked" : ""}>
+              <span>${label}</span>
+            </label>`).join("")}
+          </fieldset>
+          <label class="field">A help that is not in the list
+            <textarea>${esc(state.other)}</textarea>
+          </label>
+        `, `<div class="actions">
+          <button class="secondary" id="back" type="button">Back</button>
+          <button class="primary" id="submit" type="button">Submit</button>
+        </div>`);
+      }
+
+      document.getElementById("next")?.addEventListener("click", next);
+      document.getElementById("back")?.addEventListener("click", () => {
+        state.stage -= 1;
+        state.error = false;
+        render();
+      });
+      document.getElementById("add")?.addEventListener("click", () => {
+        state.member = { gender: "unspecified" };
+        render();
+      });
+      document.getElementById("submit")?.addEventListener("click", () => {
+        state.stage = "done";
+        state.email = state.email || "mary@school.example";
+        render();
+      });
+      document.querySelectorAll('input[name="mode"]').forEach((input) => {
+        input.addEventListener("change", () => {
+          state.mode = input.value;
+          render();
+        });
+      });
+    }
+
+    function next() {
+      if (state.stage === 1) {
+        const phone = document.getElementById("phone").value.trim();
+        const normalized = phone.replace(/[\s().-]/g, "");
+        state.phone = phone;
+        state.email = document.getElementById("email").value;
+        if (!/^\+?[0-9]{8,15}$/.test(normalized)) {
+          state.error = true;
+          render();
+          return;
+        }
+        state.error = false;
+        if (!state.familyPhone) state.familyPhone = normalized;
+      }
+      state.stage += 1;
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

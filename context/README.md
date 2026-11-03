@@ -17,6 +17,6 @@ This tree is the product memory. Read it before planning or coding. Write back b
 | `knowledge/how-to/` | Procedures worth repeating. |
 | `knowledge/postmortems/` | What broke, why, and what changed. |
 
-No feature PRD is in progress. The catalog is `product/master-feature-list.md`. The running app is a Rails API with `GET /up` only.
+The enrolment spec (F01–F05) is approved in `requirements/features/enrolment/spec.md`. Status is `spec-approved`. The catalog is `product/master-feature-list.md`. The running app is a Rails API with `GET /up` only.
 
 Agents follow `.cursor/skills/repo-workflow/SKILL.md`.

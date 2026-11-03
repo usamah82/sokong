@@ -27,6 +27,23 @@ Set status to spec-draft and stop for my approval.
 Do not plan and do not write code.
 ```
 
+## Design
+
+```
+Design the screens in context/requirements/features/<slug>/spec.md.
+
+Follow frontend-ui-engineering for the screen contract.
+Read spec.md. Use its English copy as written.
+If the spec has no screen, stop and say so.
+Write design.md in that folder: each screen's job, primary action,
+required states, and the phone-width rule.
+Build a static review page at context/requirements/features/<slug>/design/preview.html.
+Screenshot it at 390px wide and save the images in that design folder.
+If a picture disagrees with the spec, update spec.md and say what changed.
+Status stays spec-draft.
+Do not plan, do not scaffold web/, and do not write API code.
+```
+
 ## Plan
 
 ```
