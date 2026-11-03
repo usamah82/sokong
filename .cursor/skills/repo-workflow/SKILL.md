@@ -48,6 +48,8 @@ Copy `context/requirements/features/_template/` to `context/requirements/feature
 
 The upstream spec skill defaults to `tasks/plan.md` and `tasks/todo.md`. This repo overrides that. The feature folder is the tracker.
 
+When a plan adds tables, models, HTTP routes, or a processing pipeline, `plan.md` also has a technical map: the new tables and columns, the models and other objects, the routes, and the flow from request to saved rows. A Mermaid diagram is enough. Skip the map when the change has none of those. Leave the vendored planning skill as it is. This rule is the repo's addition.
+
 ## Status
 
 Set `Status` in the feature `README.md` to exactly one of:
