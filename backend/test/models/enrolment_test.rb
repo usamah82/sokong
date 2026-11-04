@@ -212,7 +212,8 @@ class EnrolmentTest < ActiveSupport::TestCase
 
     assert_equal circled.id, enrolment.locality_id
     assert_equal 1, Locality.count
-    assert_equal 0, enrolment.latitude.to_f
-    assert_equal 0, enrolment.longitude.to_f
+    enrolment.reload
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
   end
 end
