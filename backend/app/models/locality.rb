@@ -11,6 +11,19 @@ class Locality < ApplicationRecord
     closest(staffed.empty? ? matches : staffed, point)
   end
 
+  def self.nearest(point)
+    return if point.nil?
+
+    matches = all.select { |locality| center?(locality) }
+    return if matches.empty?
+
+    matches.min_by { |locality| [ distance_metres(locality, point), locality.created_at ] }
+  end
+
+  def self.same_name?(left, right)
+    fold_name(left) == fold_name(right)
+  end
+
   def staffed?
     locality_assignments.exists?
   end

@@ -250,7 +250,7 @@ The enrolment form is a wizard of four stages. Back and Next move one stage. Typ
 
 JSON keys are snake_case. Times are ISO 8601 UTC. Ids are UUIDs. Paths are unversioned. List responses are the full set the account may see, newest enrolment first.
 
-`GET /localities/suggestion?latitude=&longitude=` is anonymous. `200` with `{ "locality": null }` or `{ "locality": { "name": "Block 4" } }`.
+`GET /localities/suggestion?latitude=&longitude=` is anonymous. `200` with `{ "locality": null }` or `{ "locality": { "name": "Block 4" } }`. The body has no other keys. A missing coordinate, a value that is not a number, or a value outside -90 through 90 and -180 through 180 returns `422` with `VALIDATION_ERROR` and the same coordinate messages as `POST /enrolments`.
 
 `POST /enrolments` is anonymous. `201` returns the saved enrolment: id, `submitted_at`, `on_behalf`, `consent_text`, `enroler_contact`, `email`, `place_name`, `latitude`, `longitude`, `family_phone`, `how_to_find`, `help`, `other_help`, `locality` (`id`, `name`), `members` (head first, then submission order, with the member fields), and `progress` (`case_in` true, `looks` `[]`, `visit_at` null). A later anonymous `GET` of that id is 401. A body larger than 128 KiB, or a body sent with chunked transfer encoding, is `413`:
 
