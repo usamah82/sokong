@@ -19,6 +19,7 @@ Then follow the upstream skill that `repo-workflow` names for this phase. Skills
 - Do not write code unless the feature status is `plan-approved` or `implementing`.
 - Do not plan or code in the session that just wrote the spec.
 - Do not open a production deploy. Hosting is undecided.
+- Do not merge `feature/<slug>` to `main`. That merge is a human action (ADR-0009).
 - Do not delete ADRs or edit vendored skills.
 
 ## Done

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. ADR-0009 supersedes the rule that a clean review waits until every task is checked before it merges. A merge is still a merge commit, and a red required check still follows the rule below.
 
 ## Date
 

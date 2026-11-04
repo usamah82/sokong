@@ -4,7 +4,7 @@ This is the answer to "can we run product development as a chain of agents, with
 
 ## What is feasible
 
-Yes. You approve intent, the spec, the plan, a spec-stop, and any deploy. After the plan, ADR-0007 runs the remaining tasks as a build loop of fresh sessions. ADR-0008 merges the pull request when the last review is clean.
+Yes. You approve intent, the spec, the plan, a spec-stop, the merge of the feature branch to `main`, and any deploy. After the plan, ADR-0007 runs the remaining tasks as a build loop of fresh sessions. ADR-0009 merges each clean slice into `feature/<slug>`.
 
 The skills pack already maps onto the chain you described:
 
@@ -42,7 +42,8 @@ Human gates that stay:
 2. Approve the spec (`spec-approved`) before anyone plans or codes. When the spec has a screen, accept the design screenshots first. Status stays `spec-draft` until that approval.
 3. Approve the plan (`plan-approved`), including when one task remains.
 4. Resolve a `spec-stop`: a finding whose remedy needs a changed spec sentence, a changed task, or a new ADR.
-5. Deploy to production. No agent holds production credentials by default. A clean `ready` review merges the pull request without you.
+5. Merge `feature/<slug>` to `main`. A clean review merges the slice into the feature branch. It does not merge to `main`.
+6. Deploy to production. No agent holds production credentials by default.
 
 ## Gaps
 
@@ -85,9 +86,10 @@ you have an idea
   → you approve
   → a fresh session takes one build-loop hop and writes handoff.md
       implement one green slice → review that diff → fix in-scope findings
-      → next slice, until the tasks are checked or a hop sets spec-stop
+      → a clean review merges that slice into feature/<slug>
+      → next slice, until the tasks are on that branch or a hop sets spec-stop
   → you resolve a spec-stop, then the loop continues
-  → the ready hop merges the pull request and sets status to done
+  → you merge feature/<slug> to main
   → deploy and monitor only when you have asked for production
 ```
 
@@ -97,7 +99,7 @@ Status names and file paths are in `repo-workflow`.
 
 - Pinned skills, references, and personas
 - `repo-workflow`, always-on project rule, Rails rule
-- Context index, ADRs through 0008, the Sokong introduction, the feature catalog, templates, prompts, definition of done
+- Context index, ADRs through 0009, the Sokong introduction, the feature catalog, templates, prompts, definition of done
 - Rails API, `GET /up`, integration test, `bin/ci`
 - Root GitHub Actions workflow and Dependabot config aimed at `backend/`
 
@@ -108,6 +110,6 @@ Status names and file paths are in `repo-workflow`.
 3. Run spec, then design when the spec has a screen, then plan, each in a new session, and approve each.
 4. Set status to `plan-approved`. Paste `Continue the build loop` into a new chat for each hop until status is `done` or `spec-stop`.
 5. On `spec-stop`, change the spec or tasks, or say how the loop should continue. Then paste the continue prompt again.
-6. The ready hop merges the pull request. Deploy only when you have asked for production.
+6. A clean review merges the slice into `feature/<slug>`. You merge that branch to `main`. Deploy only when you have asked for production.
 
 Leave deploy until that feature needs a server. Write the hosting ADR then, and replace the placeholder in `config/deploy.yml` in the same change.

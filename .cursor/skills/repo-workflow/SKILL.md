@@ -59,7 +59,7 @@ Set `Status` in the feature `README.md` to exactly one of:
 
 `spec-stop` halts the build loop from `implementing`. `parked` is allowed from any state. Say why in the README.
 
-Only a human moves a feature to `intent-confirmed`, `spec-approved`, or `plan-approved`. An agent may set `spec-draft`, `planning`, `implementing`, `spec-stop`, `in-review`, and `done` when it finishes that phase's artifact. `spec-stop` means a finding needs a human. `in-review` means auto-merge is queued and the pull request is not merged yet. `done` means the ready hop's pull request is merged.
+Only a human moves a feature to `intent-confirmed`, `spec-approved`, or `plan-approved`. An agent may set `spec-draft`, `planning`, `implementing`, `spec-stop`, `in-review`, and `done` when it finishes that phase's artifact. `spec-stop` means a finding needs a human. `in-review` means the slice pull request's auto-merge is queued. `done` means every task and checkpoint is on `feature/<slug>`. The human merges that branch to `main`.
 
 ## Gates
 
@@ -71,7 +71,7 @@ Stop the turn, even if you could keep going:
 - After the plan. Approval is a human action, including when one task remains. The build loop starts only at status `plan-approved`.
 - After one build-loop hop. Write `handoff.md` and stop. Do not start the next action in this session.
 - On `spec-stop`. Wait for the human to change the spec or tasks, or to say how the loop should continue.
-- On `ready`. Merge the pull request in that same review hop (ADR-0008).
+- On `ready`. Merge the slice pull request into `feature/<slug>` in that same review hop (ADR-0009). Do not merge to `main`.
 - Before any production deploy.
 
 A typo, a failing test for already-accepted behavior, or a dependency bump does not need a new feature folder. Name the existing spec or ADR in the commit instead.
@@ -100,6 +100,7 @@ Write `handoff.md` with these fields only. Do not summarize the spec or the impl
 Slug:
 Action:
 Task:
+Branch:
 Base:
 Claim: open
 Cycles: 0
@@ -108,11 +109,11 @@ Continue: no
 Note:
 ```
 
-`Action` is `implement`, `review`, `fix`, `spec-stop`, or `ready`. `Base` is the full commit sha the next review diffs from (`Base..HEAD`). `Task` is the task heading. `Note` is what is left, or the spec-stop reason.
+`Action` is `implement`, `review`, `fix`, `spec-stop`, or `ready`. `Branch` is the long-lived `feature/<slug>`. `Base` is the full commit sha the next review diffs from (`Base..HEAD`). `Task` is the task heading. `Note` is what is left, or the spec-stop reason.
 
 The claim commit sets `Claim: taken` and does not change product code. For `implement` or `fix`, that commit sets `Base` to the current HEAD. A review hop's claim commit leaves `Base` unchanged, so the diff stays `Base..HEAD`. The slice commit comes after the claim and `bin/ci` passes. The last commit sets the next action and `Claim: open`, increments `Cycles` by one, and leaves `Base` unchanged. A second runner that sees `Claim: taken` stops.
 
-On the first slice, open a pull request when the feature does not already have one. Record the link in the feature README. Leave status `implementing`.
+`feature/<slug>` is the long-lived branch. Create it from `main` when the feature README does not name a different start. The slice branch for a new task is `feature/<slug>-<task number>`, cut from `feature/<slug>`. An in-flight slice keeps its current branch. Open one pull request for that slice into `feature/<slug>`, and record the link in the feature README. Leave status `implementing`.
 
 ### Actions
 
@@ -122,7 +123,7 @@ On the first slice, open a pull request when the feature does not already have o
 | `review` | Read `spec.md`, `tasks.md`, and the diff `Base..HEAD`. Do not read the implementation chat. Read `.cursor/agents/code-reviewer.md` and follow `code-review-and-quality`. When the diff touches auth, input, or stored data, also read `.cursor/agents/security-auditor.md`. Read `.cursor/agents/test-engineer.md` for missing tests of behavior the spec already requires. Write `review.md`. Do not edit product code. | See the verdicts below. |
 | `fix` | Apply only the in-scope findings in `review.md` for this slice. | `review`. Do not change `Fix-round`. |
 | `spec-stop` | Set status to `spec-stop`. Put the reason in `Note`. | Stop. |
-| `ready` | Merge the open pull request, as in the merge section. | `done` when the pull request is merged. `in-review` when auto-merge is only queued. |
+| `ready` | Merge the slice pull request into `feature/<slug>`, as in the merge section. | After the merge, `implement` for the next unchecked task when one remains, with `Fix-round` `0`. `done` when every task and checkpoint is checked. `in-review` when auto-merge is only queued. |
 
 Replace `review.md` each review hop:
 
@@ -146,20 +147,19 @@ Verdicts:
 
 - In-scope findings, and `Fix-round` is `0` or `1`: set `fix` and add one to `Fix-round`.
 - In-scope findings, and `Fix-round` is `2`: `spec-stop` with reason `not converging`.
-- No findings, a later task or checkpoint remains: `implement`.
-- No findings, and every task and checkpoint is checked: `ready`.
+- No findings: `ready`. When the tasks above an unchecked checkpoint are checked, verify that checkpoint and check it in this same hop, before the merge.
 
 One green slice per session. Do not start a second slice, the review of your own slice, or the next task in this session. Code is allowed at `plan-approved` or `implementing` only.
 
 ### Merge
 
-ADR-0008. The review hop merges when its verdict is `ready`. A clean review that still has a later task or checkpoint sets `implement` and does not merge.
+ADR-0009. The review hop merges when its verdict is `ready`. The merge target is `feature/<slug>`, the `Branch` in `handoff.md`. Do not merge to `main`.
 
-Merge the open pull request whose head is the current branch, with a merge commit: `gh pr merge --merge`. Do not delete the branch. Required checks must be green, or still running. When they are still running, enable auto-merge with `gh pr merge --merge --auto`, set status to `in-review`, set action `ready`, and set `Note` to `auto-merge queued`.
+Merge the open pull request whose head is the current branch and whose base is `feature/<slug>`, with a merge commit: `gh pr merge --merge`. Do not delete the branch. Required checks must be green, or still running. When they are still running, enable auto-merge with `gh pr merge --merge --auto`, set status to `in-review`, set action `ready`, and set `Note` to `auto-merge queued`.
 
 When a required check is failing, do not merge. Set `fix` when `Fix-round` is `0` or `1` and the failure is a red test or lint for behavior the spec already requires. Otherwise set `spec-stop` and name the check in `Note`.
 
-When the pull request is merged, set status to `done` and stop. A later hop that finds `in-review` and a merged pull request sets `done` and stops. A later hop that finds auto-merge queued and checks still pending stops. A later hop that finds a failing required check follows the red-check rule above.
+When the slice pull request is merged and a later task or checkpoint remains, set status to `implementing`, set action `implement`, set `Task` to the next unchecked task, set `Fix-round` to `0`, set `Base` to the merge commit on `feature/<slug>`, set `Claim` to `open`, and stop. When it is merged and every task and checkpoint is checked, set status to `done` and stop. A later hop that finds `in-review` and a merged slice follows those same two outcomes. A later hop that finds auto-merge queued and checks still pending stops. A later hop that finds a failing required check follows the red-check rule above.
 
 ## Decisions, how-tos, postmortems
 
