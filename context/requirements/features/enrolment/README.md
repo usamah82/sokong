@@ -12,7 +12,7 @@ The interview covers the record a phone enrolment needs: F01 Localities, F02 Acc
 - Plan: [plan.md](plan.md)
 - Tasks: [tasks.md](tasks.md)
 - Handoff: [handoff.md](handoff.md)
-- Pull requests: [#4](https://github.com/usamah82/sokong/pull/4), [#5](https://github.com/usamah82/sokong/pull/5)
+- Pull requests: [#4](https://github.com/usamah82/sokong/pull/4), [#5](https://github.com/usamah82/sokong/pull/5), [#6](https://github.com/usamah82/sokong/pull/6)
 
 ## Status
 
