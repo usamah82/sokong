@@ -1,6 +1,6 @@
 # Agents
 
-You are one phase of a feature, not the whole lifecycle. The human starts the next session.
+You are one hop of a feature, not the whole lifecycle. After plan approval, do the one build-loop action in the feature `handoff.md` and stop. The human, or later a runner outside the chat, starts the next session.
 
 ## Read first
 

@@ -1,8 +1,8 @@
 # Tasks
 
-Ordered by dependency. Each task is one session. Checkboxes live here. Decisions and the dependency graph are in [plan.md](plan.md). The contract is [spec.md](spec.md). The phone pictures are [design.md](design.md).
+Ordered by dependency. One green slice per session. A task may take more than one slice. Checkboxes live here. Decisions and the dependency graph are in [plan.md](plan.md). The contract is [spec.md](spec.md). The phone pictures are [design.md](design.md).
 
-A `Checkpoint` is a review gate. Check it after the tasks above it. Do not open a pull request for a checkpoint.
+A `Checkpoint` is a build-loop review of the tasks above it (ADR-0007). Check it when that review is clean. It is not a human gate. Do not open a pull request for a checkpoint.
 
 A task is done only when its acceptance lines are true and [definition of done](../../../workflow/definition-of-done.md) is met. Until Task 14, `bin/ci` is the Rails gate. From Task 14 on, `bin/ci` also runs the web test and lint scripts.
 

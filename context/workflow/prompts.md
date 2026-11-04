@@ -51,35 +51,30 @@ Plan context/requirements/features/<slug>/.
 
 The spec is approved. Follow planning-and-task-breakdown.
 Write plan.md and tasks.md in that folder.
-Set status to planning and stop for my approval if more than one task remains.
-Do not write code unless I already asked you to build a single task.
+Set status to planning and stop for my approval.
+Do not write code. The build loop starts in a new session after I set plan-approved.
 ```
 
-## Implement
+## Continue the build loop
+
+Paste this once per hop, into a new chat, after the plan is approved. The same line is the whole instruction. ADR-0007. The procedure is the build loop in `repo-workflow`.
 
 ```
-Implement the next unchecked task in context/requirements/features/<slug>/tasks.md.
+Continue the build loop for context/requirements/features/<slug>/.
 
-Follow incremental-implementation and test-driven-development.
-Follow api-and-interface-design if the task changes HTTP.
-Status must already be plan-approved or implementing. If it is not, stop.
-Run bin/ci from the repository root before you finish.
-Update the task checkbox and set status to in-review when the pull request is open.
-Do not review your own change as if you were a second agent.
+Follow repo-workflow. Do the one action in handoff.md and stop.
+If handoff.md is missing and status is plan-approved or implementing,
+the action is implement for the next unchecked task.
+If Claim is taken, stop and say the last hop is unfinished.
+If status is spec-stop or in-review, stop.
+Do not start the next hop. Do not spawn an agent.
 ```
 
-## Review
-
-```
-Review the open pull request for context/requirements/features/<slug>/.
-
-Read .cursor/agents/code-reviewer.md and follow code-review-and-quality.
-Read spec.md and the diff. Do not read the implementation chat.
-Report findings. Do not change the code unless I ask you to fix a finding.
-If the change touches auth, input, or data, say whether a security-auditor pass is needed.
-```
+A dead hop leaves `Claim: taken`. The recovery line, in a new chat, is: take over the claimed hop for `context/requirements/features/<slug>/` and finish that one action.
 
 ## Security
+
+An extra pass, only when you ask. The build-loop review already reads this persona when the diff touches auth, input, or stored data.
 
 ```
 Audit the open pull request for context/requirements/features/<slug>/.
@@ -89,6 +84,8 @@ Report only. Do not change the code unless I ask you to fix a finding.
 ```
 
 ## Tests
+
+An extra pass, only when you ask. The build-loop review already files missing tests of specified behavior as findings.
 
 ```
 Look for missing tests in the open pull request for context/requirements/features/<slug>/.

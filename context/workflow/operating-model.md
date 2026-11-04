@@ -4,7 +4,7 @@ This is the answer to "can we run product development as a chain of agents, with
 
 ## What is feasible
 
-Yes, if you stay the orchestrator.
+Yes. You approve intent, the spec, the plan, a spec-stop, the merge, and any deploy. After the plan, ADR-0007 runs the remaining tasks as a build loop of fresh sessions.
 
 The skills pack already maps onto the chain you described:
 
@@ -14,7 +14,8 @@ The skills pack already maps onto the chain you described:
 | Stress a vague idea | `idea-refine` |
 | Write the spec and stop | `spec-driven-development` |
 | Break it into tasks | `planning-and-task-breakdown` |
-| Implement in small slices | `incremental-implementation`, `test-driven-development` |
+| Implement one slice, then stop | `incremental-implementation`, `test-driven-development` |
+| Apply in-scope review findings | `incremental-implementation`, `test-driven-development` |
 | Design the HTTP contract | `api-and-interface-design` |
 | Review a pull request | `code-review-and-quality` and `.cursor/agents/code-reviewer.md` |
 | Look for missing tests | `.cursor/agents/test-engineer.md` |
@@ -31,23 +32,24 @@ Cursor loads a skill when the task matches its description, and this repo tells 
 
 ## What you should not automate away
 
-The pack is explicit, and this repo adopts that rule in ADR-0001. You run the sequence. An agent does not hire the next agent.
+The pack is explicit, and this repo adopts that rule in ADR-0001. An agent does not hire the next agent. ADR-0007 does not add a parent agent. It writes the next action into `handoff.md` and stops. A runner outside the chat, or you, opens the next session.
 
-A single "software factory" agent that interviews, codes, and reviews itself will paraphrase the spec at every hop and then approve its own diff. Fresh sessions are the point of the split: the reviewer never saw the implementation chat, only the spec and the diff.
+A single session that interviews, codes, and reviews itself will paraphrase the spec at every hop and then approve its own diff. Fresh sessions are the point of the split: the reviewer never saw the implementation chat, only the spec and the diff.
 
-Human gates that stay, even later:
+Human gates that stay:
 
 1. Confirm the interview (`intent-confirmed`).
 2. Approve the spec (`spec-approved`) before anyone plans or codes. When the spec has a screen, accept the design screenshots first. Status stays `spec-draft` until that approval.
-3. Approve the plan when there is more than one task.
-4. Merge the pull request. A review agent recommends.
-5. Deploy to production. No agent holds production credentials by default.
+3. Approve the plan (`plan-approved`), including when one task remains.
+4. Resolve a `spec-stop`: a finding whose remedy needs a changed spec sentence, a changed task, or a new ADR.
+5. Merge the pull request. The loop sets `in-review` when the last review is clean.
+6. Deploy to production. No agent holds production credentials by default.
 
 ## Gaps
 
 These are real. The scaffold does not pretend they are done.
 
-1. **Nothing starts the next session for you.** Skills are instructions, not a queue. `context/workflow/prompts.md` is the handoff. Cursor automations can later open a coding agent when you flip a feature to `plan-approved`. That automation is not wired, and it should not skip spec approval.
+1. **The build-loop runner is not wired.** After `plan-approved`, `handoff.md` is the queue (ADR-0007). Each session does one hop and stops. Until a runner exists, paste `Continue the build loop` from `prompts.md` into a new chat. The runner must stay quiet on `spec-stop` and `in-review`, and it must not start before `plan-approved`. It needs a git remote.
 
 2. **Interview only works with you in the thread.** It is one question at a time. File the confirmed intent before you open the spec session, or the spec session will guess.
 
@@ -69,7 +71,7 @@ These are real. The scaffold does not pretend they are done.
 
 11. **A context tree rots if status is not updated.** The feature README is the board. A session that writes `spec.md` and leaves status at `interviewing` has failed the skill.
 
-12. **Same-session self-review is weak.** Use a second session, or a review bot, on the pull request. Give it the spec path and the diff, not the coding transcript.
+12. **Same-session self-review is weak.** The build-loop review hop is a fresh session. Give it the spec path and the diff, not the coding transcript.
 
 ## How a feature moves
 
@@ -82,10 +84,11 @@ you have an idea
   → you approve the spec and, when they exist, the screens
   → plan session writes plan.md and tasks.md and stops
   → you approve
-  → coding session implements one task, opens a PR
-  → a different session reviews against the spec
-  → bin/ci is green
-  → you merge
+  → a fresh session takes one build-loop hop and writes handoff.md
+      implement one green slice → review that diff → fix in-scope findings
+      → next slice, until the tasks are checked or a hop sets spec-stop
+  → you resolve a spec-stop, then the loop continues
+  → status in-review, bin/ci green, you merge
   → deploy and monitor only when you have asked for production
 ```
 
@@ -95,7 +98,7 @@ Status names and file paths are in `repo-workflow`.
 
 - Pinned skills, references, and personas
 - `repo-workflow`, always-on project rule, Rails rule
-- Context index, four ADRs, the Sokong introduction, the feature catalog, templates, prompts, definition of done
+- Context index, ADRs through 0007, the Sokong introduction, the feature catalog, templates, prompts, definition of done
 - Rails API, `GET /up`, integration test, `bin/ci`
 - Root GitHub Actions workflow and Dependabot config aimed at `backend/`
 
@@ -104,8 +107,8 @@ Status names and file paths are in `repo-workflow`.
 1. Pick a row in `context/product/master-feature-list.md`. Answer the open questions that block it.
 2. Start an interview session with the prompt in `prompts.md`. Answer one question at a time. Confirm the intent file.
 3. Run spec, then design when the spec has a screen, then plan, each in a new session, and approve each.
-4. Let a coding agent implement the first task and open a pull request.
-5. Run a review session that has not seen the coding chat.
-6. Merge only when `bin/ci` is green and the review has no unresolved correctness or security findings.
+4. Set status to `plan-approved`. Paste `Continue the build loop` into a new chat for each hop until status is `in-review` or `spec-stop`.
+5. On `spec-stop`, change the spec or tasks, or say how the loop should continue. Then paste the continue prompt again.
+6. Merge only when status is `in-review` and `bin/ci` is green.
 
 Leave deploy until that feature needs a server. Write the hosting ADR then, and replace the placeholder in `config/deploy.yml` in the same change.

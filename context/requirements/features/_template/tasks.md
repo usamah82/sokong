@@ -1,6 +1,6 @@
 # Tasks
 
-Ordered by dependency. Each task is one session and about five files or fewer.
+Ordered by dependency. One green slice per session. A task may take more than one slice. About five files or fewer per slice.
 
 ```markdown
 - [ ] Task:

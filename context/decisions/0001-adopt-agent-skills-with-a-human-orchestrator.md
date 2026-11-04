@@ -45,3 +45,4 @@ The human starts each phase in a fresh session, using `context/workflow/prompts.
 - Updating the pack is `scripts/sync-agent-skills.sh`, then a commit of the new SHA.
 - `/spec` and `/plan` from the Claude Code adapter are not installed. Prompts name the skill instead.
 - A review session must be told to read `.cursor/agents/code-reviewer.md`. Cursor will not load it automatically.
+- ADR-0007 is the build loop after `plan-approved`. Each hop is still a fresh session started from outside the agent. The human still approves intent, spec, plan, a spec-stop, merge, and deploy.

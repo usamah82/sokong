@@ -189,7 +189,7 @@ A later edit to a locality's name or circle does not move an enrolment already s
 
 ## Task List
 
-The task list target is [tasks.md](tasks.md). Implement the next unchecked task there. A `Checkpoint` heading is a review gate: check it after the tasks above it, and do not open a pull request for the checkpoint itself.
+The task list target is [tasks.md](tasks.md). The build loop implements the next unchecked task, one slice per session (ADR-0007). A `Checkpoint` heading is a review hop over the tasks above it, not a human gate. Check it when that review is clean, and do not open a pull request for the checkpoint itself.
 
 ### Phase 1: Save an enrolment
 
