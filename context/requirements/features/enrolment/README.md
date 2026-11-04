@@ -11,11 +11,11 @@ The interview covers the record a phone enrolment needs: F01 Localities, F02 Acc
 - Design: [design.md](design.md)
 - Plan: [plan.md](plan.md)
 - Tasks: [tasks.md](tasks.md)
-- Handoff: handoff.md (written by the next build-loop hop)
+- Handoff: [handoff.md](handoff.md)
 - Pull requests: [#4](https://github.com/usamah82/sokong/pull/4), [#5](https://github.com/usamah82/sokong/pull/5)
 
 ## Status
 
 Allowed values, in order: `interviewing`, `intent-confirmed`, `spec-draft`, `spec-approved`, `planning`, `plan-approved`, `implementing`, `in-review`, `done`. `spec-stop` halts the build loop from `implementing`. `parked` needs a reason written here.
 
-Only a human sets `intent-confirmed`, `spec-approved`, or `plan-approved`. The ready hop merges the pull request and sets `done` (ADR-0008). The next session uses `Continue the build loop` in `context/workflow/prompts.md`. There is no `handoff.md` yet, so that hop implements the next unchecked task.
+Only a human sets `intent-confirmed`, `spec-approved`, or `plan-approved`. The ready hop merges the pull request and sets `done` (ADR-0008). The next session uses `Continue the build loop` in `context/workflow/prompts.md`.

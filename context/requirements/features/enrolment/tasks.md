@@ -63,14 +63,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `POST /enrolments` is anonymous and saves the whole form in one transaction. `EnrolmentSubmission` rejects bad input with the spec's `422` envelope and saves nothing. Coordinates on this task are stored as null; Task 4 adds the keep rule. The two consent sentences are chosen from `on_behalf` and a client-sent `consent_text` is ignored.
 
 **Acceptance criteria:**
-- [ ] A body with one named head and empty optional fields returns `201` with the spec's enrolment shape, `progress.case_in` true, `looks` empty, and `visit_at` null. No locality existed, so the new locality holds it. A second body creates a second enrolment and a second family unit. A matching place name uses the existing locality.
-- [ ] Missing enroler phone, a non-phone contact, a missing place name, a missing head name, a gender outside the three values, a non-integer age, a non-integer monthly amount, a help key outside the four, zero members, two heads, or only one of latitude and longitude returns `422` with `VALIDATION_ERROR` and saves nothing.
-- [ ] Self and on-behalf each store their own spec sentence. `latitude` and `longitude` in the `201` body are null.
+- [x] A body with one named head and empty optional fields returns `201` with the spec's enrolment shape, `progress.case_in` true, `looks` empty, and `visit_at` null. No locality existed, so the new locality holds it. A second body creates a second enrolment and a second family unit. A matching place name uses the existing locality.
+- [x] Missing enroler phone, a non-phone contact, a missing place name, a missing head name, a gender outside the three values, a non-integer age, a non-integer monthly amount, a help key outside the four, zero members, two heads, or only one of latitude and longitude returns `422` with `VALIDATION_ERROR` and saves nothing.
+- [x] Self and on-behalf each store their own spec sentence. `latitude` and `longitude` in the `201` body are null.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: `POST /enrolments` on port `3000` with one named head returns `201`. A body with no phone returns `422` and leaves the counts unchanged.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: `POST /enrolments` on port `3000` with one named head returns `201`. A body with no phone returns `422` and leaves the counts unchanged.
 
 **Dependencies:** Task 2
 
