@@ -37,14 +37,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Persist one family unit, its members, and one enrolment per submission, and assign the locality from Task 1 at create time. The test calls a model method with already-clean attributes. Validation and HTTP wait for Task 3.
 
 **Acceptance criteria:**
-- [ ] One call creates one enrolment, one family unit, and members with the head first. A second call creates a second pair. `visit_at` is null. Optional blanks are empty strings, and blank age and amount are null.
-- [ ] When `working` is false, `job` is empty and `monthly_amount` is null. Help keys are stored once in first-seen order.
-- [ ] Changing the locality name, center, or radius afterward leaves `enrolment.locality_id` the same.
+- [x] One call creates one enrolment, one family unit, and members with the head first. A second call creates a second pair. `visit_at` is null. Optional blanks are empty strings, and blank age and amount are null.
+- [x] When `working` is false, `job` is empty and `monthly_amount` is null. Help keys are stored once in first-seen order.
+- [x] Changing the locality name, center, or radius afterward leaves `enrolment.locality_id` the same.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/models/enrolment_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: none. The model test is the check.
+- [x] Tests pass: `cd backend && bin/rails test test/models/enrolment_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: none. The model test is the check.
 
 **Dependencies:** Task 1
 
