@@ -95,14 +95,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `GET /localities/suggestion` returns the nearest locality name, or `{ "locality": null }` when none have a center. `POST /enrolments` keeps a valid coordinate pair only when the place name matches that nearest locality. Any other name, including a name that creates a locality, stores null coordinates. Ties use the earliest `created_at`. There is no distance cutoff.
 
 **Acceptance criteria:**
-- [ ] The suggestion response is only `locality: null` or `locality.name`. It includes no workers, radii, or enrolments. A missing or out-of-range coordinate pair returns `422`.
-- [ ] A kept point inside several circles assigns the closest staffed locality, or the closest locality when none are staffed. A fitting locality with no center loses to one with a numeric distance. Equal distance uses the earliest `created_at`.
-- [ ] Coordinates whose place name matches the nearest locality with a center are stored. Any other name returns `latitude` and `longitude` as null and still saves the enrolment. A locality created by the enrolment has a null center and a null radius.
+- [x] The suggestion response is only `locality: null` or `locality.name`. It includes no workers, radii, or enrolments. A missing or out-of-range coordinate pair returns `422`.
+- [x] A kept point inside several circles assigns the closest staffed locality, or the closest locality when none are staffed. A fitting locality with no center loses to one with a numeric distance. Equal distance uses the earliest `created_at`.
+- [x] Coordinates whose place name matches the nearest locality with a center are stored. Any other name returns `latitude` and `longitude` as null and still saves the enrolment. A locality created by the enrolment has a null center and a null radius.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/localities_suggestion_test.rb test/integration/enrolments_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: `GET /localities/suggestion` with a point near a seeded center returns that locality's name only.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/localities_suggestion_test.rb test/integration/enrolments_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: `GET /localities/suggestion` with a point near a seeded center returns that locality's name only.
 
 **Dependencies:** Task 3
 
