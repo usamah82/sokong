@@ -8,7 +8,7 @@ Read `context/workflow/operating-model.md` once. Then use a new session per phas
 4. Plan. You approve the task list, including when one task remains. Set status to `plan-approved`.
 5. For each hop, paste `Continue the build loop` from `prompts.md` into a new chat. The session does one of implement, review, or fix, writes `handoff.md`, and stops.
 6. On `spec-stop`, you change the spec or tasks, or you say how the loop should continue.
-7. You merge when status is `in-review`.
+7. The ready hop merges the pull request and sets status to `done`. You do not merge it.
 
 If a hop dies after `Claim: taken`, paste the recovery line from that same prompt into a new chat. A checkpoint in `tasks.md` is a review hop, not a pause for you.
 

@@ -75,6 +75,7 @@ Human gates that stay: confirm intent, approve the spec (and the design screens 
 ## Consequences
 
 - Accepted on 2026-11-04. `repo-workflow`, the prompts, the operating model, the how-to, and the feature template state the loop.
+- ADR-0008 supersedes the human merge in this decision. The `ready` hop merges the pull request.
 - A cloud or automation runner is a follow-up. It needs a git remote. It must not run on `spec-stop`.
 - Review, security, and test passes stay one fresh session. When the diff touches auth, input, or stored data, that review hop also reads `.cursor/agents/security-auditor.md` and still only writes findings.
 - Enrolment, already `implementing`, uses the build loop from the next session. Its checkpoints are review hops, not human gates.

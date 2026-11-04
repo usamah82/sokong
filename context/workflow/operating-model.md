@@ -4,7 +4,7 @@ This is the answer to "can we run product development as a chain of agents, with
 
 ## What is feasible
 
-Yes. You approve intent, the spec, the plan, a spec-stop, the merge, and any deploy. After the plan, ADR-0007 runs the remaining tasks as a build loop of fresh sessions.
+Yes. You approve intent, the spec, the plan, a spec-stop, and any deploy. After the plan, ADR-0007 runs the remaining tasks as a build loop of fresh sessions. ADR-0008 merges the pull request when the last review is clean.
 
 The skills pack already maps onto the chain you described:
 
@@ -42,14 +42,13 @@ Human gates that stay:
 2. Approve the spec (`spec-approved`) before anyone plans or codes. When the spec has a screen, accept the design screenshots first. Status stays `spec-draft` until that approval.
 3. Approve the plan (`plan-approved`), including when one task remains.
 4. Resolve a `spec-stop`: a finding whose remedy needs a changed spec sentence, a changed task, or a new ADR.
-5. Merge the pull request. The loop sets `in-review` when the last review is clean.
-6. Deploy to production. No agent holds production credentials by default.
+5. Deploy to production. No agent holds production credentials by default. A clean `ready` review merges the pull request without you.
 
 ## Gaps
 
 These are real. The scaffold does not pretend they are done.
 
-1. **The build-loop runner is not wired.** After `plan-approved`, `handoff.md` is the queue (ADR-0007). Each session does one hop and stops. Until a runner exists, paste `Continue the build loop` from `prompts.md` into a new chat. The runner must stay quiet on `spec-stop` and `in-review`, and it must not start before `plan-approved`. It needs a git remote.
+1. **The build-loop runner is the Cursor automation "Sokong build loop".** After `plan-approved`, `handoff.md` is the queue (ADR-0007). Each run is a new cloud agent and does one hop. It starts when an open pull request in `usamah82/sokong` is pushed, when that pull request's checks finish, or when it merges. It stays quiet on `spec-stop` and `done`, and it does not start before `plan-approved`. Paste `Continue the build loop` from `prompts.md` to start the first hop, or to recover a hop whose `Claim` is `taken`. Save the automation before that first hop pushes, or the next hop still waits on the paste.
 
 2. **Interview only works with you in the thread.** It is one question at a time. File the confirmed intent before you open the spec session, or the spec session will guess.
 
@@ -88,7 +87,7 @@ you have an idea
       implement one green slice → review that diff → fix in-scope findings
       → next slice, until the tasks are checked or a hop sets spec-stop
   → you resolve a spec-stop, then the loop continues
-  → status in-review, bin/ci green, you merge
+  → the ready hop merges the pull request and sets status to done
   → deploy and monitor only when you have asked for production
 ```
 
@@ -98,7 +97,7 @@ Status names and file paths are in `repo-workflow`.
 
 - Pinned skills, references, and personas
 - `repo-workflow`, always-on project rule, Rails rule
-- Context index, ADRs through 0007, the Sokong introduction, the feature catalog, templates, prompts, definition of done
+- Context index, ADRs through 0008, the Sokong introduction, the feature catalog, templates, prompts, definition of done
 - Rails API, `GET /up`, integration test, `bin/ci`
 - Root GitHub Actions workflow and Dependabot config aimed at `backend/`
 
@@ -107,8 +106,8 @@ Status names and file paths are in `repo-workflow`.
 1. Pick a row in `context/product/master-feature-list.md`. Answer the open questions that block it.
 2. Start an interview session with the prompt in `prompts.md`. Answer one question at a time. Confirm the intent file.
 3. Run spec, then design when the spec has a screen, then plan, each in a new session, and approve each.
-4. Set status to `plan-approved`. Paste `Continue the build loop` into a new chat for each hop until status is `in-review` or `spec-stop`.
+4. Set status to `plan-approved`. Paste `Continue the build loop` into a new chat for each hop until status is `done` or `spec-stop`.
 5. On `spec-stop`, change the spec or tasks, or say how the loop should continue. Then paste the continue prompt again.
-6. Merge only when status is `in-review` and `bin/ci` is green.
+6. The ready hop merges the pull request. Deploy only when you have asked for production.
 
 Leave deploy until that feature needs a server. Write the hosting ADR then, and replace the placeholder in `config/deploy.yml` in the same change.

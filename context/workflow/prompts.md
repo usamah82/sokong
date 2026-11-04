@@ -57,7 +57,7 @@ Do not write code. The build loop starts in a new session after I set plan-appro
 
 ## Continue the build loop
 
-Paste this once per hop, into a new chat, after the plan is approved. The same line is the whole instruction. ADR-0007. The procedure is the build loop in `repo-workflow`.
+Paste this into a new chat to start the first hop, or to recover a hop whose `Claim` is `taken`. After that, the Sokong build loop automation starts each later hop when the pull request is pushed, when its checks finish, or when it merges. The same line is the whole instruction. ADR-0007. The procedure is the build loop in `repo-workflow`.
 
 ```
 Continue the build loop for context/requirements/features/<slug>/.
@@ -66,7 +66,8 @@ Follow repo-workflow. Do the one action in handoff.md and stop.
 If handoff.md is missing and status is plan-approved or implementing,
 the action is implement for the next unchecked task.
 If Claim is taken, stop and say the last hop is unfinished.
-If status is spec-stop or in-review, stop.
+If status is spec-stop or done, stop.
+If status is in-review, follow the merge section in repo-workflow and stop.
 Do not start the next hop. Do not spawn an agent.
 ```
 

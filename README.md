@@ -50,6 +50,6 @@ Use a fresh agent session per phase. Prompts are in [context/workflow/prompts.md
 4. Plan, until you approve the tasks.
 5. Set the feature to `plan-approved`. Paste `Continue the build loop` into a new chat for each hop.
 6. On `spec-stop`, change the spec or tasks, or say how the loop should continue.
-7. Merge when status is `in-review` and `bin/ci` is green.
+7. The ready hop merges the pull request when every task is checked and the last review is clean.
 
 Deploy waits until you ask for it, and until an ADR names a real host. The address in `backend/config/deploy.yml` is a placeholder.

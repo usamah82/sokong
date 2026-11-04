@@ -1,6 +1,6 @@
 # Decisions
 
-ADRs are append-only. The next number is 0008. Match the headings in the existing files: Status, Date, Context, Decision, Alternatives Considered, Consequences.
+ADRs are append-only. The next number is 0009. Match the headings in the existing files: Status, Date, Context, Decision, Alternatives Considered, Consequences.
 
 `.adr-dir` at the repository root points here so `documentation-and-adrs` does not start a second sequence under `docs/decisions/`.
 
@@ -12,4 +12,5 @@ ADRs are append-only. The next number is 0008. Match the headings in the existin
 | [0004](0004-the-product-is-sokong.md) | Accepted | The product is Sokong, assessed with Mara. The feature catalog is not a set of PRDs. |
 | [0005](0005-nuxt-web-and-flutter-mobile.md) | Accepted | Web is Nuxt. Mobile is Flutter. Neither client is scaffolded yet. |
 | [0006](0006-clients-are-localizable-english-first.md) | Accepted | Both clients are localizable. The first locale is English. |
-| [0007](0007-build-loop-after-plan-approval.md) | Accepted | After plan approval, one fresh session per slice runs implement, review, and fix until a spec change or merge. |
+| [0007](0007-build-loop-after-plan-approval.md) | Accepted | After plan approval, one fresh session per slice runs implement, review, and fix until a spec change or the loop is ready to merge. |
+| [0008](0008-clean-build-loop-merges.md) | Accepted | A clean ready hop merges the pull request with a merge commit. |

@@ -17,7 +17,7 @@ Copy this folder to `context/requirements/features/<slug>/` before filling it in
 
 Allowed values, in order: `interviewing`, `intent-confirmed`, `spec-draft`, `spec-approved`, `planning`, `plan-approved`, `implementing`, `in-review`, `done`. `spec-stop` halts the build loop from `implementing`. `parked` needs a reason written here.
 
-Only a human sets `intent-confirmed`, `spec-approved`, `plan-approved`, or `done`. An agent sets `spec-stop` when a review finding needs a changed spec, a changed task, or a new ADR. An agent sets `in-review` only when the build loop reaches `ready`.
+Only a human sets `intent-confirmed`, `spec-approved`, or `plan-approved`. An agent sets `spec-stop` when a review finding needs a changed spec, a changed task, or a new ADR. An agent sets `in-review` when auto-merge is queued, and `done` when that pull request is merged (ADR-0008).
 
 ## Build loop
 
