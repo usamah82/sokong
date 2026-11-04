@@ -3,6 +3,31 @@ class Enrolment < ApplicationRecord
   belongs_to :locality
   has_many :members, -> { order(:position) }, through: :family_unit
 
+  def response_body
+    {
+      id: id,
+      submitted_at: submitted_at.utc.iso8601,
+      on_behalf: on_behalf,
+      consent_text: consent_text,
+      enroler_contact: enroler_contact,
+      email: email,
+      place_name: place_name,
+      latitude: latitude,
+      longitude: longitude,
+      family_phone: family_phone,
+      how_to_find: how_to_find,
+      help: help,
+      other_help: other_help,
+      locality: { id: locality.id, name: locality.name },
+      members: members.map { |member| member_response(member) },
+      progress: {
+        case_in: true,
+        looks: [],
+        visit_at: visit_at&.utc&.iso8601
+      }
+    }
+  end
+
   def self.record!(**attributes)
     transaction do
       locality = Locality.claim(place_name: attributes[:place_name], point: point_from(attributes))
@@ -79,4 +104,20 @@ class Enrolment < ApplicationRecord
         value
       end
   end
+
+  private
+    def member_response(member)
+      {
+        id: member.id,
+        role: member.role,
+        name: member.name,
+        age: member.age,
+        gender: member.gender,
+        description: member.description,
+        in_education: member.in_education,
+        working: member.working,
+        job: member.job,
+        monthly_amount: member.monthly_amount
+      }
+    end
 end
