@@ -131,6 +131,85 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_rejected body, "Help is not included", "help" => [ "is not included" ]
   end
 
+  test "more than 20 members returns 422 and saves nothing" do
+    body = valid_enrolment
+    body[:members] = [ { role: "head", name: "Siti", gender: "unspecified" } ]
+    20.times do |index|
+      body[:members] << { role: "member", name: "Child #{index}", gender: "unspecified" }
+    end
+
+    assert_rejected body, "Members are too many", "members" => [ "are too many" ]
+  end
+
+  test "20 members are saved" do
+    body = valid_enrolment
+    body[:members] = [ { role: "head", name: "Siti", gender: "unspecified" } ]
+    19.times do |index|
+      body[:members] << { role: "member", name: "Child #{index}", gender: "unspecified" }
+    end
+
+    assert_difference "FamilyMember.count", 20 do
+      post "/enrolments", params: body, as: :json
+    end
+
+    assert_response :created
+  end
+
+  test "20 members at the field limits still fit" do
+    member = {
+      role: "member",
+      name: "n" * 200,
+      gender: "unspecified",
+      age: 130,
+      description: "d" * 2000,
+      in_education: true,
+      working: true,
+      job: "j" * 200,
+      monthly_amount: 999_999_999
+    }
+    body = valid_enrolment.merge(
+      email: "siti@example.com",
+      place_name: "p" * 200,
+      how_to_find: "h" * 2000,
+      other_help: "o" * 500,
+      family_phone: "0123456789",
+      help: %w[food clothing school_supplies help_applying],
+      members: [ member.merge(role: "head") ] + Array.new(19) { member }
+    )
+    assert_operator body.to_json.bytesize, :<=, LimitRequestBody::LIMIT
+
+    assert_difference "FamilyMember.count", 20 do
+      post "/enrolments", params: body, as: :json
+    end
+
+    assert_response :created
+  end
+
+  test "a body over 128 KiB returns 413 and saves nothing" do
+    assert_no_difference [ "Enrolment.count", "FamilyUnit.count", "FamilyMember.count", "Locality.count" ] do
+      post "/enrolments",
+        params: "x" * (128 * 1024 + 1),
+        headers: { "CONTENT_TYPE" => "application/json" }
+    end
+
+    assert_response :content_too_large
+    error = response.parsed_body.fetch("error")
+    assert_equal "PAYLOAD_TOO_LARGE", error["code"]
+    assert_equal "Payload is too large", error["message"]
+    assert_equal({}, error["details"])
+  end
+
+  test "a chunked body returns 413 and saves nothing" do
+    assert_no_difference [ "Enrolment.count", "FamilyUnit.count", "FamilyMember.count", "Locality.count" ] do
+      post "/enrolments",
+        params: valid_enrolment,
+        as: :json,
+        env: { "HTTP_TRANSFER_ENCODING" => "chunked" }
+    end
+
+    assert_response :content_too_large
+  end
+
   test "zero members returns 422 and saves nothing" do
     body = valid_enrolment
     body[:members] = []
@@ -148,6 +227,25 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_rejected body, "Members have more than one head", "members" => [ "has more than one head" ]
   end
 
+  test "a role outside head and member returns 422 and saves nothing" do
+    body = valid_enrolment
+    body[:members] = [
+      { role: "head", name: "Siti", gender: "female" },
+      { role: "other", name: "Ali", gender: "male" }
+    ]
+
+    assert_rejected body, "Member role is not included", "members" => [ "role is not included" ]
+  end
+
+  test "members with no head returns 422 and saves nothing" do
+    body = valid_enrolment
+    body[:members] = [
+      { role: "member", name: "Ali", gender: "male" }
+    ]
+
+    assert_rejected body, "Members need one head", "members" => [ "needs one head" ]
+  end
+
   test "a family phone that is not a phone returns 422 and saves nothing" do
     body = valid_enrolment
     body[:family_phone] = "Mary at the shop"
@@ -162,6 +260,17 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_rejected body, "Email is invalid", "email" => [ "is invalid" ]
   end
 
+  test "a valid email is stored and returned" do
+    body = valid_enrolment
+    body[:email] = "siti@example.com"
+
+    post "/enrolments", params: body, as: :json
+
+    assert_response :created
+    assert_equal "siti@example.com", Enrolment.order(:created_at).last.email
+    assert_equal "siti@example.com", response.parsed_body["email"]
+  end
+
   test "a place name over 200 characters returns 422 and saves nothing" do
     body = valid_enrolment
     body[:place_name] = "a" * 201
@@ -170,10 +279,25 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
   end
 
   test "an age outside 0 through 130 returns 422 and saves nothing" do
-    body = valid_enrolment
-    body[:members][0][:age] = 131
+    [ -1, 131 ].each do |age|
+      body = valid_enrolment
+      body[:members][0][:age] = age
 
-    assert_rejected body, "Age is out of range", "members" => [ "age is out of range" ]
+      assert_rejected body, "Age is out of range", "members" => [ "age is out of range" ]
+    end
+  end
+
+  test "ages 0 and 130 are stored" do
+    [ 0, 130 ].each do |age|
+      body = valid_enrolment
+      body[:members][0][:age] = age
+
+      post "/enrolments", params: body, as: :json
+
+      assert_response :created
+      assert_equal age, Enrolment.order(:created_at).last.members.sole.age
+      assert_equal age, response.parsed_body["members"].sole["age"]
+    end
   end
 
   test "a coordinate that is not a number returns 422 and saves nothing" do
@@ -244,6 +368,51 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_equal false, head.working
     assert_equal "", head.job
     assert_nil head.monthly_amount
+  end
+
+  test "a working member in education keeps the job and the amount" do
+    body = valid_enrolment
+    body[:members][0][:in_education] = true
+    body[:members][0][:working] = true
+    body[:members][0][:job] = " Tailor "
+    body[:members][0][:monthly_amount] = 800
+
+    post "/enrolments", params: body, as: :json
+
+    assert_response :created
+    head = Enrolment.order(:created_at).last.members.sole
+    assert_equal true, head.in_education
+    assert_equal true, head.working
+    assert_equal "Tailor", head.job
+    assert_equal 800, head.monthly_amount
+    member = response.parsed_body["members"].sole
+    assert_equal true, member["in_education"]
+    assert_equal true, member["working"]
+    assert_equal "Tailor", member["job"]
+    assert_equal 800, member["monthly_amount"]
+  end
+
+  test "on behalf must be true or false" do
+    missing = valid_enrolment
+    missing.delete(:on_behalf)
+
+    assert_rejected missing, "On behalf must be true or false", "on_behalf" => [ "must be true or false" ]
+
+    as_string = valid_enrolment
+    as_string[:on_behalf] = "false"
+
+    assert_rejected as_string, "On behalf must be true or false", "on_behalf" => [ "must be true or false" ]
+  end
+
+  test "dots and parentheses are removed from a phone number" do
+    body = valid_enrolment
+    body[:enroler_contact] = "(012) 345.6789"
+
+    post "/enrolments", params: body, as: :json
+
+    assert_response :created
+    assert_equal "0123456789", Enrolment.order(:created_at).last.enroler_contact
+    assert_equal "0123456789", response.parsed_body["enroler_contact"]
   end
 
   test "duplicate help keys are stored once in first-seen order" do

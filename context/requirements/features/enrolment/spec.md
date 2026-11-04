@@ -133,7 +133,8 @@ end
 Edge cases the integration tests cover:
 
 - Family phone, how to find them, help, description, age, gender, job, and monthly amount all empty, with one named head. The enrolment is saved. No locality and no worker existed. A new locality holds it.
-- Missing enroler phone, a contact that is not a phone, missing place name, missing head name, a gender outside the three values, a non-integer age, a non-integer monthly amount, zero members, or two heads. The response is 422 and nothing is saved.
+- Missing enroler phone, a contact that is not a phone, missing place name, missing head name, a gender outside the three values, a non-integer age, a non-integer monthly amount, zero members, two heads, or more than 20 members. The response is 422 and nothing is saved.
+- A body larger than 128 KiB, or a chunked body, is 413 with `PAYLOAD_TOO_LARGE` and nothing is saved.
 - A place name that matches no locality creates one. A place name that matches one uses it.
 - A kept point inside several circles, at least one of those localities staffed: the closest staffed locality.
 - A kept point inside several circles, none staffed: the closest.
@@ -172,6 +173,7 @@ Always:
 - Run `bin/ci` before a code change is called done.
 - Validate input at the controller. Keep the fit rule in the model or one plain object.
 - Keep user-facing strings in `web/i18n/locales/en.json`.
+- Keep enroler contact, family phone, email, place name, how to find them, other help, coordinates, and member name, description, job, and monthly amount out of the request log.
 - Return 404 when an account must not see a record, including when the id does not exist, so the response does not reveal that a family is on file.
 - Leave `config/master.key` and `storage/` uncommitted.
 
@@ -203,7 +205,7 @@ The enrolment form is a wizard of four stages. Back and Next move one stage. Typ
 2. The saved enrolment stores `on_behalf` and the exact sentence shown.
 3. Stage 2, "The family", collects the place, the optional family phone, and the head. Required before Next: place name, and a head with a non-blank name. The head fields on this stage are name, Age, Gender, description, in education, working, and, when working, job and the rough monthly amount. A control labeled "Use my current location" asks the device for a point. When a nearest locality with a center exists, the place field fills with its name and the screen says "This place was suggested from your current location." The screen also says "You can name a different place if you are not with the family." Changing the place name removes the suggested-from-location sentence. When the device returns a point and no locality has a center, the screen says "Your current location was read. Name the place." Refusing the device, or never using the control, still allows Next once a place name is typed.
 4. When the mode is self and the family phone is still the automatic copy, stage 2 shows the enroler's phone in the family phone field. Editing or clearing the family phone stops the copying. Changing the enroler phone while the copy is still automatic updates the family phone. Switching to on behalf clears the family phone only while it is still that automatic copy. On behalf, the family phone starts empty. The stored family phone is whatever the field holds at submit, including empty.
-5. Stage 3, "Other people in the family", collects any other members. Zero other members is valid, and Next is available immediately. Each member block that is added has the same fields as the head, including Age and Gender, and needs a non-blank name before Next. Added members can be removed. The head is not on this stage.
+5. Stage 3, "Other people in the family", collects any other members. Zero other members is valid, and Next is available immediately. Each member block that is added has the same fields as the head, including Age and Gender, and needs a non-blank name before Next. Added members can be removed. The head is not on this stage. The submitted list holds at most 20 members, including the head.
 6. Stage 4, "Notes for the community worker", collects how to find them, the help choices, and a help that is not in the list. All of these may be empty. Description, how to find them, and the other-help field are textareas of at least three lines. Typed text stays on screen. Submit on this stage sends the enrolment.
 7. Optional, and legal when empty: family phone; how to find them; help; other help; and for each member age, description, job, and monthly amount. Gender is one of Male, Female, or Unspecified, and the control starts on Unspecified. In education and working are independent. Both may be true. Both may be false.
 8. Job and monthly amount are stored only when that member is working. When working is false, those two values are discarded.
@@ -213,7 +215,7 @@ The enrolment form is a wizard of four stages. Back and Next move one stage. Typ
 
 ### Records
 
-12. The enroler's contact and, when present, the family phone are phone numbers. Spaces, hyphens, dots, and parentheses are removed, and the remainder must match `^\+?[0-9]{8,15}$`. The stored value is that remainder. `+60 12-345 6789` and `012-345 6789` pass. `Mary at the shop`, `123`, and `phone: 0123456789` fail with 422 and nothing is saved. Other limits, after trim: place name 1–200; email up to 254 and a valid address when present; how to find them up to 2000; other help up to 500; member name 1–200; description up to 2000; job up to 200. Blank optional strings are stored as empty.
+12. The enroler's contact and, when present, the family phone are phone numbers. Spaces, hyphens, dots, and parentheses are removed, and the remainder must match `^\+?[0-9]{8,15}$`. The stored value is that remainder. `+60 12-345 6789` and `012-345 6789` pass. `Mary at the shop`, `123`, and `phone: 0123456789` fail with 422 and nothing is saved. Other limits, after trim: place name 1–200; email up to 254 and a valid address when present; how to find them up to 2000; other help up to 500; member name 1–200; description up to 2000; job up to 200. Blank optional strings are stored as empty. The members list holds at most 20 people, including the head. A longer list is 422 and nothing is saved.
 13. Age is an integer field on the head and on every other member. A blank age is stored as null. A present age is a JSON integer from 0 through 130. The rough monthly amount is the same kind of field, shown only when that member is working. A blank amount is stored as null. A present amount is a JSON integer from 0 through 999999999. A decimal, a numeric string such as "about 800", or any other type is 422 and nothing is saved. When working is false, a sent amount is discarded and does not fail validation.
 14. Gender is required on the head and on every other member and is only `male`, `female`, or `unspecified`, shown as Male, Female, and Unspecified. Any other value is 422 and nothing is saved.
 15. Place names match after trim, Unicode case fold, and collapsing internal whitespace. The stored place name keeps the submitter's casing.
@@ -250,7 +252,17 @@ JSON keys are snake_case. Times are ISO 8601 UTC. Ids are UUIDs. Paths are unver
 
 `GET /localities/suggestion?latitude=&longitude=` is anonymous. `200` with `{ "locality": null }` or `{ "locality": { "name": "Block 4" } }`.
 
-`POST /enrolments` is anonymous. `201` returns the saved enrolment: id, `submitted_at`, `on_behalf`, `consent_text`, `enroler_contact`, `email`, `place_name`, `latitude`, `longitude`, `family_phone`, `how_to_find`, `help`, `other_help`, `locality` (`id`, `name`), `members` (head first, then submission order, with the member fields), and `progress` (`case_in` true, `looks` `[]`, `visit_at` null). A later anonymous `GET` of that id is 401.
+`POST /enrolments` is anonymous. `201` returns the saved enrolment: id, `submitted_at`, `on_behalf`, `consent_text`, `enroler_contact`, `email`, `place_name`, `latitude`, `longitude`, `family_phone`, `how_to_find`, `help`, `other_help`, `locality` (`id`, `name`), `members` (head first, then submission order, with the member fields), and `progress` (`case_in` true, `looks` `[]`, `visit_at` null). A later anonymous `GET` of that id is 401. A body larger than 128 KiB, or a body sent with chunked transfer encoding, is `413`:
+
+```json
+{
+  "error": {
+    "code": "PAYLOAD_TOO_LARGE",
+    "message": "Payload is too large",
+    "details": {}
+  }
+}
+```
 
 `POST /accounts` with `email`, `password`, `password_confirmation`. `201` returns `token` and `account` (`id`, `email`, `role`). Role is `submitter`.
 

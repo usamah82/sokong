@@ -6,6 +6,7 @@ class EnrolmentSubmission
   GENDERS = %w[male female unspecified].freeze
   ROLES = %w[head member].freeze
   PHONE = /\A\+?[0-9]{8,15}\z/
+  MAX_MEMBERS = 20
 
   def initialize(params)
     @params = params
@@ -157,6 +158,10 @@ class EnrolmentSubmission
       raw = value(@params, "members")
       unless raw.is_a?(Array) && raw.any?
         add("members", "Members are required", "are required")
+        return []
+      end
+      if raw.size > MAX_MEMBERS
+        add("members", "Members are too many", "are too many")
         return []
       end
 
