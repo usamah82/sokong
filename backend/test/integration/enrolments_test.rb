@@ -216,11 +216,41 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_equal({ "name" => [ "is required" ] }, error["details"])
   end
 
+  test "a head name over 200 characters returns validation error and saves nothing" do
+    error = assert_rejected(valid_body(members: [ head(name: "a" * 201) ]))
+
+    assert_equal "Name is too long", error["message"]
+    assert_equal({ "name" => [ "is too long" ] }, error["details"])
+  end
+
+  test "a description over 2000 characters returns validation error and saves nothing" do
+    error = assert_rejected(valid_body(members: [ head(description: "a" * 2001) ]))
+
+    assert_equal "Description is too long", error["message"]
+    assert_equal({ "description" => [ "is too long" ] }, error["details"])
+  end
+
+  test "a job over 200 characters while working returns validation error and saves nothing" do
+    error = assert_rejected(valid_body(members: [ head(working: true, job: "a" * 201) ]))
+
+    assert_equal "Job is too long", error["message"]
+    assert_equal({ "job" => [ "is too long" ] }, error["details"])
+  end
+
   test "a gender outside the three values returns validation error and saves nothing" do
     error = assert_rejected(valid_body(members: [ head(gender: "other") ]))
 
     assert_equal "Gender is invalid", error["message"]
     assert_equal({ "gender" => [ "is invalid" ] }, error["details"])
+  end
+
+  test "a blank gender returns validation error and saves nothing" do
+    [ "", nil ].each do |gender|
+      error = assert_rejected(valid_body(members: [ head(gender: gender) ]))
+
+      assert_equal "Gender is required", error["message"]
+      assert_equal({ "gender" => [ "is required" ] }, error["details"])
+    end
   end
 
   test "a non-integer age returns validation error and saves nothing" do
@@ -248,6 +278,13 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "a monthly amount over 999999999 while working returns validation error and saves nothing" do
+    error = assert_rejected(valid_body(members: [ head(working: true, monthly_amount: 1_000_000_000) ]))
+
+    assert_equal "Monthly amount is out of range", error["message"]
+    assert_equal({ "monthly_amount" => [ "is out of range" ] }, error["details"])
+  end
+
   test "a help key outside the four returns validation error and saves nothing" do
     error = assert_rejected(valid_body(help: [ "food", "shelter" ]))
 
@@ -269,6 +306,28 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_equal({ "members" => [ "has more than one head" ] }, error["details"])
   end
 
+  test "members with no head returns validation error and saves nothing" do
+    error = assert_rejected(valid_body(members: [ head(role: "member", name: "Ali") ]))
+
+    assert_equal "A family needs a head", error["message"]
+    assert_equal({ "members" => [ "needs a head" ] }, error["details"])
+  end
+
+  test "the response lists the head first and then the other members in submission order" do
+    post_enrolment valid_body(
+      members: [
+        head(role: "member", name: "Ali", gender: "male"),
+        head(name: "Siti"),
+        head(role: "member", name: "Aminah", gender: "female")
+      ]
+    )
+
+    assert_response :created
+    members = response.parsed_body["members"]
+    assert_equal [ "head", "member", "member" ], members.map { |member| member["role"] }
+    assert_equal [ "Siti", "Ali", "Aminah" ], members.map { |member| member["name"] }
+  end
+
   test "only one of latitude and longitude returns validation error and saves nothing" do
     missing_longitude = assert_rejected(valid_body(latitude: 3.1))
     assert_equal "Longitude is required", missing_longitude["message"]
@@ -284,6 +343,16 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
 
     assert_equal "Latitude is out of range", error["message"]
     assert_equal({ "latitude" => [ "is out of range" ] }, error["details"])
+  end
+
+  test "a non-numeric coordinate returns validation error and saves nothing" do
+    string_latitude = assert_rejected(valid_body(latitude: "3.14", longitude: 101.7))
+    assert_equal "Latitude is not a number", string_latitude["message"]
+    assert_equal({ "latitude" => [ "is not a number" ] }, string_latitude["details"])
+
+    string_longitude = assert_rejected(valid_body(latitude: 3.14, longitude: "101.7"))
+    assert_equal "Longitude is not a number", string_longitude["message"]
+    assert_equal({ "longitude" => [ "is not a number" ] }, string_longitude["details"])
   end
 
   test "how to find them over 2000 characters returns validation error and saves nothing" do
