@@ -1,12 +1,12 @@
 # Handoff
 
 Slug: enrolment
-Action: fix
+Action: review
 Task: Task 3: Accept an enrolment over HTTP
 Branch: feature/enrolment
 Base: 9d5bb545f4cecf42735cb6785fa308e5bf0adcbd
-Claim: taken
-Cycles: 2
+Claim: open
+Cycles: 3
 Fix-round: 1
 Continue: no
-Note: Add the missing spec tests named in review.md. The current code already rejects those bodies.
+Note: The spec cases named in review.md now have integration tests.
