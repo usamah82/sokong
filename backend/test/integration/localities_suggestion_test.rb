@@ -13,10 +13,34 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
     assert_equal({ "locality" => nil }, response.parsed_body)
   end
 
+  test "a longitude without a latitude is not a center" do
+    create_locality(name: "Longitude only", latitude: nil, longitude: 0, created_at: Time.utc(2026, 1, 1))
+
+    assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
+      get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
+    end
+
+    assert_response :ok
+    assert_equal({ "locality" => nil }, response.parsed_body)
+  end
+
   test "the response is only the nearest locality name" do
     create_locality(name: "Farther", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 1))
     nearest = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
     LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: nearest)
+
+    assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
+      get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
+    end
+
+    assert_response :ok
+    assert_equal({ "locality" => { "name" => "Block 4" } }, response.parsed_body)
+  end
+
+  test "an unstaffed nearer center wins over a staffed farther center" do
+    create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
+    farther = create_locality(name: "Farther", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 1))
+    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: farther)
 
     assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
       get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
@@ -46,6 +70,19 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
     assert_equal({ "locality" => { "name" => "Earlier" } }, response.parsed_body)
   end
 
+  test "an earlier center wins a tie when the later center is staffed" do
+    create_locality(name: "Earlier", latitude: 0, longitude: 0, created_at: Time.utc(2026, 1, 1))
+    later = create_locality(name: "Later", latitude: 0, longitude: 0, created_at: Time.utc(2026, 1, 2))
+    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: later)
+
+    assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
+      get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
+    end
+
+    assert_response :ok
+    assert_equal({ "locality" => { "name" => "Earlier" } }, response.parsed_body)
+  end
+
   test "a missing coordinate pair returns 422 and writes nothing" do
     assert_rejected({ longitude: "0" }, "Latitude and longitude must both be present", "latitude" => [ "must be present with longitude" ])
     assert_rejected({ latitude: "0" }, "Latitude and longitude must both be present", "latitude" => [ "must be present with longitude" ])
@@ -56,6 +93,14 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
   test "a coordinate that is not a number returns 422 and writes nothing" do
     assert_rejected({ latitude: "north", longitude: "0" }, "Latitude is not a number", "latitude" => [ "is not a number" ])
     assert_rejected({ latitude: "0", longitude: "east" }, "Longitude is not a number", "longitude" => [ "is not a number" ])
+  end
+
+  test "both invalid coordinates return both details" do
+    assert_rejected(
+      { latitude: "north", longitude: "east" },
+      "Latitude is not a number",
+      "latitude" => [ "is not a number" ], "longitude" => [ "is not a number" ]
+    )
   end
 
   test "an out-of-range coordinate pair returns 422 and writes nothing" do
@@ -70,6 +115,24 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
 
     assert_response :ok
     assert_equal({ "locality" => nil }, response.parsed_body)
+  end
+
+  test "the suggestion returns the stored locality name" do
+    create_locality(name: "Straße Weg", latitude: 0, longitude: 0, created_at: Time.utc(2026, 1, 1))
+
+    get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
+
+    assert_response :ok
+    assert_equal({ "locality" => { "name" => "Straße Weg" } }, response.parsed_body)
+  end
+
+  test "padded numeric coordinates are accepted" do
+    create_locality(name: "Block 4", latitude: 0, longitude: 0, created_at: Time.utc(2026, 1, 1))
+
+    get "/localities/suggestion", params: { latitude: " 0 ", longitude: " 0 " }
+
+    assert_response :ok
+    assert_equal({ "locality" => { "name" => "Block 4" } }, response.parsed_body)
   end
 
   private
