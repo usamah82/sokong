@@ -132,6 +132,13 @@ class EnrolmentSubmission
 
       number("latitude", latitude, -90..90, "Latitude")
       number("longitude", longitude, -180..180, "Longitude")
+      return if @errors.any?
+
+      nearest = Locality.nearest([ latitude, longitude ])
+      return unless nearest && Locality.same_name?(nearest.name, @attributes[:place_name])
+
+      @attributes[:latitude] = latitude
+      @attributes[:longitude] = longitude
     end
 
     def number(field, raw, range, label)

@@ -415,6 +415,198 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_equal "0123456789", response.parsed_body["enroler_contact"]
   end
 
+  test "coordinates are stored when the place name matches the nearest locality with a center" do
+    locality = create_locality(name: "Straße Weg", latitude: 0, longitude: 0, radius_metres: 500, created_at: Time.utc(2026, 1, 1))
+
+    assert_no_difference "Locality.count" do
+      post "/enrolments", params: valid_enrolment.merge(place_name: "  strasse   weg ", latitude: 0, longitude: 0), as: :json
+    end
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal locality.id, enrolment.locality_id
+    assert_equal "strasse weg", enrolment.place_name
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
+    assert_instance_of Float, response.parsed_body["latitude"]
+    assert_instance_of Float, response.parsed_body["longitude"]
+    assert_equal 0.0, response.parsed_body["latitude"]
+    assert_equal 0.0, response.parsed_body["longitude"]
+    locality.reload
+    assert_equal "Straße Weg", locality.name
+    assert_equal 0, locality.latitude
+    assert_equal 500, locality.radius_metres
+  end
+
+  test "a different place name stores null coordinates and still saves" do
+    circled = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 5_000, created_at: Time.utc(2026, 1, 1))
+
+    assert_difference [ "Enrolment.count", "Locality.count" ], 1 do
+      post "/enrolments", params: valid_enrolment.merge(place_name: "Kampung Baru", latitude: 0, longitude: 0), as: :json
+    end
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_nil enrolment.latitude
+    assert_nil enrolment.longitude
+    assert_nil response.parsed_body["latitude"]
+    assert_nil response.parsed_body["longitude"]
+    assert_not_equal circled.id, enrolment.locality_id
+    created = enrolment.locality
+    assert_equal "Kampung Baru", created.name
+    assert_nil created.latitude
+    assert_nil created.longitude
+    assert_nil created.radius_metres
+  end
+
+  test "a name other than the nearest center stores null coordinates on the existing locality" do
+    create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
+    named = create_locality(name: "Kampung Baru", latitude: 0, longitude: 1, radius_metres: 1_000, created_at: Time.utc(2026, 1, 1))
+
+    assert_no_difference "Locality.count" do
+      post "/enrolments", params: valid_enrolment.merge(place_name: "Kampung Baru", latitude: 0, longitude: 0), as: :json
+    end
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal named.id, enrolment.locality_id
+    assert_nil enrolment.latitude
+    assert_nil enrolment.longitude
+    assert_nil response.parsed_body["latitude"]
+    assert_nil response.parsed_body["longitude"]
+  end
+
+  test "a kept point inside several circles assigns the closest staffed locality" do
+    closer = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 5_000, created_at: Time.utc(2026, 1, 1))
+    staffed = create_locality(name: "Staffed", latitude: 0, longitude: 0.02, radius_metres: 5_000, created_at: Time.utc(2026, 1, 2))
+    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: staffed)
+
+    post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0), as: :json
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal staffed.id, enrolment.locality_id
+    assert_not_equal closer.id, enrolment.locality_id
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
+  end
+
+  test "a kept point inside several circles assigns the closest locality when none are staffed" do
+    farther = create_locality(name: "Block 4", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 1))
+    nearer = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
+
+    post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0), as: :json
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal nearer.id, enrolment.locality_id
+    assert_not_equal farther.id, enrolment.locality_id
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
+  end
+
+  test "a kept point prefers a fitting locality with a center over one with no center" do
+    name_only = create_locality(name: "Block 4", created_at: Time.utc(2026, 1, 1))
+    circled = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
+
+    post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0), as: :json
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal circled.id, enrolment.locality_id
+    assert_not_equal name_only.id, enrolment.locality_id
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
+  end
+
+  test "equal distance uses the earliest created locality when the point is kept" do
+    earlier = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 1))
+    later = create_locality(name: "Other", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
+
+    post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0), as: :json
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal earlier.id, enrolment.locality_id
+    assert_not_equal later.id, enrolment.locality_id
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
+    assert_equal 0.0, response.parsed_body["latitude"]
+    assert_equal 0.0, response.parsed_body["longitude"]
+  end
+
+  test "a matching center with no radius keeps the point" do
+    locality = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: nil, created_at: Time.utc(2026, 1, 1))
+
+    assert_no_difference "Locality.count" do
+      post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0), as: :json
+    end
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal locality.id, enrolment.locality_id
+    assert_equal 0, enrolment.latitude
+    assert_equal 0, enrolment.longitude
+    assert_instance_of Float, response.parsed_body["latitude"]
+    assert_instance_of Float, response.parsed_body["longitude"]
+    assert_equal 0.0, response.parsed_body["latitude"]
+    assert_equal 0.0, response.parsed_body["longitude"]
+    locality.reload
+    assert_nil locality.radius_metres
+  end
+
+  test "a matching name keeps a point outside that circle and assigns the staffed circle that covers it" do
+    named = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 10, created_at: Time.utc(2026, 1, 1))
+    staffed = create_locality(name: "Other", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 2))
+    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: staffed)
+
+    post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0.25), as: :json
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal staffed.id, enrolment.locality_id
+    assert_not_equal named.id, enrolment.locality_id
+    assert_equal 0, enrolment.latitude
+    assert_equal 0.25, enrolment.longitude
+    assert_instance_of Float, response.parsed_body["latitude"]
+    assert_instance_of Float, response.parsed_body["longitude"]
+    assert_equal 0.0, response.parsed_body["latitude"]
+    assert_equal 0.25, response.parsed_body["longitude"]
+  end
+
+  test "the later name in an equal-distance tie stores null coordinates and is assigned by that name" do
+    earlier = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 1))
+    later = create_locality(name: "Kampung Baru", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
+
+    assert_no_difference "Locality.count" do
+      post "/enrolments", params: valid_enrolment.merge(place_name: "Kampung Baru", latitude: 0, longitude: 0), as: :json
+    end
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal later.id, enrolment.locality_id
+    assert_not_equal earlier.id, enrolment.locality_id
+    assert_nil enrolment.latitude
+    assert_nil enrolment.longitude
+    assert_nil response.parsed_body["latitude"]
+    assert_nil response.parsed_body["longitude"]
+  end
+
+  test "a fractional kept coordinate is a JSON number" do
+    create_locality(name: "Block 4", latitude: 3.25, longitude: 101.5, radius_metres: 500, created_at: Time.utc(2026, 1, 1))
+
+    post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 3.25, longitude: 101.5), as: :json
+
+    assert_response :created
+    enrolment = Enrolment.order(:created_at).last
+    assert_equal 3.25, enrolment.latitude
+    assert_equal 101.5, enrolment.longitude
+    assert_instance_of Float, response.parsed_body["latitude"]
+    assert_instance_of Float, response.parsed_body["longitude"]
+    assert_equal 3.25, response.parsed_body["latitude"]
+    assert_equal 101.5, response.parsed_body["longitude"]
+  end
+
   test "duplicate help keys are stored once in first-seen order" do
     body = valid_enrolment
     body[:help] = [ "clothing", "food", "clothing", "school_supplies" ]
@@ -426,6 +618,12 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
   end
 
   private
+    def create_locality(name:, created_at:, latitude: nil, longitude: nil, radius_metres: nil)
+      travel_to(created_at) do
+        Locality.create!(name:, latitude:, longitude:, radius_metres:)
+      end
+    end
+
     def valid_enrolment
       {
         on_behalf: false,
@@ -470,8 +668,8 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
         "enroler_contact" => enrolment.enroler_contact,
         "email" => enrolment.email,
         "place_name" => enrolment.place_name,
-        "latitude" => nil,
-        "longitude" => nil,
+        "latitude" => enrolment.latitude&.to_f,
+        "longitude" => enrolment.longitude&.to_f,
         "family_phone" => enrolment.family_phone,
         "how_to_find" => enrolment.how_to_find,
         "help" => enrolment.help,

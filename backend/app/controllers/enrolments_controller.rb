@@ -20,8 +20,9 @@ class EnrolmentsController < ApplicationController
         enroler_contact: enrolment.enroler_contact,
         email: enrolment.email,
         place_name: enrolment.place_name,
-        latitude: enrolment.latitude,
-        longitude: enrolment.longitude,
+        # BigDecimal#as_json is a string in Rails 8.1. The contract is a JSON number.
+        latitude: enrolment.latitude&.to_f,
+        longitude: enrolment.longitude&.to_f,
         family_phone: enrolment.family_phone,
         how_to_find: enrolment.how_to_find,
         help: enrolment.help,
