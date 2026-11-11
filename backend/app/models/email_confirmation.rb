@@ -7,13 +7,16 @@ class EmailConfirmation < ApplicationRecord
     return unless token.is_a?(String)
     return if token.empty? || token.include?("\0")
 
-    record = find_by(token_digest: Digest::SHA256.hexdigest(token))
-    return if record.nil? || record.expires_at <= Time.current
-
+    digest = Digest::SHA256.hexdigest(token)
+    confirmed = false
     transaction do
-      record.account.update!(email_confirmed_at: Time.current)
-      record.destroy!
+      record = find_by(token_digest: digest)
+      if record && record.expires_at > Time.current
+        record.account.update!(email_confirmed_at: Time.current)
+        record.destroy!
+        confirmed = true
+      end
     end
-    true
+    confirmed
   end
 end

@@ -36,6 +36,9 @@ class AccountRegistration
   private
     def persist
       if @existing
+        @existing.reload
+        raise ActiveRecord::RecordNotUnique if @existing.email_confirmed_at
+
         @existing.update!(password: @password)
         @existing
       else

@@ -123,6 +123,28 @@ class AccountVerificationsTest < ActionDispatch::IntegrationTest
     assert account.authenticate("correct horse battery staple")
   end
 
+  test "a sign-up that read an unconfirmed account does not replace a password after confirmation" do
+    post "/accounts", params: account_body, as: :json
+    account = Account.find(response.parsed_body.dig("account", "id"))
+    digest = account.password_digest
+    registration = AccountRegistration.new(
+      email: "Siti@Example.com",
+      password: "another horse battery",
+      password_confirmation: "another horse battery"
+    )
+    assert_nil registration.error_envelope
+
+    post "/account_verifications", params: { token: confirmation_token }, as: :json
+    assert_response :no_content
+
+    assert_no_enqueued_emails do
+      assert_raises(ActiveRecord::RecordNotUnique) { registration.save }
+    end
+    account.reload
+    assert_equal digest, account.password_digest
+    assert account.authenticate("correct horse battery staple")
+  end
+
   test "a raised enqueue error still saves the account and returns 201" do
     previous = ActiveJob::Base.queue_adapter
     adapter = RaisingQueueAdapter.new
