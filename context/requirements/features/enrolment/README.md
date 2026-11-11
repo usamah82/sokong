@@ -1,6 +1,6 @@
 # Feature: enrolment
 
-Status: in-review
+Status: implementing
 
 The interview covers the record a phone enrolment needs: F01 Localities, F02 Accounts and roles, F03 Family unit record, F04 Enrolment, and F05 Enrolment progress. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-02 and approved [spec.md](spec.md) on 2026-11-03. The screens are in [design.md](design.md). Usamah approved the first [plan.md](plan.md) and [tasks.md](tasks.md) on 2026-11-03. On 2026-11-11 Usamah approved the revised spec: sign-up confirms the email before sign-in, sign-up returns no token, and the account, session, and confirmation routes are rate limited. Tasks 1–5 stay done. On 2026-11-11 Usamah approved this plan. Tasks 6–27 replace the account contract. Task 6 is [pull request #13](https://github.com/usamah82/sokong/pull/13). [Pull request #12](https://github.com/usamah82/sokong/pull/12) must not merge.
 
