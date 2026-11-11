@@ -618,6 +618,7 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
   end
 
   test "an email enqueues one invitation with the spec subject and body" do
+    previous_logger = ActiveJob::Base.logger
     assert_instance_of ActiveJob::QueueAdapters::TestAdapter, ActiveJob::Base.queue_adapter
 
     body = valid_enrolment.merge(
@@ -630,6 +631,9 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
       members: [ { role: "head", name: "Siti Aminah", gender: "female" } ]
     )
 
+    io = StringIO.new
+    ActiveJob::Base.logger = ActiveSupport::Logger.new(io)
+
     assert_enqueued_emails 1 do
       post "/enrolments", params: body, as: :json
     end
@@ -638,6 +642,7 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_enqueued_email_with EnrolmentMailer, :invitation, args: [ "siti@example.com" ]
 
     perform_enqueued_jobs
+    assert_not_includes io.string, "siti@example.com"
     mail = ActionMailer::Base.deliveries.sole
     assert_equal [ "siti@example.com" ], mail.to
     assert_equal "Sokong enrolment", mail.subject
@@ -648,6 +653,8 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_not_includes mail.body.to_s, "blue gate"
     assert_not_includes mail.body.to_s, "food"
     assert_not_includes mail.body.to_s, "school fees"
+  ensure
+    ActiveJob::Base.logger = previous_logger
   end
 
   test "a blank email enqueues no invitation" do
