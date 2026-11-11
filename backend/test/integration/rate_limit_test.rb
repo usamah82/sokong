@@ -12,6 +12,7 @@ class RateLimitTest < ActionDispatch::IntegrationTest
 
   test "the sixth sign-up from one address is limited and an enrolment is not" do
     hashes = 0
+    opened = Time.current
     original = Account.method(:digest_password)
     Account.define_singleton_method(:digest_password) do |password|
       hashes += 1
@@ -31,10 +32,18 @@ class RateLimitTest < ActionDispatch::IntegrationTest
     assert_equal 5, hashes
     assert_rate_limited
 
+    travel_to opened + 1.hour - 1.second do
+      assert_no_difference -> { Account.count } do
+        post "/accounts", params: account_body(email: "person-inside@example.com"), as: :json
+      end
+    end
+    assert_equal 5, hashes
+    assert_rate_limited
+
     post "/enrolments", params: enrolment_body, as: :json
     assert_response :created
 
-    travel 1.hour + 1.second do
+    travel_to opened + 1.hour + 1.second do
       post "/accounts", params: account_body(email: "person-6@example.com"), as: :json
     end
     assert_response :created
@@ -67,7 +76,79 @@ class RateLimitTest < ActionDispatch::IntegrationTest
     assert_response :created
   end
 
+  test "a private client cannot refresh the allowance and a loopback proxy counts each forwarded client" do
+    5.times do |index|
+      post "/accounts",
+        params: account_body(email: "lan-#{index}@example.com"),
+        headers: { "REMOTE_ADDR" => "192.168.1.20", "X-Forwarded-For" => "198.51.100.#{index + 1}" },
+        as: :json
+      assert_response :created
+    end
+    post "/accounts",
+      params: account_body(email: "lan-5@example.com"),
+      headers: { "REMOTE_ADDR" => "192.168.1.20", "X-Forwarded-For" => "198.51.100.99" },
+      as: :json
+    assert_rate_limited
+
+    5.times do |index|
+      post "/accounts",
+        params: account_body(email: "loop-#{index}@example.com"),
+        headers: { "REMOTE_ADDR" => "127.0.0.1", "Forwarded" => "for=203.0.113.#{index + 1}" },
+        as: :json
+      assert_response :created
+    end
+    post "/accounts",
+      params: account_body(email: "loop-5@example.com"),
+      headers: { "REMOTE_ADDR" => "127.0.0.1", "Forwarded" => "for=203.0.113.99" },
+      as: :json
+    assert_rate_limited
+
+    5.times do
+      post "/accounts",
+        params: account_body(email: "proxy-#{SecureRandom.hex(4)}@example.com"),
+        headers: { "REMOTE_ADDR" => "127.0.0.1", "X-Forwarded-For" => "198.51.100.20" },
+        as: :json
+      assert_response :created
+    end
+    post "/accounts",
+      params: account_body(email: "proxy-extra@example.com"),
+      headers: { "REMOTE_ADDR" => "127.0.0.1", "X-Forwarded-For" => "198.51.100.20" },
+      as: :json
+    assert_rate_limited
+
+    post "/accounts",
+      params: account_body(email: "proxy-other@example.com"),
+      headers: { "REMOTE_ADDR" => "127.0.0.1", "X-Forwarded-For" => "198.51.100.21" },
+      as: :json
+    assert_response :created
+  end
+
+  test "a limited repeat sign-up leaves the unconfirmed account unchanged" do
+    post "/accounts", params: account_body, as: :json
+    account = Account.last
+    digest = account.password_digest
+    token_digest = account.email_confirmation.token_digest
+
+    4.times do |index|
+      post "/accounts", params: account_body(email: "other-#{index}@example.com"), as: :json
+      assert_response :created
+    end
+
+    assert_no_enqueued_emails do
+      post "/accounts", params: account_body(
+        password: "another horse battery",
+        password_confirmation: "another horse battery"
+      ), as: :json
+    end
+
+    assert_rate_limited
+    account.reload
+    assert_equal digest, account.password_digest
+    assert_equal token_digest, account.email_confirmation.token_digest
+  end
+
   test "the eleventh sign-in and confirmation from one address change nothing" do
+    original = nil
     post "/accounts", params: account_body, as: :json
     perform_enqueued_jobs
     token = ActionMailer::Base.deliveries.last.body.to_s[/token=([^&\s]+)/, 1]
@@ -79,11 +160,18 @@ class RateLimitTest < ActionDispatch::IntegrationTest
     end
     assert_nil Account.last.email_confirmed_at
 
+    opened = Time.current
     post "/account_verifications", params: { token: token }, as: :json
     assert_rate_limited
     assert_nil Account.last.reload.email_confirmed_at
 
-    travel 1.hour + 1.second do
+    travel_to opened + 1.hour - 1.second do
+      post "/account_verifications", params: { token: token }, as: :json
+    end
+    assert_rate_limited
+    assert_nil Account.last.reload.email_confirmed_at
+
+    travel_to opened + 1.hour + 1.second do
       post "/account_verifications", params: { token: token }, as: :json
     end
     assert_response :no_content
@@ -93,16 +181,32 @@ class RateLimitTest < ActionDispatch::IntegrationTest
       assert_response :unauthorized
     end
 
+    signed_in = Time.current
+    calls = 0
+    original = Account.instance_method(:authenticate)
+    Account.define_method(:authenticate) do |password|
+      calls += 1
+      original.bind_call(self, password)
+    end
     assert_no_difference -> { AuthToken.count } do
       post "/sessions", params: { email: "Siti@Example.com", password: "correct horse battery staple" }, as: :json
     end
+    assert_equal 0, calls
     assert_rate_limited
 
-    travel 15.minutes + 1.second do
+    travel_to signed_in + 15.minutes - 1.second do
+      post "/sessions", params: { email: "Siti@Example.com", password: "correct horse battery staple" }, as: :json
+    end
+    assert_equal 0, calls
+    assert_rate_limited
+
+    travel_to signed_in + 15.minutes + 1.second do
       post "/sessions", params: { email: "Siti@Example.com", password: "correct horse battery staple" }, as: :json
     end
     assert_response :ok
     assert response.parsed_body["token"]
+  ensure
+    Account.define_method(:authenticate, original) if original
   end
 
   private

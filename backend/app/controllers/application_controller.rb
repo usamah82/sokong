@@ -42,14 +42,14 @@ class ApplicationController < ActionController::API
 
     def rate_limit_ip
       peer = request.remote_addr.to_s
-      return request.remote_ip if peer.empty? || trusted_proxy?(peer)
+      return peer unless loopback?(peer)
 
-      peer
+      request.x_forwarded_for.to_s.split(",").map(&:strip).reverse_each.find { |ip| !loopback?(ip) } || peer
     end
 
-    def trusted_proxy?(ip)
-      proxies = Rails.application.config.action_dispatch.trusted_proxies
-      proxies = ActionDispatch::RemoteIp::TRUSTED_PROXIES if proxies.blank?
-      proxies.any? { |proxy| proxy === ip }
+    def loopback?(ip)
+      IPAddr.new(ip).loopback?
+    rescue ArgumentError
+      false
     end
 end
