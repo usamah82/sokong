@@ -56,7 +56,9 @@ class AccountSession
       return @matched if defined?(@matched)
 
       candidate = @password.is_a?(String) ? @password : ""
-      @matched = if account
+      @matched = if candidate.include?("\0")
+        false
+      elsif account
         account.authenticate(candidate).present?
       else
         BCrypt::Password.new(self.class.dummy_digest).is_password?(candidate)

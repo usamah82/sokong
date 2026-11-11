@@ -66,6 +66,32 @@ class SessionsTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "missing@example.com"
   end
 
+  test "a wrong password on an unconfirmed account hides that the email exists" do
+    post "/accounts", params: account_body, as: :json
+
+    assert_no_difference -> { AuthToken.count } do
+      post "/sessions", params: { email: "Siti@Example.com", password: "not the password" }, as: :json
+    end
+
+    assert_response :unauthorized
+    assert_equal "UNAUTHENTICATED", response.parsed_body.dig("error", "code")
+    assert_equal "Email or password is wrong", response.parsed_body.dig("error", "message")
+  end
+
+  test "a null byte in the password is a wrong sign-in for a known or unknown email" do
+    sign_up_and_confirm
+
+    assert_no_difference -> { AuthToken.count } do
+      post "/sessions", params: { email: "Siti@Example.com", password: "correct horse\0battery" }, as: :json
+      assert_response :unauthorized
+      assert_equal "Email or password is wrong", response.parsed_body.dig("error", "message")
+
+      post "/sessions", params: { email: "missing@example.com", password: "correct horse\0battery" }, as: :json
+      assert_response :unauthorized
+      assert_equal "Email or password is wrong", response.parsed_body.dig("error", "message")
+    end
+  end
+
   test "a missing token is sign-in required" do
     delete "/sessions"
     assert_sign_in_required
