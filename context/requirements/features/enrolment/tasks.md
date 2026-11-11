@@ -211,14 +211,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `POST /sessions` checks email and password and returns `token` and `account` only when the email is confirmed. The row stores a SHA-256 digest of that new token. A wrong pair returns `401` without saying whether the email exists. The correct password on an unconfirmed account returns `401` with "Confirm your email to sign in". `DELETE /sessions` with a valid bearer token returns `204` and revokes it. The token stays valid until then. Later tasks authenticate with `Authorization: Bearer`. This task does not edit `spec.md`.
 
 **Acceptance criteria:**
-- [ ] A confirmed account, compared case-insensitively, returns `200` with `token` and `account`. The stored credential is the digest of that new token. An unconfirmed account with the right password returns `401` with message "Confirm your email to sign in" and creates no token.
-- [ ] An unknown email and a wrong password both return `401` with code `UNAUTHENTICATED` and message "Email or password is wrong".
-- [ ] `DELETE /sessions` returns `204` and a later request with that token returns `401` with message "Sign in is required".
+- [x] A confirmed account, compared case-insensitively, returns `200` with `token` and `account`. The stored credential is the digest of that new token. An unconfirmed account with the right password returns `401` with message "Confirm your email to sign in" and creates no token.
+- [x] An unknown email and a wrong password both return `401` with code `UNAUTHENTICATED` and message "Email or password is wrong".
+- [x] `DELETE /sessions` returns `204` and a later request with that token returns `401` with message "Sign in is required".
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/sessions_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: confirm an account, sign in, call `DELETE /sessions`, and confirm the revoked token receives `401`.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/sessions_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: confirm an account, sign in, call `DELETE /sessions`, and confirm the revoked token receives `401`.
 
 **Dependencies:** Task 7
 
