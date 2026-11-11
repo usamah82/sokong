@@ -26,4 +26,30 @@ class ApplicationController < ActionController::API
 
       render json: { error: sign_in_required }, status: :unauthorized
     end
+
+    def within_rate_limit?(bucket)
+      return true if RequestRateLimit.allow?(bucket, rate_limit_ip)
+
+      render json: {
+        error: {
+          code: "RATE_LIMITED",
+          message: "Too many attempts. Try again later.",
+          details: {}
+        }
+      }, status: :too_many_requests
+      false
+    end
+
+    def rate_limit_ip
+      peer = request.remote_addr.to_s
+      return peer unless loopback?(peer)
+
+      request.x_forwarded_for.to_s.split(",").map(&:strip).reverse_each.find { |ip| !loopback?(ip) } || peer
+    end
+
+    def loopback?(ip)
+      IPAddr.new(ip).loopback?
+    rescue ArgumentError
+      false
+    end
 end

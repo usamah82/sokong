@@ -2,6 +2,8 @@ class AccountsController < ApplicationController
   wrap_parameters false
 
   def create
+    return unless within_rate_limit?("accounts")
+
     registration = AccountRegistration.new(params)
     if (error = registration.error_envelope)
       render json: { error: error }, status: :unprocessable_content

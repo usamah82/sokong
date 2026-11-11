@@ -2,6 +2,8 @@ class AccountVerificationsController < ApplicationController
   wrap_parameters false
 
   def create
+    return unless within_rate_limit?("account_verifications")
+
     if EmailConfirmation.redeem(params[:token])
       head :no_content
     else
