@@ -6,7 +6,7 @@ Catalog rows F01–F05 are in this feature only for the slice below. [intent.md]
 
 ## Objective
 
-A person with a phone can enrol a family, for themselves or for someone else, without creating an account first. The saved record tells a community worker who the family is, where they are, how to find them, and what help they are asking for. A submitter who later signs up with the optional email can see that the case is in, who has looked, what those people said, and that no first visit is set.
+A person with a phone can enrol a family, for themselves or for someone else, without creating an account first. The saved record tells a community worker who the family is, where they are, how to find them, and what help they are asking for. A submitter who later signs up with the optional email, confirms that inbox, and signs in can see that the case is in, who has looked, what those people said, and that no first visit is set.
 
 The submitter may be the family, a community member, a community worker, or anyone else. The other user is the community worker who has to contact the family.
 
@@ -25,7 +25,7 @@ Choices approval accepts:
 - The form is four stages: enroler, family and head, other members, then remarks for the community worker. The API still receives one enrolment.
 - Help may be left blank. The worker then sees that no help was named.
 - Gender is Male, Female, or Unspecified. Job is free text. Age and the rough monthly amount are integers. A blank age or a blank amount is stored as empty. No currency code is collected.
-- The public sign-up form creates a submitter account only. An operator command creates a community worker and links a locality.
+- The public sign-up form creates a submitter account only, and does not sign them in. The account can sign in after that email is confirmed. An operator command creates a community worker, marks that email confirmed, and links a locality.
 - The first time a worker opens one enrolment, that look is stored. A note is a later action on that case. Nothing in this feature sets the first visit time.
 - When an email address was given, one invitation is queued. The enrolment is saved even if mail is down. Later progress sends no mail.
 
@@ -40,7 +40,7 @@ Each enrolment creates one family unit. The head and the other members belong to
 - Rails 8.1 API in `backend/`, Ruby 3.4.11, SQLite for local and test databases. Module name `Backend`. URL paths stay unversioned (ADR-0003).
 - Nuxt app in `web/`, a sibling of `backend/` (ADR-0005). Dev server port `3001` so it does not take Rails' port `3000`.
 - User-facing copy is externalized with [`@nuxtjs/i18n`](https://i18n.nuxtjs.org/docs/getting-started). `defaultLocale` is `en`. The only locale file is `web/i18n/locales/en.json`. Routing strategy is `no_prefix` while English is the only locale (ADR-0006).
-- Auth is an opaque bearer token issued by the API. `has_secure_password` (bcrypt, already named in the Rails Gemfile) stores the password. No JWT library and no third-party auth service.
+- Auth is an opaque bearer token issued when a confirmed account signs in. Sign-up does not issue one. `POST /enrolments` stays anonymous and does not take a token. `has_secure_password` (bcrypt, already named in the Rails Gemfile) stores the password. No JWT library and no third-party auth service.
 - Mail uses Action Mailer and Active Job, which are already in the API. The test suite uses the test delivery adapter.
 - CORS allows `http://localhost:3001` only. A production origin waits until a host is decided.
 - `GET /up` stays as it is.
@@ -84,7 +84,7 @@ bin/rails sokong:locality NAME="Block 4"
 bin/rails sokong:assign EMAIL=aman@example.com LOCALITY_ID=<id printed above>
 ```
 
-`PASSWORD` is at least 12 characters. `NAME` is the worker name shown on progress.
+`PASSWORD` is at least 12 characters. `NAME` is the worker name shown on progress. The worker's email is confirmed when the command creates the account. The command queues no confirmation message.
 
 ## Project Structure
 
@@ -93,14 +93,16 @@ API behavior stays in Rails. Domain rules for claiming a locality live on a mode
 ```
 backend/app/models/         Account, Locality, LocalityAssignment,
                             FamilyUnit, FamilyMember, Enrolment, Look
-backend/app/controllers/    enrolments, accounts, sessions, localities
-backend/app/mailers/        the one invitation
+backend/app/controllers/    enrolments, accounts, account verifications,
+                            sessions, localities
+backend/app/mailers/        the invitation, and the sign-up confirmation
 backend/lib/tasks/          sokong:worker, sokong:locality, sokong:assign
 backend/test/integration/   the HTTP cases in Testing Strategy
 web/                        Nuxt app this spec introduces
 web/i18n/locales/en.json    every user-facing string
 web/pages/                  four-stage enrolment wizard, confirmation,
-                            sign-up, sign-in, submitter progress, worker cases,
+                            sign-up, email confirmation, sign-in,
+                            submitter progress, worker cases,
                             locality boundary
 ```
 
@@ -144,7 +146,8 @@ Edge cases the integration tests cover:
 - Self and on-behalf each store their own consent sentence.
 - Email present enqueues one invitation and no family details in that mail. A mail failure still leaves the enrolment saved. No email enqueues nothing.
 - A look or a note enqueues no mail.
-- Sign-up is not required to submit. Public sign-up cannot create a worker, including by sending a role field.
+- Sign-up is not required to submit. Public sign-up cannot create a worker, including by sending a role field. Sign-up returns no token. An unconfirmed account cannot obtain one. After the confirmation token is accepted, sign-in returns a token. That confirmation token is single-use and is not the session token.
+- The sixth `POST /accounts` from one client IP in an hour returns 429 and creates no account. `POST /enrolments` from that IP still succeeds.
 - The matching submitter sees the case in, an empty look list, and no visit. Another account, a worker of another locality, and an anonymous caller do not get the record.
 - The worker of the locality sees the members, the place, how to find them, the family phone, the enroler contact, and the help asked.
 - The worker's first open of that enrolment stores one look. A second open does not store another. A note shows on the submitter's progress. `visit_at` stays empty.
@@ -163,7 +166,7 @@ Left for later features:
 - A person in more than one family unit, moving between units, merging units, and an institution flag. A unit of one person is the head alone.
 - How members are related beyond head or other member.
 - Duplicate detection, scam matching, and registrations from other organizations.
-- Retention rules, a privacy request, and rate limits or captchas. Hosting is still undecided.
+- Retention rules, a privacy request, and captchas. Hosting is still undecided.
 - Polygon boundaries, a map provider, and a gazetteer of official districts.
 - The Flutter app, a production origin, and a production database.
 - Reassigning an enrolment when a locality's name or circle changes later.
@@ -175,6 +178,7 @@ Always:
 - Keep user-facing strings in `web/i18n/locales/en.json`.
 - Keep enroler contact, family phone, email, place name, how to find them, other help, coordinates, and member name, description, job, and monthly amount out of the request log.
 - Return 404 when an account must not see a record, including when the id does not exist, so the response does not reveal that a family is on file.
+- Check a rate limit before hashing a password or queuing mail.
 - Leave `config/master.key` and `storage/` uncommitted.
 
 Ask first:
@@ -188,7 +192,8 @@ Never:
 
 - Reject an enrolment because no worker, no locality, no family phone, or no account exists, or because the family looks ineligible.
 - Put the device point on the family after the submitter named a different place.
-- Send family names, place, phone, contact, or help in the invitation email.
+- Send family names, place, phone, contact, or help in the invitation email or the confirmation email.
+- Require a token to submit an enrolment.
 - Expose worker creation or locality assignment as a public route.
 - Commit secrets, edit vendored skills, or drop a failing test to make the gate green.
 
@@ -227,8 +232,8 @@ The enrolment form is a wizard of four stages. Back and Next move one stage. Typ
 
 ### Accounts and progress
 
-21. `POST /accounts` creates a submitter. Password and confirmation must match. Password length is at least 12. The email is unique case-insensitively. A wrong sign-in returns 401 without saying whether the email exists.
-22. Sign-in returns an opaque token. Later calls send `Authorization: Bearer <token>`. Sign-out revokes it. The web client keeps the token in `sessionStorage`.
+21. `POST /accounts` creates a submitter and returns no token. Password and confirmation must match. Password length is at least 12 characters and at most 72 bytes. The email is unique case-insensitively among confirmed accounts. A confirmed duplicate returns 422 and sends no mail. An unconfirmed account for that email younger than 24 hours stays as it is, a new confirmation message is queued, and the response is the same 201. An unconfirmed account older than 24 hours is replaced: the new password is stored, the old confirmation token stops working, and a new message is queued. A wrong sign-in returns 401 without saying whether the email exists. The correct password on an unconfirmed account returns 401 with message "Confirm your email to sign in".
+22. Sign-in of a confirmed account returns an opaque token. Later calls send `Authorization: Bearer <token>`. Sign-out revokes it. The token stays valid until it is revoked. The web client keeps the token in `sessionStorage`. Submitting an enrolment does not use this token.
 23. A submitter sees enrolments whose stored email matches the account email, case-insensitively, and no others. With no looks, the screen says "This case is in. No one has looked. No visit is set."
 24. Opening a worker's list does not record a look. The first authorized detail read by that worker records one look with the worker's name, the time, and an empty note. A note is `POST` with non-blank text up to 2000 characters and appends a new look. The submitter sees looks in time order.
 25. `visit_at` is null on every enrolment this feature creates or updates.
@@ -245,6 +250,21 @@ The enrolment form is a wizard of four stages. Back and Next move one stage. Typ
   }
 }
 ```
+
+29. After a 201, the sign-up screen says "Check your email to confirm this address. Then sign in." Sign-up queues one confirmation message. The subject is "Confirm your Sokong email". The body is "Confirm this email address to sign in to Sokong. If you did not sign up, ignore this message." followed by one link to the web app's confirmation page. The link carries an opaque token in the query string. The page sends that token to `POST /account_verifications`. The message contains no family name, place, phone, contact, or help. The API stores the SHA-256 digest of the token. The token expires 24 hours after it is issued. A valid token returns 204, marks the email confirmed, and returns no session token. The confirmation screen says "This email is confirmed. Sign in." A second use, a wrong token, or an expired token returns 422 with message "Confirmation link is invalid" and confirms nothing. If the queue raises, the account stays saved and the sign-up response is still 201.
+30. Rate limits are counted per client IP, and they are checked before a password is hashed and before mail is queued. `POST /accounts` allows 5 requests in one hour. `POST /sessions` allows 10 requests in 15 minutes. `POST /account_verifications` allows 10 requests in one hour. The next request in the window returns 429 and changes nothing:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many attempts. Try again later.",
+    "details": {}
+  }
+}
+```
+
+`POST /enrolments` is not under these limits.
 
 ### HTTP contract
 
@@ -264,9 +284,11 @@ JSON keys are snake_case. Times are ISO 8601 UTC. Ids are UUIDs. Paths are unver
 }
 ```
 
-`POST /accounts` with `email`, `password`, `password_confirmation`. `201` returns `token` and `account` (`id`, `email`, `role`). Role is `submitter`.
+`POST /accounts` with `email`, `password`, `password_confirmation`. `201` returns `account` (`id`, `email`, `role`) and no `token`. Role is `submitter`. The same call queues the confirmation message.
 
-`POST /sessions` with `email` and `password`. `200` returns the same token payload. `DELETE /sessions` with a valid token returns `204` and revokes it.
+`POST /account_verifications` with `token`. `204` confirms the email and returns no body and no session token.
+
+`POST /sessions` with `email` and `password`. `200` returns `token` and `account` (`id`, `email`, `role`) when the account is confirmed. `DELETE /sessions` with a valid token returns `204` and revokes it. The token stays valid until that revocation.
 
 `GET /enrolments` and `GET /enrolments/:id` require a token. A submitter's detail is the `201` shape plus looks (`id`, `worker_name`, `looked_at`, `note`). A worker's list items are `id`, `submitted_at`, `place_name`, `head_name`, `enroler_contact`, `on_behalf`, and `locality` (`id`, `name`). A worker's detail adds the family fields, `email`, `how_to_find`, `family_phone`, `help`, `other_help`, `consent_text`, coordinates when stored, `members`, and `looks`. The first worker detail read for that pair creates the empty-note look before the response is sent.
 

@@ -89,8 +89,10 @@
     input[type="text"],
     input[type="email"],
     input[type="tel"],
+    input[type="password"],
     textarea {
       width: 100%;
+      min-height: 44px;
       margin-top: 8px;
       padding: 12px;
       border: 1px solid var(--line);
@@ -164,6 +166,12 @@
       color: var(--muted);
       font-size: 14px;
     }
+
+    .notice {
+      margin: 0 0 16px;
+      color: var(--error);
+      font-size: 15px;
+    }
   </style>
 </head>
 <body>
@@ -206,6 +214,33 @@
       confirmation: {
         stage: "done",
         email: "mary@school.example"
+      },
+      "sign-up": { stage: "sign-up" },
+      "sign-up-error": {
+        stage: "sign-up",
+        email: "mary@school.example",
+        password: "correct horse",
+        confirmation: "correct horse battery",
+        accountError: "Password confirmation does not match"
+      },
+      "sign-up-sent": { stage: "sign-up-sent", email: "mary@school.example" },
+      "sign-up-limited": {
+        stage: "sign-up",
+        email: "mary@school.example",
+        notice: "Too many attempts. Try again later."
+      },
+      "confirm": { stage: "confirm" },
+      "confirm-invalid": { stage: "confirm-invalid" },
+      "sign-in": { stage: "sign-in" },
+      "sign-in-unconfirmed": {
+        stage: "sign-in",
+        email: "mary@school.example",
+        notice: "Confirm your email to sign in"
+      },
+      "sign-in-wrong": {
+        stage: "sign-in",
+        email: "mary@school.example",
+        notice: "Email or password is wrong"
       }
     };
 
@@ -224,7 +259,11 @@
       member: preset.member || null,
       find: preset.find || "",
       help: preset.help || [],
-      other: ""
+      other: "",
+      password: preset.password || "",
+      confirmation: preset.confirmation || "",
+      accountError: preset.accountError || "",
+      notice: preset.notice || ""
     };
 
     const helpOptions = [
@@ -300,8 +339,63 @@
         ${actions || ""}`;
     }
 
+    function accountFields(mode) {
+      const mismatch = state.accountError !== "";
+      return `
+        ${state.notice ? `<p class="notice" role="alert">${esc(state.notice)}</p>` : ""}
+        <label class="field">Email
+          <input type="email" autocomplete="email" value="${esc(state.email)}">
+        </label>
+        <label class="field">Password
+          <input type="password" autocomplete="${mode === "new" ? "new-password" : "current-password"}" value="${esc(state.password)}">
+        </label>
+        ${mode === "new" ? `<label class="field">Password confirmation
+          <input type="password" autocomplete="new-password" value="${esc(state.confirmation)}" aria-invalid="${mismatch ? "true" : "false"}">
+          ${mismatch ? `<p class="error">${esc(state.accountError)}</p>` : ""}
+        </label>` : ""}`;
+    }
+
     function render() {
       const app = document.getElementById("app");
+      if (state.stage === "sign-up") {
+        app.innerHTML = shell(null, "Sign up", accountFields("new"),
+          `<div class="actions"><button class="primary" type="button">Create account</button></div>`);
+        return;
+      }
+
+      if (state.stage === "sign-up-sent") {
+        app.innerHTML = `<div class="confirm">
+          <p class="mark">Sokong</p>
+          <h1>Check your email to confirm this address. Then sign in.</h1>
+          <p class="email">${esc(state.email)}</p>
+        </div>`;
+        return;
+      }
+
+      if (state.stage === "confirm") {
+        app.innerHTML = `<div class="confirm">
+          <p class="mark">Sokong</p>
+          <h1>This email is confirmed. Sign in.</h1>
+          <div class="actions"><button class="primary" type="button">Sign in</button></div>
+        </div>`;
+        return;
+      }
+
+      if (state.stage === "confirm-invalid") {
+        app.innerHTML = `<div class="confirm">
+          <p class="mark">Sokong</p>
+          <h1>Confirmation link is invalid</h1>
+          <div class="actions"><button class="primary" type="button">Sign up</button></div>
+        </div>`;
+        return;
+      }
+
+      if (state.stage === "sign-in") {
+        app.innerHTML = shell(null, "Sign in", accountFields("current"),
+          `<div class="actions"><button class="primary" type="button">Sign in</button></div>`);
+        return;
+      }
+
       if (state.stage === "done") {
         app.innerHTML = `<div class="confirm">
           <p class="mark">Sokong</p>

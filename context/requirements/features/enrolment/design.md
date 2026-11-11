@@ -1,8 +1,8 @@
 # Design
 
-Review pictures for the enrolment wizard. Usamah approved [spec.md](spec.md) on 2026-11-03. These screens follow that spec. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
+Review pictures for the enrolment wizard, sign-up, email confirmation, and sign-in. Usamah approved [spec.md](spec.md) on 2026-11-03. The account screens follow the spec draft from 2026-11-11. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
 
-Sign-in, sign-up, submitter progress, the worker case, and the locality boundary are later pictures. This pass is the phone form and the confirmation.
+Submitter progress, the worker case, and the locality boundary are later pictures. This pass is the phone form, the enrolment confirmation, and the email confirmation flow.
 
 ## Visual language
 
@@ -93,3 +93,55 @@ Copy:
 - "Sign up with this email to see who has looked and whether a visit is set."
 
 Picture: [confirmation.png](design/confirmation.png). The email line is omitted when they left email blank. This picture includes it.
+
+### Sign up
+
+Job: create a submitter account for the email used on the enrolment. The form does not offer a role, and it does not sign the person in.
+
+Primary action: Create account. It stays on this screen until the email, the password, and the confirmation are acceptable.
+
+States: empty; password confirmation does not match; the confirmation message has been queued; too many attempts.
+
+Copy, as in the spec:
+
+- "Password confirmation does not match"
+- "Check your email to confirm this address. Then sign in."
+- "Too many attempts. Try again later."
+
+The queued state shows the address they typed, in the same muted line as the enrolment confirmation. Submitting the form again is how another confirmation message is requested. That state has no second button.
+
+Pictures: [sign-up.png](design/sign-up.png), [sign-up-error.png](design/sign-up-error.png), [sign-up-sent.png](design/sign-up-sent.png), [sign-up-limited.png](design/sign-up-limited.png).
+
+### Email confirmation
+
+Job: accept the link from the confirmation message, without signing the person in.
+
+Primary action: Sign in, only after the link is accepted. An invalid, used, or expired link offers Sign up, which is how a new message is requested.
+
+States: the link worked; the link is invalid.
+
+Copy, as in the spec:
+
+- "This email is confirmed. Sign in."
+- "Confirmation link is invalid"
+
+The token from the link is not shown.
+
+Pictures: [confirm.png](design/confirm.png), [confirm-invalid.png](design/confirm-invalid.png).
+
+### Sign in
+
+Job: issue a token after the email is confirmed. A wrong password does not say whether the email exists.
+
+Primary action: Sign in.
+
+States: empty; the password is right but the email is not confirmed; the email or password is wrong.
+
+Copy, as in the spec:
+
+- "Confirm your email to sign in"
+- "Email or password is wrong"
+
+There is no password reset on this screen.
+
+Pictures: [sign-in.png](design/sign-in.png), [sign-in-unconfirmed.png](design/sign-in-unconfirmed.png), [sign-in-wrong.png](design/sign-in-wrong.png).
