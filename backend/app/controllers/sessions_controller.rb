@@ -2,6 +2,8 @@ class SessionsController < ApplicationController
   wrap_parameters false
 
   def create
+    return unless within_rate_limit?("sessions")
+
     session = AccountSession.new(params)
     if (error = session.error_envelope)
       render json: { error: error }, status: :unauthorized

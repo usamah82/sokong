@@ -26,4 +26,17 @@ class ApplicationController < ActionController::API
 
       render json: { error: sign_in_required }, status: :unauthorized
     end
+
+    def within_rate_limit?(bucket)
+      return true if RequestRateLimit.allow?(bucket, request.remote_ip)
+
+      render json: {
+        error: {
+          code: "RATE_LIMITED",
+          message: "Too many attempts. Try again later.",
+          details: {}
+        }
+      }, status: :too_many_requests
+      false
+    end
 end
