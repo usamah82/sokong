@@ -23,10 +23,32 @@ class AccountRegistration
   def save
     raise ArgumentError, error_envelope[:message] if error_envelope
 
-    Account.register!(email: @email_address, password: @password)
+    raw = nil
+    account = Account.transaction do
+      saved = persist
+      raw = saved.issue_confirmation!
+      saved
+    end
+    queue_confirmation(account.email, raw)
+    account
   end
 
   private
+    def persist
+      if @existing
+        @existing.update!(password: @password)
+        @existing
+      else
+        Account.register!(email: @email_address, password: @password)
+      end
+    end
+
+    def queue_confirmation(email, raw)
+      AccountMailer.confirmation(email, raw).deliver_later
+    rescue StandardError => error
+      Rails.logger.info("Account confirmation was not queued: #{error.class}")
+    end
+
     def collect
       return if defined?(@errors)
 
@@ -53,10 +75,14 @@ class AccountRegistration
         reject("email", "Email is too long", "is too long")
       elsif !cleaned.match?(EMAIL)
         reject("email", "Email is invalid", "is invalid")
-      elsif Account.exists?(email_normalized: cleaned.downcase(:fold))
-        reject("email", "Email has already been taken", "has already been taken")
       else
-        @email_address = cleaned
+        existing = Account.find_by(email_normalized: cleaned.downcase(:fold))
+        if existing&.email_confirmed_at
+          reject("email", "Email has already been taken", "has already been taken")
+        else
+          @existing = existing
+          @email_address = cleaned
+        end
       end
     end
 

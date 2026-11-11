@@ -1,5 +1,9 @@
+require "digest"
+
 class Account < ApplicationRecord
   has_secure_password
+
+  has_one :email_confirmation, dependent: :destroy
 
   before_validation :assign_email_normalized
 
@@ -8,6 +12,16 @@ class Account < ApplicationRecord
 
   def self.register!(email:, password:)
     create!(email: email, password: password, role: "submitter")
+  end
+
+  def issue_confirmation!
+    email_confirmation&.destroy!
+    raw = SecureRandom.urlsafe_base64(32)
+    create_email_confirmation!(
+      token_digest: Digest::SHA256.hexdigest(raw),
+      expires_at: 24.hours.from_now
+    )
+    raw
   end
 
   private

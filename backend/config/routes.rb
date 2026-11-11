@@ -7,6 +7,7 @@ Rails.application.routes.draw do
 
   resources :enrolments, only: :create
   resources :accounts, only: :create
+  resources :account_verifications, only: :create
   resources :localities, only: [] do
     get "suggestion", on: :collection
   end
