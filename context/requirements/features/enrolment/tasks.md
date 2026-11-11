@@ -238,14 +238,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Count `request.remote_ip` in `Rails.cache` before a password is hashed and before mail is queued. `POST /accounts` allows 5 requests in one hour. `POST /sessions` allows 10 in 15 minutes. `POST /account_verifications` allows 10 in one hour. The next request returns `429` and changes nothing. `POST /enrolments` is not counted. No new gem.
 
 **Acceptance criteria:**
-- [ ] The sixth `POST /accounts` from one IP in an hour returns `429` with code `RATE_LIMITED` and message "Too many attempts. Try again later." and creates no account. `POST /enrolments` from that IP still returns `201`.
-- [ ] The eleventh `POST /sessions` from one IP in 15 minutes returns that same `429` and creates no token. The eleventh `POST /account_verifications` from one IP in an hour returns that same `429` and confirms nothing.
-- [ ] The limit is checked before bcrypt runs. After the window passes, the next request is handled again.
+- [x] The sixth `POST /accounts` from one IP in an hour returns `429` with code `RATE_LIMITED` and message "Too many attempts. Try again later." and creates no account. `POST /enrolments` from that IP still returns `201`.
+- [x] The eleventh `POST /sessions` from one IP in 15 minutes returns that same `429` and creates no token. The eleventh `POST /account_verifications` from one IP in an hour returns that same `429` and confirms nothing.
+- [x] The limit is checked before bcrypt runs. After the window passes, the next request is handled again.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/rate_limit_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: none. The integration test travels the clock and is the check.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/rate_limit_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: none. The integration test travels the clock and is the check.
 
 **Dependencies:** Task 8
 
