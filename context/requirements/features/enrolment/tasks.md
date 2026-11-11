@@ -738,4 +738,4 @@ A task is done only when its acceptance lines are true and [definition of done](
 - [ ] Every acceptance line in Tasks 1–27 is checked
 - [ ] At 390 CSS pixels, each wizard stage, the enrolment confirmation, sign-up, email confirmation, sign-in, submitter progress, and the worker case scroll vertically and do not scroll horizontally
 - [ ] `GET /up` still returns success
-- [ ] Ready for a review session. The next prompt is Review in `context/workflow/prompts.md`
+- [ ] Ready for the human to merge `feature/enrolment` into `main`. The loop stops here under ADR-0007.

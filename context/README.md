@@ -10,6 +10,7 @@ This tree is the product memory. Read it before planning or coding. Write back b
 | `product/master-feature-list.md` | Catalog. No row is an approved spec. |
 | `product/open-questions.md` | Human answers from 2026-10-28. Agents do not reopen them. |
 | `workflow/operating-model.md` | What is feasible, what is missing, and how a feature moves. |
+| `workflow/flows.md` | Diagrams of sessions, status, the feature branch, and review passes. |
 | `workflow/prompts.md` | The prompt for each fresh agent session. |
 | `workflow/definition-of-done.md` | The standing bar for every change. |
 | `requirements/features/` | One folder per feature. Status lives in that folder's README. |
