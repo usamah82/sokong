@@ -2,7 +2,7 @@ require "test_helper"
 
 class AccountsTest < ActionDispatch::IntegrationTest
   test "a sign-up returns a submitter and no token, even when a role is sent" do
-    assert_no_enqueued_emails do
+    assert_enqueued_emails 1 do
       assert_difference -> { Account.count } => 1 do
         post "/accounts", params: account_body(role: "worker"), as: :json
       end
@@ -33,7 +33,8 @@ class AccountsTest < ActionDispatch::IntegrationTest
   end
 
   test "a mismatch, a short password, a duplicate email, or a missing field creates no account" do
-    Account.register!(email: "siti@example.com", password: "correct horse battery staple")
+    account = Account.register!(email: "siti@example.com", password: "correct horse battery staple")
+    account.update!(email_confirmed_at: Time.current)
 
     cases = [
       [ account_body(password_confirmation: "correct horse battery staples"), "password_confirmation", "does not match" ],
@@ -65,13 +66,13 @@ class AccountsTest < ActionDispatch::IntegrationTest
   test "a duplicate that passes the pre-check still returns 422" do
     Account.register!(email: "siti@example.com", password: "correct horse battery staple")
 
-    original = Account.method(:exists?)
-    Account.define_singleton_method(:exists?) { |*| false }
+    original = Account.method(:find_by)
+    Account.define_singleton_method(:find_by) { |*args, **kwargs| nil }
     assert_no_difference -> { Account.count } do
       post "/accounts", params: account_body(email: "SITI@example.com"), as: :json
     end
   ensure
-    Account.define_singleton_method(:exists?) { |*args, **kwargs, &block| original.call(*args, **kwargs, &block) }
+    Account.define_singleton_method(:find_by) { |*args, **kwargs, &block| original.call(*args, **kwargs, &block) }
 
     assert_response :unprocessable_content
     assert_equal [ "has already been taken" ], response.parsed_body.dig("error", "details", "email")
