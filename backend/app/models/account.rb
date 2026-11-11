@@ -4,6 +4,7 @@ class Account < ApplicationRecord
   has_secure_password
 
   has_one :email_confirmation, dependent: :destroy
+  has_many :auth_tokens, dependent: :destroy
 
   before_validation :assign_email_normalized
 

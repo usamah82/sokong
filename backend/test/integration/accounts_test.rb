@@ -25,7 +25,7 @@ class AccountsTest < ActionDispatch::IntegrationTest
     assert_equal "siti@example.com", stored.email_normalized
     assert_nil stored.email_confirmed_at
     assert stored.authenticate("correct horse battery staple")
-    assert_not ActiveRecord::Base.connection.table_exists?("auth_tokens")
+    assert_equal 0, AuthToken.count
 
     foreign_key = ActiveRecord::Base.connection.foreign_keys("locality_assignments")
       .find { |key| key.column == "account_id" }
