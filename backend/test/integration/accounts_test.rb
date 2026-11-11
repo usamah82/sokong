@@ -64,6 +64,63 @@ class AccountsTest < ActionDispatch::IntegrationTest
     assert_equal 1, Account.count
   end
 
+  test "eleven characters is rejected and twelve characters is accepted" do
+    short = "a" * 11
+    long_enough = "a" * 12
+
+    assert_no_difference -> { Account.count } do
+      post "/accounts", params: account_body(password: short, password_confirmation: short), as: :json
+    end
+    assert_response :unprocessable_content
+    assert_equal "VALIDATION_ERROR", response.parsed_body.dig("error", "code")
+    assert_equal [ "is too short" ], response.parsed_body.dig("error", "details", "password")
+
+    assert_difference -> { Account.count } => 1 do
+      post "/accounts", params: account_body(
+        email: "twelve@example.com",
+        password: long_enough,
+        password_confirmation: long_enough
+      ), as: :json
+    end
+    assert_response :created
+    assert_equal "submitter", response.parsed_body.dig("account", "role")
+  end
+
+  test "a padded email is stored trimmed and an overlong email is too long" do
+    post "/accounts", params: account_body(email: "  Siti@Example.com  "), as: :json
+
+    assert_response :created
+    assert_equal "Siti@Example.com", response.parsed_body.dig("account", "email")
+    assert_equal "siti@example.com", Account.find(response.parsed_body.dig("account", "id")).email_normalized
+
+    overlong = "#{"a" * 243}@example.com"
+    assert_equal 255, overlong.length
+    assert_no_difference -> { Account.count } do
+      post "/accounts", params: account_body(email: overlong), as: :json
+    end
+    assert_response :unprocessable_content
+    assert_equal [ "is too long" ], response.parsed_body.dig("error", "details", "email")
+  end
+
+  test "a non-string, a null byte, or a password over 72 bytes returns a validation error" do
+    bodies = [
+      account_body(password: 12, password_confirmation: "correct horse battery staple"),
+      account_body(password: "correct horse\0battery", password_confirmation: "correct horse\0battery"),
+      account_body(password: "a" * 73, password_confirmation: "a" * 73)
+    ]
+
+    bodies.each do |body|
+      assert_no_difference -> { Account.count } do
+        post "/accounts", params: body, as: :json
+      end
+
+      assert_response :unprocessable_content
+      error = response.parsed_body.fetch("error")
+      assert_equal "VALIDATION_ERROR", error["code"]
+      assert_equal %w[code details message], error.keys.sort
+    end
+  end
+
   private
     def account_body(**extra)
       {

@@ -23,7 +23,7 @@ class AccountRegistration
   def save
     raise ArgumentError, error_envelope[:message] if error_envelope
 
-    Account.register!(email: @email.to_s.strip, password: @password)
+    Account.register!(email: @email_address, password: @password)
   end
 
   private
@@ -31,25 +31,61 @@ class AccountRegistration
       return if defined?(@errors)
 
       @errors = []
-      email = @email.to_s
-      if email.strip.empty?
+      collect_email
+      collect_password
+      collect_confirmation
+    end
+
+    def collect_email
+      if @email.nil?
         reject("email", "Email is required", "is required")
-      elsif email.length > 254 || !email.match?(EMAIL)
+        return
+      end
+      unless @email.is_a?(String)
         reject("email", "Email is invalid", "is invalid")
-      elsif Account.exists?(email_normalized: email.strip.downcase(:fold))
+        return
+      end
+
+      cleaned = @email.strip
+      if cleaned.empty?
+        reject("email", "Email is required", "is required")
+      elsif cleaned.length > 254
+        reject("email", "Email is too long", "is too long")
+      elsif !cleaned.match?(EMAIL)
+        reject("email", "Email is invalid", "is invalid")
+      elsif Account.exists?(email_normalized: cleaned.downcase(:fold))
         reject("email", "Email has already been taken", "has already been taken")
+      else
+        @email_address = cleaned
       end
+    end
 
-      if @password.blank?
-        reject("password", "Password is required", "is required")
-      elsif @password.length < 12
-        reject("password", "Password is too short", "is too short")
-      end
+    def collect_password
+      collect_secret(@password, "password", "Password")
+    end
 
-      if @confirmation.blank?
-        reject("password_confirmation", "Password confirmation is required", "is required")
-      elsif @password.present? && @password != @confirmation
-        reject("password_confirmation", "Password confirmation does not match", "does not match")
+    def collect_confirmation
+      collect_secret(@confirmation, "password_confirmation", "Password confirmation")
+      return if @errors.any? { |error| error[:field] == "password" || error[:field] == "password_confirmation" }
+      return unless @password.is_a?(String) && @confirmation.is_a?(String)
+      return if @password == @confirmation
+
+      reject("password_confirmation", "Password confirmation does not match", "does not match")
+    end
+
+    def collect_secret(value, field, label)
+      if value.nil?
+        reject(field, "#{label} is required", "is required")
+      elsif !value.is_a?(String)
+        reject(field, "#{label} is invalid", "is invalid")
+      elsif value.blank?
+        reject(field, "#{label} is required", "is required")
+      elsif value.include?("\0")
+        reject(field, "#{label} is invalid", "is invalid")
+      elsif value.bytesize > 72
+        reject(field, "#{label} is too long", "is too long")
+      elsif value.length < 12
+        reject(field, "#{label} is too short", "is too short")
       end
     end
 
