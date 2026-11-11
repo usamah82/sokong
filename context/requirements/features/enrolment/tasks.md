@@ -121,14 +121,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** When the submission includes an email, enqueue one invitation after the enrolment commits. The mail has the spec's subject and body and no family name, place, phone, contact, or help. No email enqueues nothing. If enqueue raises, the enrolment remains and the response is still `201`. Looks and notes send no mail; this task covers the invitation side of that rule.
 
 **Acceptance criteria:**
-- [ ] An email enqueues one message with subject "Sokong enrolment" and body "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set."
-- [ ] A blank email enqueues nothing. A raised enqueue error still leaves the enrolment saved and returns `201`.
-- [ ] The test environment uses the Active Job test adapter, so the example asserts the message was enqueued.
+- [x] An email enqueues one message with subject "Sokong enrolment" and body "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set."
+- [x] A blank email enqueues nothing. A raised enqueue error still leaves the enrolment saved and returns `201`.
+- [x] The test environment uses the Active Job test adapter, so the example asserts the message was enqueued.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: submit with an email in development and confirm one message is in the job log, with none of the family fields in the body.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: submit with an email in development and confirm one message is in the job log, with none of the family fields in the body.
 
 **Dependencies:** Task 3
 
@@ -143,10 +143,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 4–5
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] A place name that matches the nearest center keeps the point
-- [ ] Any other place name saves the enrolment with null coordinates
-- [ ] One invitation is queued only when an email was submitted
+- [x] `bin/ci` from the repository root exits 0
+- [x] A place name that matches the nearest center keeps the point
+- [x] Any other place name saves the enrolment with null coordinates
+- [x] One invitation is queued only when an email was submitted
 
 ## Task 6: Create a submitter account
 
