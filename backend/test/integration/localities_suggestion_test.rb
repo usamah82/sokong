@@ -27,7 +27,7 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
   test "the response is only the nearest locality name" do
     create_locality(name: "Farther", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 1))
     nearest = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
-    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: nearest)
+    link_account(nearest)
 
     assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
       get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
@@ -40,7 +40,7 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
   test "an unstaffed nearer center wins over a staffed farther center" do
     create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 1_000, created_at: Time.utc(2026, 1, 2))
     farther = create_locality(name: "Farther", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 1))
-    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: farther)
+    link_account(farther)
 
     assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
       get "/localities/suggestion", params: { latitude: "0", longitude: "0" }
@@ -73,7 +73,7 @@ class LocalitiesSuggestionTest < ActionDispatch::IntegrationTest
   test "an earlier center wins a tie when the later center is staffed" do
     create_locality(name: "Earlier", latitude: 0, longitude: 0, created_at: Time.utc(2026, 1, 1))
     later = create_locality(name: "Later", latitude: 0, longitude: 0, created_at: Time.utc(2026, 1, 2))
-    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: later)
+    link_account(later)
 
     assert_no_difference [ "Locality.count", "Enrolment.count", "LocalityAssignment.count" ] do
       get "/localities/suggestion", params: { latitude: "0", longitude: "0" }

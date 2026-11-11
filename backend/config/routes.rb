@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   resources :enrolments, only: :create
+  resources :accounts, only: :create
   resources :localities, only: [] do
     get "suggestion", on: :collection
   end

@@ -10,6 +10,14 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
-    # Add more helper methods to be used by all tests here...
+    # A locality counts as staffed when a real account is linked. The account
+    # foreign key rejects the placeholder ids these examples used before accounts existed.
+    def link_account(locality)
+      account = Account.register!(
+        email: "staff-#{SecureRandom.hex(8)}@example.com",
+        password: "correct horse battery staple"
+      )
+      LocalityAssignment.create!(account:, locality:)
+    end
   end
 end

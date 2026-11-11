@@ -153,14 +153,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Uncomment `bcrypt` and add `POST /accounts`. The account is always a submitter and `email_confirmed_at` stays null. The response is `account` and has no `token`. Password and confirmation must match. Password length is at least 12 characters and at most 72 bytes. Any existing email, confirmed or not, returns `422`. Task 7 replaces that rule for unconfirmed emails. This task sends no mail and does not create `auth_tokens`.
 
 **Acceptance criteria:**
-- [ ] `201` returns `account` with `id`, `email`, and `role` `submitter`, and the JSON has no `token` key. A sent `role` field still persists `submitter`.
-- [ ] A mismatch, a password under 12 characters or over 72 bytes, a non-string password, a null byte, a missing field, or a duplicate email under a different case returns `422` and creates no account.
-- [ ] The migration adds the foreign key from `locality_assignments.account_id` to accounts. `email_confirmed_at` is null.
+- [x] `201` returns `account` with `id`, `email`, and `role` `submitter`, and the JSON has no `token` key. A sent `role` field still persists `submitter`.
+- [x] A mismatch, a password under 12 characters or over 72 bytes, a non-string password, a null byte, a missing field, or a duplicate email under a different case returns `422` and creates no account.
+- [x] The migration adds the foreign key from `locality_assignments.account_id` to accounts. `email_confirmed_at` is null.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/accounts_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: `POST /accounts` with a 12-character password returns a submitter and no token. The same call with `role` set to a worker still returns `submitter`.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/accounts_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: `POST /accounts` with a 12-character password returns a submitter and no token. The same call with `role` set to a worker still returns `submitter`.
 
 **Dependencies:** Task 3
 
