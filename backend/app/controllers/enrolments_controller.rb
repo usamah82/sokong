@@ -6,11 +6,21 @@ class EnrolmentsController < ApplicationController
     if (error = submission.error_envelope)
       render json: { error: error }, status: :unprocessable_content
     else
-      render json: enrolment_json(submission.save), status: :created
+      enrolment = submission.save
+      queue_invitation(enrolment)
+      render json: enrolment_json(enrolment), status: :created
     end
   end
 
   private
+    def queue_invitation(enrolment)
+      return if enrolment.email.blank?
+
+      EnrolmentMailer.invitation(enrolment.email).deliver_later
+    rescue StandardError => error
+      logger.info("Enrolment invitation was not queued: #{error.class}")
+    end
+
     def enrolment_json(enrolment)
       {
         id: enrolment.id,

@@ -617,6 +617,87 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_equal [ "clothing", "food", "school_supplies" ], Enrolment.order(:created_at).last.help
   end
 
+  test "an email enqueues one invitation with the spec subject and body" do
+    assert_instance_of ActiveJob::QueueAdapters::TestAdapter, ActiveJob::Base.queue_adapter
+
+    body = valid_enrolment.merge(
+      email: "siti@example.com",
+      place_name: "Kampung Baru",
+      family_phone: "+60123456789",
+      how_to_find: "the blue gate",
+      help: [ "food" ],
+      other_help: "school fees",
+      members: [ { role: "head", name: "Siti Aminah", gender: "female" } ]
+    )
+
+    assert_enqueued_emails 1 do
+      post "/enrolments", params: body, as: :json
+    end
+
+    assert_response :created
+    assert_enqueued_email_with EnrolmentMailer, :invitation, args: [ "siti@example.com" ]
+
+    perform_enqueued_jobs
+    mail = ActionMailer::Base.deliveries.sole
+    assert_equal [ "siti@example.com" ], mail.to
+    assert_equal "Sokong enrolment", mail.subject
+    assert_equal INVITATION_BODY, mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
+    assert_not_includes mail.body.to_s, "Siti Aminah"
+    assert_not_includes mail.body.to_s, "Kampung Baru"
+    assert_not_includes mail.body.to_s, "+60123456789"
+    assert_not_includes mail.body.to_s, "blue gate"
+    assert_not_includes mail.body.to_s, "food"
+    assert_not_includes mail.body.to_s, "school fees"
+  end
+
+  test "a blank email enqueues no invitation" do
+    assert_no_enqueued_emails do
+      post "/enrolments", params: valid_enrolment, as: :json
+    end
+    assert_response :created
+
+    assert_no_enqueued_emails do
+      post "/enrolments", params: valid_enrolment.merge(email: "   "), as: :json
+    end
+    assert_response :created
+  end
+
+  test "a raised enqueue error still saves the enrolment and returns 201" do
+    previous = ActiveJob::Base.queue_adapter
+    adapter = RaisingQueueAdapter.new
+    ActiveJob::Base.queue_adapter = adapter
+    body = valid_enrolment.merge(email: "siti@example.com")
+
+    assert_difference "Enrolment.count", 1 do
+      post "/enrolments", params: body, as: :json
+    end
+
+    assert_equal 1, adapter.attempts
+    assert_response :created
+    assert_equal "siti@example.com", Enrolment.order(:created_at).last.email
+  ensure
+    ActiveJob::Base.queue_adapter = previous
+  end
+
+  INVITATION_BODY = "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set."
+
+  class RaisingQueueAdapter
+    attr_reader :attempts
+
+    def initialize
+      @attempts = 0
+    end
+
+    def enqueue(*)
+      @attempts += 1
+      raise "queue down"
+    end
+
+    def enqueue_at(*)
+      raise "queue down"
+    end
+  end
+
   private
     def create_locality(name:, created_at:, latitude: nil, longitude: nil, radius_metres: nil)
       travel_to(created_at) do
