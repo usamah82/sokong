@@ -28,7 +28,7 @@ class ApplicationController < ActionController::API
     end
 
     def within_rate_limit?(bucket)
-      return true if RequestRateLimit.allow?(bucket, request.remote_ip)
+      return true if RequestRateLimit.allow?(bucket, rate_limit_ip)
 
       render json: {
         error: {
@@ -38,5 +38,18 @@ class ApplicationController < ActionController::API
         }
       }, status: :too_many_requests
       false
+    end
+
+    def rate_limit_ip
+      peer = request.remote_addr.to_s
+      return request.remote_ip if peer.empty? || trusted_proxy?(peer)
+
+      peer
+    end
+
+    def trusted_proxy?(ip)
+      proxies = Rails.application.config.action_dispatch.trusted_proxies
+      proxies = ActionDispatch::RemoteIp::TRUSTED_PROXIES if proxies.blank?
+      proxies.any? { |proxy| proxy === ip }
     end
 end

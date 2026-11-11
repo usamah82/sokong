@@ -43,6 +43,30 @@ class RateLimitTest < ActionDispatch::IntegrationTest
     Account.define_singleton_method(:digest_password) { |password| original.call(password) } if original
   end
 
+  test "a public client cannot refresh the sign-up allowance with X-Forwarded-For" do
+    5.times do |index|
+      post "/accounts",
+        params: account_body(email: "forward-#{index}@example.com"),
+        headers: { "REMOTE_ADDR" => "203.0.113.5", "X-Forwarded-For" => "198.51.100.#{index + 1}" },
+        as: :json
+      assert_response :created
+    end
+
+    assert_no_difference -> { Account.count } do
+      post "/accounts",
+        params: account_body(email: "forward-5@example.com"),
+        headers: { "REMOTE_ADDR" => "203.0.113.5", "X-Forwarded-For" => "198.51.100.99" },
+        as: :json
+    end
+    assert_rate_limited
+
+    post "/accounts",
+      params: account_body(email: "forward-6@example.com"),
+      headers: { "REMOTE_ADDR" => "203.0.113.6", "X-Forwarded-For" => "198.51.100.99" },
+      as: :json
+    assert_response :created
+  end
+
   test "the eleventh sign-in and confirmation from one address change nothing" do
     post "/accounts", params: account_body, as: :json
     perform_enqueued_jobs
