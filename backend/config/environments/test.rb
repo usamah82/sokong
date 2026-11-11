@@ -33,6 +33,10 @@ Rails.application.configure do
   # ActionMailer::Base.deliveries array.
   config.action_mailer.delivery_method = :test
 
+  # Record enqueued mail instead of running it. Rails 8.1 also defaults the
+  # test environment to this adapter; the invitation examples assert on it.
+  config.active_job.queue_adapter = :test
+
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "example.com" }
 
