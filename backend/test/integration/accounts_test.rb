@@ -39,28 +39,46 @@ class AccountsTest < ActionDispatch::IntegrationTest
   test "a mismatch, a short password, a duplicate email, or a missing field creates no account" do
     Account.register!(email: "siti@example.com", password: "correct horse battery staple")
 
-    bodies = [
-      account_body(password_confirmation: "correct horse battery staples"),
-      account_body(password: "too-short", password_confirmation: "too-short"),
-      account_body(email: "SITI@example.com"),
-      account_body.except(:email),
-      account_body.except(:password),
-      account_body.except(:password_confirmation),
-      account_body(email: "   ")
+    cases = [
+      [ account_body(password_confirmation: "correct horse battery staples"), "password_confirmation", "does not match" ],
+      [ account_body(password: "too-short", password_confirmation: "too-short"), "password", "is too short" ],
+      [ account_body(email: "SITI@example.com"), "email", "has already been taken" ],
+      [ account_body(email: "  SITI@example.com  "), "email", "has already been taken" ],
+      [ account_body(email: "not-an-email"), "email", "is invalid" ],
+      [ account_body(email: 12), "email", "is invalid" ],
+      [ account_body.except(:email), "email", "is required" ],
+      [ account_body.except(:password), "password", "is required" ],
+      [ account_body.except(:password_confirmation), "password_confirmation", "is required" ],
+      [ account_body(email: "   "), "email", "is required" ]
     ]
 
-    bodies.each do |body|
+    cases.each do |body, field, detail|
       assert_no_difference -> { Account.count + AuthToken.count } do
         post "/accounts", params: body, as: :json
       end
 
       assert_response :unprocessable_content
-      error = JSON.parse(response.body).fetch("error")
+      error = response.parsed_body.fetch("error")
       assert_equal "VALIDATION_ERROR", error["code"]
-      assert error["message"].present?
-      assert error["details"].present?
+      assert_equal [ detail ], error.dig("details", field), body.inspect
     end
 
+    assert_equal 1, Account.count
+  end
+
+  test "a duplicate that passes the pre-check still returns 422" do
+    Account.register!(email: "siti@example.com", password: "correct horse battery staple")
+
+    original = Account.method(:exists?)
+    Account.define_singleton_method(:exists?) { |*| false }
+    assert_no_difference -> { Account.count } do
+      post "/accounts", params: account_body(email: "SITI@example.com"), as: :json
+    end
+  ensure
+    Account.define_singleton_method(:exists?) { |*args, **kwargs, &block| original.call(*args, **kwargs, &block) }
+
+    assert_response :unprocessable_content
+    assert_equal [ "has already been taken" ], response.parsed_body.dig("error", "details", "email")
     assert_equal 1, Account.count
   end
 
@@ -100,24 +118,45 @@ class AccountsTest < ActionDispatch::IntegrationTest
     end
     assert_response :unprocessable_content
     assert_equal [ "is too long" ], response.parsed_body.dig("error", "details", "email")
+
+    accepted = "#{"b" * 242}@example.com"
+    assert_equal 254, accepted.length
+    assert_difference -> { Account.count } => 1 do
+      post "/accounts", params: account_body(email: accepted), as: :json
+    end
+    assert_response :created
+    assert_equal accepted, response.parsed_body.dig("account", "email")
   end
 
   test "a non-string, a null byte, or a password over 72 bytes returns a validation error" do
-    bodies = [
-      account_body(password: 12, password_confirmation: "correct horse battery staple"),
-      account_body(password: "correct horse\0battery", password_confirmation: "correct horse\0battery"),
-      account_body(password: "a" * 73, password_confirmation: "a" * 73)
+    boundary = "a" * 72
+    assert_difference -> { Account.count } => 1 do
+      post "/accounts", params: account_body(
+        email: "boundary@example.com",
+        password: boundary,
+        password_confirmation: boundary
+      ), as: :json
+    end
+    assert_response :created
+
+    multibyte = "é" * 40
+    assert_equal 40, multibyte.length
+    assert_operator multibyte.bytesize, :>, 72
+
+    cases = [
+      [ account_body(password: 12, password_confirmation: "correct horse battery staple"), "is invalid" ],
+      [ account_body(password: "correct horse\0battery", password_confirmation: "correct horse\0battery"), "is invalid" ],
+      [ account_body(password: "a" * 73, password_confirmation: "a" * 73), "is too long" ],
+      [ account_body(password: multibyte, password_confirmation: multibyte), "is too long" ]
     ]
 
-    bodies.each do |body|
+    cases.each do |body, detail|
       assert_no_difference -> { Account.count } do
         post "/accounts", params: body, as: :json
       end
 
       assert_response :unprocessable_content
-      error = response.parsed_body.fetch("error")
-      assert_equal "VALIDATION_ERROR", error["code"]
-      assert_equal %w[code details message], error.keys.sort
+      assert_equal [ detail ], response.parsed_body.dig("error", "details", "password"), body.inspect
     end
   end
 
