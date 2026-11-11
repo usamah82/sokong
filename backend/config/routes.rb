@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   resources :enrolments, only: :create
   resources :accounts, only: :create
   resources :account_verifications, only: :create
+  post "sessions", to: "sessions#create"
+  delete "sessions", to: "sessions#destroy"
   resources :localities, only: [] do
     get "suggestion", on: :collection
   end

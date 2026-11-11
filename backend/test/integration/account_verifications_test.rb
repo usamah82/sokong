@@ -32,7 +32,7 @@ class AccountVerificationsTest < ActionDispatch::IntegrationTest
     assert_empty response.body
     assert_not_nil account.reload.email_confirmed_at
     assert_not EmailConfirmation.exists?(account_id: account.id)
-    assert_not ActiveRecord::Base.connection.table_exists?("auth_tokens")
+    assert_equal 0, AuthToken.count
   end
 
   test "a second use, a wrong token, and an expired token confirm nothing" do
