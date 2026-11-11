@@ -14,6 +14,11 @@ class Account < ApplicationRecord
     create!(email: email, password: password, role: "submitter")
   end
 
+  def self.digest_password(password)
+    cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST : BCrypt::Engine.cost
+    BCrypt::Password.create(password, cost: cost).to_s
+  end
+
   def issue_confirmation!
     email_confirmation&.destroy!
     raw = SecureRandom.urlsafe_base64(32)

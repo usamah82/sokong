@@ -23,9 +23,10 @@ class AccountRegistration
   def save
     raise ArgumentError, error_envelope[:message] if error_envelope
 
+    digest = Account.digest_password(@password)
     raw = nil
     account = Account.transaction do
-      saved = persist
+      saved = persist(digest)
       raw = saved.issue_confirmation!
       saved
     end
@@ -34,15 +35,15 @@ class AccountRegistration
   end
 
   private
-    def persist
+    def persist(digest)
       if @existing
         @existing.reload
         raise ActiveRecord::RecordNotUnique if @existing.email_confirmed_at
 
-        @existing.update!(password: @password)
+        @existing.update!(password_digest: digest)
         @existing
       else
-        Account.register!(email: @email_address, password: @password)
+        Account.create!(email: @email_address, password_digest: digest, role: "submitter")
       end
     end
 
