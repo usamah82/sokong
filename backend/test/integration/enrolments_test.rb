@@ -479,7 +479,7 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
   test "a kept point inside several circles assigns the closest staffed locality" do
     closer = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 5_000, created_at: Time.utc(2026, 1, 1))
     staffed = create_locality(name: "Staffed", latitude: 0, longitude: 0.02, radius_metres: 5_000, created_at: Time.utc(2026, 1, 2))
-    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: staffed)
+    link_account(staffed)
 
     post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0), as: :json
 
@@ -558,7 +558,7 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
   test "a matching name keeps a point outside that circle and assigns the staffed circle that covers it" do
     named = create_locality(name: "Block 4", latitude: 0, longitude: 0, radius_metres: 10, created_at: Time.utc(2026, 1, 1))
     staffed = create_locality(name: "Other", latitude: 0, longitude: 1, radius_metres: 200_000, created_at: Time.utc(2026, 1, 2))
-    LocalityAssignment.create!(account_id: SecureRandom.uuid, locality: staffed)
+    link_account(staffed)
 
     post "/enrolments", params: valid_enrolment.merge(place_name: "Block 4", latitude: 0, longitude: 0.25), as: :json
 

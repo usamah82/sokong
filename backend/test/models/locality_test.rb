@@ -268,7 +268,7 @@ class LocalityTest < ActiveSupport::TestCase
     end
 
     def assign(locality)
-      LocalityAssignment.create!(account_id: SecureRandom.uuid, locality:)
+      link_account(locality)
     end
 
     def degrees_east(metres)
