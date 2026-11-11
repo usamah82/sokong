@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. The task loop after `plan-approved` is superseded by ADR-0007.
 
 ## Date
 
