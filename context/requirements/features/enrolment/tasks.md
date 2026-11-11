@@ -179,12 +179,12 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Task 7: Confirm the email
 
-**Description:** Signing up queues one confirmation message after the account commits. The link is `http://localhost:3001/confirm?token=` plus an opaque token. The row stores a SHA-256 digest and expires in 24 hours. Each new message replaces the previous token. `POST /account_verifications` confirms the email, returns `204`, and returns no session token. An unconfirmed account younger than 24 hours stays, including its password, and a new message is queued. An older unconfirmed account is replaced. A confirmed duplicate still returns `422` and sends no mail.
+**Description:** Signing up queues one confirmation message after the account commits. The link is `http://localhost:3001/confirm?token=` plus an opaque token. The row stores a SHA-256 digest and expires in 24 hours. Each new message replaces the previous token. `POST /account_verifications` confirms the email, returns `204`, and returns no session token. Repeating sign-up for an unconfirmed email keeps that account, however recent it is, stores the new password, and queues a new message. A confirmed duplicate still returns `422` and sends no mail.
 
 **Acceptance criteria:**
 - [ ] The message subject is "Confirm your Sokong email" and the body is "Confirm this email address to sign in to Sokong. If you did not sign up, ignore this message." followed by one link. The body has no family name, place, phone, contact, or help. A raised enqueue error still leaves the account saved and returns `201`.
 - [ ] A valid token returns `204`, sets `email_confirmed_at`, and leaves no session token. A second use, a wrong token, or an expired token returns `422` with message "Confirmation link is invalid" and confirms nothing.
-- [ ] Repeating sign-up for an unconfirmed email younger than 24 hours returns `201`, keeps the password, and invalidates the previous link. After 24 hours the new password replaces the old one. A confirmed email returns `422` and sends no mail.
+- [ ] Repeating sign-up for an unconfirmed email returns `201`, stores the new password, and invalidates the previous link, however recent the account is. A confirmed email returns `422`, sends no mail, and leaves the stored password unchanged.
 
 **Verification:**
 - [ ] Tests pass: `cd backend && bin/rails test test/integration/accounts_test.rb test/integration/account_verifications_test.rb`
