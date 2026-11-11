@@ -31,16 +31,18 @@ Cursor loads a skill when the task matches its description, and this repo tells 
 
 ## What you should not automate away
 
-The pack is explicit, and this repo adopts that rule in ADR-0001. You run the sequence. An agent does not hire the next agent.
+ADR-0001 holds through plan approval. ADR-0007 holds after it.
 
-A single "software factory" agent that interviews, codes, and reviews itself will paraphrase the spec at every hop and then approve its own diff. Fresh sessions are the point of the split: the reviewer never saw the implementation chat, only the spec and the diff.
+A single agent that interviews, writes the spec, and then codes will paraphrase a direction nobody accepted. Fresh sessions through `plan-approved` are the point of that split.
 
-Human gates that stay, even later:
+After the plan is approved, the implementer runs the tasks. Review is a subagent with a clean context: it sees the spec and the diff, not the implementation transcript. The implementer does not grade its own diff.
+
+Human gates that stay:
 
 1. Confirm the interview (`intent-confirmed`).
 2. Approve the spec (`spec-approved`) before anyone plans or codes. When the spec has a screen, accept the design screenshots first. Status stays `spec-draft` until that approval.
 3. Approve the plan when there is more than one task.
-4. Merge the pull request. A review agent recommends.
+4. Decide a task-loop stop: a finding that would change the spec or the task, a finding still open after one fix attempt, or the feature branch ready for `main`. The implementer merges each task pull request into `feature/<slug>`.
 5. Deploy to production. No agent holds production credentials by default.
 
 ## Gaps
@@ -51,7 +53,7 @@ These are real. The scaffold does not pretend they are done.
 
 2. **Interview only works with you in the thread.** It is one question at a time. File the confirmed intent before you open the spec session, or the spec session will guess.
 
-3. **Personas do not auto-load.** `code-reviewer`, `security-auditor`, `test-engineer`, and `web-performance-auditor` sit in `.cursor/agents/`. The review prompt tells the agent to read the file.
+3. **Personas are files the implementer spawns.** `code-reviewer`, `security-auditor`, `test-engineer`, and `web-performance-auditor` sit in `.cursor/agents/`. The Run prompt spawns them by those names. A subagent comment is the review record.
 
 4. **Claude Code slash commands are not here.** `/spec`, `/plan`, `/build`, `/review`, and `/ship` belong to that adapter. In Cursor, name the skill or paste the prompt.
 
@@ -69,9 +71,11 @@ These are real. The scaffold does not pretend they are done.
 
 11. **A context tree rots if status is not updated.** The feature README is the board. A session that writes `spec.md` and leaves status at `interviewing` has failed the skill.
 
-12. **Same-session self-review is weak.** Use a second session, or a review bot, on the pull request. Give it the spec path and the diff, not the coding transcript.
+12. **The implementer does not grade its own diff.** It spawns a persona. The persona gets the spec path and the diff.
 
 ## How a feature moves
+
+Diagrams for the sessions, the status machine, the feature branch, and the review passes are in [flows.md](flows.md).
 
 ```
 you have an idea
@@ -82,14 +86,14 @@ you have an idea
   → you approve the spec and, when they exist, the screens
   → plan session writes plan.md and tasks.md and stops
   → you approve
-  → coding session implements one task, opens a PR
-  → a different session reviews against the spec
-  → bin/ci is green
-  → you merge
+  → one implementer runs every remaining task
+  → for each task it opens a pull request into the feature branch, spawns the review personas, applies the act-on findings, and merges
+  → it stops if a finding would change the spec or the task
+  → when no tasks remain, you merge the feature branch to main
   → deploy and monitor only when you have asked for production
 ```
 
-Status names and file paths are in `repo-workflow`.
+Status names and file paths are in `repo-workflow`. Enrolment's task pull requests merge into `feature/enrolment`, which is still ahead of `main`.
 
 ## What is already in place
 
@@ -104,8 +108,7 @@ Status names and file paths are in `repo-workflow`.
 1. Pick a row in `context/product/master-feature-list.md`. Answer the open questions that block it.
 2. Start an interview session with the prompt in `prompts.md`. Answer one question at a time. Confirm the intent file.
 3. Run spec, then design when the spec has a screen, then plan, each in a new session, and approve each.
-4. Let a coding agent implement the first task and open a pull request.
-5. Run a review session that has not seen the coding chat.
-6. Merge only when `bin/ci` is green and the review has no unresolved correctness or security findings.
+4. Paste the Run prompt once. The implementer takes every remaining task, reviews it through the personas, and merges each task pull request into the feature branch.
+5. When it stops with no tasks left, merge the feature branch to `main`.
 
 Leave deploy until that feature needs a server. Write the hosting ADR then, and replace the placeholder in `config/deploy.yml` in the same change.

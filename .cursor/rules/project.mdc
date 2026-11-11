@@ -5,7 +5,7 @@ alwaysApply: true
 
 Before non-trivial work, read and follow `.cursor/skills/repo-workflow/SKILL.md`. Then read `.cursor/skills/using-agent-skills/SKILL.md` and the one skill that matches the phase.
 
-Do not paste a skill into the chat and skip its steps. Do not invent a router agent that calls other agents.
+Do not paste a skill into the chat and skip its steps. Do not invent a router agent that calls other agents. ADR-0007 is the one exception: after `plan-approved`, the implementer may spawn the four review personas named there.
 
 This repo's feature tracker is `context/requirements/features/<slug>/`. Do not create root `tasks/plan.md` or `tasks/todo.md`.
 

@@ -36,11 +36,12 @@ Copy `context/requirements/features/_template/` to `context/requirements/feature
 | Spec | `spec-driven-development` | `spec.md`. Then stop. |
 | Design | `frontend-ui-engineering` | When the spec has a screen: `design.md`, `design/preview.html`, and 390px screenshots. Then stop. Status stays `spec-draft`. |
 | Plan | `planning-and-task-breakdown` | `plan.md` and `tasks.md`. Then stop for plan approval if more than one task remains. |
-| Implement | `incremental-implementation` and `test-driven-development` | Code, tests, and checked tasks. One task at a time. |
+| Implement | `incremental-implementation` and `test-driven-development` | Code, tests, and checked tasks. After `plan-approved`, every remaining task, per ADR-0007. |
 | API shape | `api-and-interface-design` | Contract notes in `spec.md` before the controller exists. |
-| Review | `code-review-and-quality` | A review comment on the PR. Read `.cursor/agents/code-reviewer.md` and follow it. Do not edit the code you are reviewing unless the human asked you to fix findings. |
-| Security pass | `security-and-hardening` | Read `.cursor/agents/security-auditor.md`. |
-| Test gap pass | `test-driven-development` | Read `.cursor/agents/test-engineer.md`. |
+| Review | `code-review-and-quality` | A review comment on the task PR. The implementer spawns `code-reviewer`. The persona does not edit the branch. |
+| Security pass | `security-and-hardening` | The implementer spawns `security-auditor` when a review says the diff needs it. Comment only. |
+| Test gap pass | `test-driven-development` | The implementer spawns `test-engineer` when a review says coverage is short. Comment only. |
+| Performance pass | `performance-optimization` | The implementer spawns `web-performance-auditor` when a review says performance needs a pass. Comment only. |
 | Debug | `debugging-and-error-recovery` | A failing test first, then the fix. |
 | Decision | `documentation-and-adrs` | The next `context/decisions/NNNN-title.md`. |
 | Ship | `shipping-and-launch` and `ci-cd-and-automation` | Only after a human asks to deploy. Production host is not decided. |
@@ -60,6 +61,8 @@ Set `Status` in the feature `README.md` to exactly one of:
 
 Only a human moves a feature to `intent-confirmed`, `spec-approved`, `plan-approved`, or `done`. An agent may set `spec-draft`, `planning`, `implementing`, and `in-review` when it finishes that phase's artifact.
 
+After `plan-approved`, status stays `implementing` across task merges. `in-review` means the loop stopped for the human: a spec or task change, a finding that survived one fix attempt, or no tasks left.
+
 ## Gates
 
 Stop the turn, even if you could keep going:
@@ -68,16 +71,20 @@ Stop the turn, even if you could keep going:
 - After `spec.md` is saved. Do not plan or write code. This matches `spec-driven-development`.
 - After the design screenshots, when the spec has a screen. Do not plan or write product code. A picture that changes behavior is written back into `spec.md`. Status stays `spec-draft` until the human approves the spec.
 - After the plan, when more than one task is left. A single small task may be implemented in a later turn of the same session only if the human already approved the spec and asked you to build it.
-- Before merging. A review from a fresh session recommends. The human merges.
+- During the task loop, when a finding can be fixed only by changing `spec.md` or that task's acceptance. Say so in the feature README and set `in-review`. Leave the spec unchanged.
+- During the task loop, when the same act-on finding is still open after one fix attempt. Set `in-review` and name the finding.
+- When no unchecked tasks remain. Set `in-review`. The human merges `feature/<slug>` into `main`, then sets `done`.
 - Before any production deploy.
 
 A typo, a failing test for already-accepted behavior, or a dependency bump does not need a new feature folder. Name the existing spec or ADR in the commit instead.
 
-## Agents do not hire agents
+## Who starts the next session
 
-You are one role for this session. Do not spawn another persona to continue the lifecycle. The upstream rule is in `.cursor/references/orchestration-patterns.md`: the human runs the next session. If a follow-up is needed, name it in your final message and point at `context/workflow/prompts.md`.
+Through plan approval, you are one role. Do not spawn another persona to continue the lifecycle. The human runs the next session. If a follow-up is needed, name it in your final message and point at `context/workflow/prompts.md`.
 
-Review, security, and test passes on one pull request are the exception the upstream pack allows: independent reports on the same diff, merged by the session the human started for that review. Do that only when the human asked for a ship or review pass.
+After `plan-approved`, ADR-0007 is the exception. The implementer runs every remaining task and may spawn `code-reviewer`, `security-auditor`, `test-engineer`, and `web-performance-auditor`. Those four comment on the task pull request and do not edit the branch, and they do not spawn anyone. The implementer merges that pull request into `feature/<slug>`. The human merges that branch into `main`.
+
+The vendored note in `.cursor/references/orchestration-patterns.md` still says personas do not call personas. This section is the repo's exception. Do not edit that file.
 
 ## Decisions, how-tos, postmortems
 

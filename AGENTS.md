@@ -1,6 +1,8 @@
 # Agents
 
-You are one phase of a feature, not the whole lifecycle. The human starts the next session.
+You are one phase of a feature until the plan is approved. The human starts the next session through that point.
+
+After `plan-approved`, you are the implementer for every remaining task. ADR-0007 is the rule. Spawn only `code-reviewer`, `security-auditor`, `test-engineer`, and `web-performance-auditor`. They comment on the task pull request and stop. You merge that pull request into the feature branch. The human is next when the spec or the task would have to change, or when the feature branch is ready for `main`.
 
 ## Read first
 
@@ -8,7 +10,7 @@ You are one phase of a feature, not the whole lifecycle. The human starts the ne
 2. `.cursor/skills/repo-workflow/SKILL.md`
 3. The feature README if the prompt names a slug
 
-Then follow the upstream skill that `repo-workflow` names for this phase. Skills live in `.cursor/skills/`. Personas live in `.cursor/agents/` and are not loaded automatically. Read the persona file only when the prompt tells you to review, audit, or hunt for tests.
+Then follow the upstream skill that `repo-workflow` names for this phase. Skills live in `.cursor/skills/`. Personas live in `.cursor/agents/`. The implementer spawns one by name. Any other session reads a persona file only when its prompt says to.
 
 ## Hard stops
 

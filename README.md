@@ -42,14 +42,13 @@ bin/ci
 
 ## Start a feature
 
-Use a fresh agent session per phase. Prompts are in [context/workflow/prompts.md](context/workflow/prompts.md). The short version:
+Use a fresh session for interview, spec, design, and plan. After you approve the plan, paste Run once. Prompts are in [context/workflow/prompts.md](context/workflow/prompts.md). The short version:
 
 1. Interview, until you confirm `intent.md`.
 2. Spec, until `spec.md` is a draft.
 3. Design, when the spec has a screen, until you accept the screenshots. Then approve the spec.
 4. Plan, until you approve the tasks.
-5. Implement one task and open a pull request.
-6. Review in a different session.
-7. Merge when `bin/ci` is green.
+5. Paste the Run prompt once. The implementer takes every remaining task and merges each one into the feature branch.
+6. Merge the feature branch to `main` when that session stops with no tasks left.
 
 Deploy waits until you ask for it, and until an ADR names a real host. The address in `backend/config/deploy.yml` is a placeholder.
