@@ -536,14 +536,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Stage 3 collects anyone besides the head. Zero other members is valid and Next is available immediately. Add a person inserts the same fields as the head, and that person needs a non-blank name before Next. Added people can be removed. The head is not on this stage.
 
 **Acceptance criteria:**
-- [ ] Next works with no added people. An added person with a blank name blocks Next. Remove drops that person and keeps the others.
-- [ ] Each added person has the same fields and the same gender, age, and working rules as the head.
-- [ ] Back returns to stage 2 with the added people intact. The component test covers zero people, one named person, and remove.
+- [x] Next works with no added people. An added person with a blank name blocks Next. Remove drops that person and keeps the others.
+- [x] Each added person has the same fields and the same gender, age, and working rules as the head.
+- [x] Back returns to stage 2 with the added people intact. The component test covers zero people, one named person, and remove.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: at 390 CSS pixels, add a person, leave the name blank, fill it, go back, and confirm the person is still there.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: at 390 CSS pixels, add a person, leave the name blank, fill it, go back, and confirm the person is still there.
 
 **Dependencies:** Task 18
 
