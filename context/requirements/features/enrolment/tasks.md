@@ -617,14 +617,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `/confirm` reads `token` from the query string and posts it to `POST /account_verifications`. A `204` shows "This email is confirmed. Sign in." and a Sign in control. A `422` shows "Confirmation link is invalid" and a Sign up control. The token is not shown. The page does not write `sessionStorage`.
 
 **Acceptance criteria:**
-- [ ] A valid token shows "This email is confirmed. Sign in." and does not store `sokong.token`.
-- [ ] An invalid, used, or expired token shows "Confirmation link is invalid".
-- [ ] At 390 CSS pixels the page does not scroll horizontally.
+- [x] A valid token shows "This email is confirmed. Sign in." and does not store `sokong.token`.
+- [x] An invalid, used, or expired token shows "Confirmation link is invalid".
+- [x] At 390 CSS pixels the page does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: open a real confirmation link at 390 CSS pixels, then open it again and confirm the invalid sentence.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: open a real confirmation link at 390 CSS pixels, then open it again and confirm the invalid sentence.
 
 **Dependencies:** Tasks 7 and 22
 
