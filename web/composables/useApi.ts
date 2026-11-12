@@ -10,6 +10,28 @@ type AccountResult = { ok: true } | { ok: false, message: string, field: Account
 
 type ConfirmResult = { ok: true } | { ok: false, reason: 'invalid' | 'limited' }
 
+type Look = {
+  id: string
+  worker_name: string
+  looked_at: string
+  note: string
+}
+
+export type SubmitterEnrolment = {
+  id: string
+  place_name: string
+  members: { name: string, role: string }[]
+  progress: {
+    case_in: boolean
+    looks: Look[]
+    visit_at: string | null
+  }
+}
+
+type EnrolmentListResult = { ok: true, enrolments: SubmitterEnrolment[] } | { ok: false, reason: 'unauthenticated' }
+
+type EnrolmentDetailResult = { ok: true, enrolment: SubmitterEnrolment } | { ok: false, reason: 'unauthenticated' | 'missing' }
+
 const accountFields: AccountField[] = [ 'email', 'password', 'password_confirmation' ]
 
 export function useApi() {
@@ -74,6 +96,35 @@ export function useApi() {
       if (response.status === 429) return { ok: false, reason: 'limited' }
       if (response.status === 422) return { ok: false, reason: 'invalid' }
       throw new Error('email was not confirmed')
+    },
+
+    async listEnrolments(): Promise<EnrolmentListResult> {
+      const response = await authorizedGet('/enrolments', config.public.apiBase)
+      if (response.status === 200) {
+        return { ok: true, enrolments: await response.json() as SubmitterEnrolment[] }
+      }
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated' }
+      throw new Error('enrolments were not read')
+    },
+
+    async readEnrolment(id: string): Promise<EnrolmentDetailResult> {
+      const response = await authorizedGet(`/enrolments/${id}`, config.public.apiBase)
+      if (response.status === 200) {
+        return { ok: true, enrolment: await response.json() as SubmitterEnrolment }
+      }
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated' }
+      if (response.status === 404) return { ok: false, reason: 'missing' }
+      throw new Error('enrolment was not read')
     }
   }
+}
+
+function authorizedGet(path: string, apiBase: string) {
+  const token = sessionStorage.getItem('sokong.token')
+  return fetch(new URL(path, apiBase), {
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  })
 }
