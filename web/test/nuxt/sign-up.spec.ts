@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SignUpPage from '../../pages/sign-up.vue'
 
 const checkEmail = 'Check your email to confirm this address. Then sign in.'
@@ -37,12 +37,21 @@ async function fill(page: Awaited<ReturnType<typeof mountSuspended>>, confirmati
 }
 
 describe('sign up', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
   it('asks the enroler to check the typed email and stores no token', async () => {
-    const calls = stubAccount(201, { account: { id: 'account-1', email: 'siti@example.com', role: 'submitter' } })
+    const calls = stubAccount(201, {
+      account: { id: 'account-1', email: 'siti@example.com', role: 'submitter' },
+      token: 'secret-token'
+    })
     sessionStorage.setItem('other', 'kept')
     const page = await mountSuspended(SignUpPage)
 
     expect(page.text()).toContain('Sign up')
+    expect(page.get('#password').attributes('type')).toBe('password')
+    expect(page.get('#password-confirmation').attributes('type')).toBe('password')
     expect(page.text()).toContain('Email')
     expect(page.text()).toContain('Password')
     expect(page.text()).toContain('Password confirmation')
@@ -67,6 +76,8 @@ describe('sign up', () => {
     })
     expect(request.json).not.toHaveProperty('role')
     expect(page.text()).toContain('siti@example.com')
+    expect(page.text()).not.toContain('secret-token')
+    expect(page.text()).not.toContain('correct horse battery staple')
     expect(page.find('#create-account').exists()).toBe(false)
     expect(page.find('#password').exists()).toBe(false)
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
@@ -112,6 +123,106 @@ describe('sign up', () => {
     expect(page.text()).not.toContain('Password confirmation does not match')
     expect(page.text()).toContain('Sign up')
     expect(limited).toHaveLength(1)
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('puts the API message on the first named field and ignores a stored token', async () => {
+    sessionStorage.setItem('sokong.token', 'already-here')
+    const calls = stubAccount(422, {
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Email has already been taken',
+        details: { email: [ 'has already been taken' ], password: [ 'is too short' ] }
+      }
+    })
+    const page = await mountSuspended(SignUpPage)
+    await fill(page, 'short')
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('Email has already been taken')
+    })
+    expect(page.get('#email').attributes('aria-invalid')).toBe('true')
+    expect(page.get('#password').attributes('aria-invalid')).toBeUndefined()
+    expect(page.get('#password-confirmation').attributes('aria-invalid')).toBeUndefined()
+    expect(page.get('#email').element.parentElement?.textContent).toContain('Email has already been taken')
+    expect(page.find('.notice').exists()).toBe(false)
+    expect(sessionStorage.getItem('sokong.token')).toBe('already-here')
+    expect(calls[0]!.json.password).toBe('correct horse battery staple')
+
+    stubAccount(422, {
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Password is too short',
+        details: { password: [ 'is too short' ] }
+      }
+    })
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => {
+      expect(page.get('#password').attributes('aria-invalid')).toBe('true')
+    })
+    expect(page.get('#password').element.parentElement?.textContent).toContain('Password is too short')
+    expect(page.get('#email').attributes('aria-invalid')).toBeUndefined()
+    expect(page.find('.notice').exists()).toBe(false)
+    expect(page.text()).not.toContain(checkEmail)
+    expect(sessionStorage.getItem('sokong.token')).toBe('already-here')
+    vi.unstubAllGlobals()
+  })
+
+  it('sends one post while sign-up is in flight', async () => {
+    const calls: number[] = []
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      calls.push(1)
+      await gate
+      return {
+        ok: true,
+        status: 201,
+        json: async () => ({ account: { id: 'account-1' }, token: 'secret-token' })
+      }
+    }))
+    const page = await mountSuspended(SignUpPage)
+    await fill(page)
+    const pending = page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    expect(page.get('#create-account').attributes('disabled')).toBeDefined()
+    await page.get('form').trigger('submit')
+    expect(calls).toHaveLength(1)
+    release()
+    await pending
+    await vi.waitFor(() => expect(page.text()).toContain(checkEmail))
+    expect(page.text()).not.toContain('secret-token')
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('stays on the form when the account is not created', async () => {
+    stubAccount(500, { error: { message: 'Something else' } })
+    const page = await mountSuspended(SignUpPage)
+    await fill(page)
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => {
+      expect(page.get('#create-account').attributes('disabled')).toBeUndefined()
+    })
+    expect(page.text()).toContain('Sign up')
+    expect(page.text()).not.toContain(checkEmail)
+    expect(page.get<HTMLInputElement>('#email').element.value).toBe('siti@example.com')
+    expect(page.get<HTMLInputElement>('#password').element.value).toBe('correct horse battery staple')
+    expect(page.get<HTMLInputElement>('#password-confirmation').element.value).toBe('correct horse battery staple')
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new Error('offline')
+    }))
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => {
+      expect(page.get('#create-account').attributes('disabled')).toBeUndefined()
+    })
+    expect(page.text()).not.toContain(checkEmail)
+    expect(page.get<HTMLInputElement>('#password').element.value).toBe('correct horse battery staple')
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
     vi.unstubAllGlobals()
   })
