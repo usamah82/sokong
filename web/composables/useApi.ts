@@ -28,9 +28,55 @@ export type SubmitterEnrolment = {
   }
 }
 
-type EnrolmentListResult = { ok: true, enrolments: SubmitterEnrolment[] } | { ok: false, reason: 'unauthenticated' }
+export type WorkerSummary = {
+  id: string
+  submitted_at: string
+  place_name: string
+  head_name: string
+  enroler_contact: string
+  on_behalf: boolean
+  locality: { id: string, name: string }
+}
 
-type EnrolmentDetailResult = { ok: true, enrolment: SubmitterEnrolment } | { ok: false, reason: 'unauthenticated' | 'missing' }
+export type WorkerMember = {
+  id: string
+  role: string
+  name: string
+  age: number | null
+  gender: string
+  description: string
+  in_education: boolean
+  working: boolean
+  job: string
+  monthly_amount: number | null
+}
+
+export type WorkerDetail = WorkerSummary & {
+  email: string
+  how_to_find: string
+  family_phone: string
+  help: string[]
+  other_help: string
+  consent_text: string
+  latitude: number | null
+  longitude: number | null
+  members: WorkerMember[]
+  looks: Look[]
+  visit_at: string | null
+}
+
+type EnrolmentListResult =
+  | { ok: true, enrolments: Array<SubmitterEnrolment | WorkerSummary> }
+  | { ok: false, reason: 'unauthenticated' | 'unlinked' }
+
+type EnrolmentDetailResult =
+  | { ok: true, kind: 'submitter', enrolment: SubmitterEnrolment }
+  | { ok: true, kind: 'worker', enrolment: WorkerDetail }
+  | { ok: false, reason: 'unauthenticated' | 'missing' }
+
+type LookResult =
+  | { ok: true, look: Look }
+  | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
 
 const accountFields: AccountField[] = [ 'email', 'password', 'password_confirmation' ]
 
@@ -101,20 +147,41 @@ export function useApi() {
     async listEnrolments(): Promise<EnrolmentListResult> {
       const response = await authorizedGet('/enrolments', config.public.apiBase)
       if (response.status === 200) {
-        return { ok: true, enrolments: await response.json() as SubmitterEnrolment[] }
+        return { ok: true, enrolments: await response.json() as Array<SubmitterEnrolment | WorkerSummary> }
       }
       if (response.status === 401) return { ok: false, reason: 'unauthenticated' }
+      if (response.status === 403) return { ok: false, reason: 'unlinked' }
       throw new Error('enrolments were not read')
     },
 
     async readEnrolment(id: string): Promise<EnrolmentDetailResult> {
       const response = await authorizedGet(`/enrolments/${id}`, config.public.apiBase)
       if (response.status === 200) {
-        return { ok: true, enrolment: await response.json() as SubmitterEnrolment }
+        const enrolment = await response.json() as SubmitterEnrolment | WorkerDetail
+        if ('progress' in enrolment) return { ok: true, kind: 'submitter', enrolment }
+        return { ok: true, kind: 'worker', enrolment }
       }
       if (response.status === 401) return { ok: false, reason: 'unauthenticated' }
       if (response.status === 404) return { ok: false, reason: 'missing' }
       throw new Error('enrolment was not read')
+    },
+
+    async addLook(id: string, note: string): Promise<LookResult> {
+      const token = sessionStorage.getItem('sokong.token')
+      const response = await fetch(new URL(`/enrolments/${id}/looks`, config.public.apiBase), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ note })
+      })
+      if (response.status === 201) return { ok: true, look: await response.json() as Look }
+      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
+      if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
+      throw new Error('note was not saved')
     }
   }
 }

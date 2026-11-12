@@ -5,6 +5,16 @@ class EnrolmentsController < ApplicationController
     require_account
     return if performed?
 
+    if current_account.role == "worker" && !current_account.locality_assignments.exists?
+      render json: {
+        error: {
+          code: "FORBIDDEN",
+          message: "No locality is linked to this account."
+        }
+      }, status: :forbidden
+      return
+    end
+
     render json: visible_enrolments.map { |enrolment|
       current_account.role == "worker" ? worker_summary_json(enrolment) : enrolment_json(enrolment)
     }

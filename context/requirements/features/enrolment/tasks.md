@@ -296,7 +296,7 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Acceptance criteria:**
 - [x] The linked worker's list returns `id`, `submitted_at`, `place_name`, `head_name`, `enroler_contact`, `on_behalf`, and `locality`, newest first, and inserts no look.
 - [x] The first detail read returns the family fields and one empty-note look. The second detail read returns that same look once. `visit_at` stays null. No mail is queued.
-- [x] A worker with no link to that locality, and a submitter requesting the worker-only fields by guessing, receives `404`. A worker with no links who lists enrolments receives `200` and an empty array.
+- [x] A worker with no link to that locality, and a submitter requesting the worker-only fields by guessing, receives `404`. A worker with no links who lists enrolments receives `403` with code `FORBIDDEN` and message "No locality is linked to this account." A linked worker with no enrolments receives `200` and an empty array.
 
 **Verification:**
 - [x] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`

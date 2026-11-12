@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { SubmitterEnrolment } from '../../composables/useApi'
+import type { SubmitterEnrolment, WorkerDetail } from '../../composables/useApi'
 
 const route = useRoute()
 const enrolment = ref<SubmitterEnrolment | null>(null)
+const worker = ref<WorkerDetail | null>(null)
 const missing = ref(false)
 const { hasToken, clearToken } = useAuth()
 const { readEnrolment } = useApi()
@@ -33,7 +34,8 @@ onMounted(async () => {
       missing.value = true
       return
     }
-    enrolment.value = result.enrolment
+    if (result.kind === 'worker') worker.value = result.enrolment
+    else enrolment.value = result.enrolment
   } catch {
     // A failed read leaves the token so a reload can try again.
   }
@@ -44,6 +46,7 @@ onMounted(async () => {
   <main class="phone">
     <p class="mark">{{ t('progress.mark') }}</p>
     <h1 v-if="missing">{{ t('progress.missing') }}</h1>
+    <WorkerCase v-else-if="worker" :enrolment="worker" />
     <template v-else-if="enrolment">
       <h1 v-if="looks.length === 0 && noVisit">{{ t('progress.quiet') }}</h1>
       <template v-else>

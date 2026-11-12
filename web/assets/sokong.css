@@ -157,6 +157,10 @@ button.block {
   overflow-wrap: anywhere;
 }
 
+.worker-case p, .look, .help {
+  overflow-wrap: anywhere;
+}
+
 .look { margin: 0 0 16px; }
 
 .look p, .worker { margin: 0 0 4px; }

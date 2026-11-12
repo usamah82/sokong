@@ -238,7 +238,7 @@ The enrolment form is a wizard of four stages. Back and Next move one stage. Typ
 24. Opening a worker's list does not record a look. The first authorized detail read by that worker records one look with the worker's name, the time, and an empty note. A note is `POST` with non-blank text up to 2000 characters and appends a new look. The submitter sees looks in time order.
 25. `visit_at` is null on every enrolment this feature creates or updates.
 26. The invitation subject is "Sokong enrolment". The body is "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set." It is queued at most once, only when an email was submitted.
-27. A worker with no linked locality sees "No locality is linked to this account." A linked worker with no enrolments sees "No enrolments yet."
+27. A worker with no linked locality sees "No locality is linked to this account." `GET /enrolments` for that worker returns `403` with code `FORBIDDEN` and that message, and no `details`. A linked worker with no enrolments receives `200` and an empty array, and sees "No enrolments yet."
 28. Anonymous detail and list requests return 401. An authenticated request for a record that account must not see returns 404 with `NOT_FOUND` and no further detail. Validation failures return 422 with this shape:
 
 ```json
@@ -290,7 +290,7 @@ JSON keys are snake_case. Times are ISO 8601 UTC. Ids are UUIDs. Paths are unver
 
 `POST /sessions` with `email` and `password`. `200` returns `token` and `account` (`id`, `email`, `role`) when the account is confirmed. `DELETE /sessions` with a valid token returns `204` and revokes it. The token stays valid until that revocation.
 
-`GET /enrolments` and `GET /enrolments/:id` require a token. A submitter's detail is the `201` shape plus looks (`id`, `worker_name`, `looked_at`, `note`). A worker's list items are `id`, `submitted_at`, `place_name`, `head_name`, `enroler_contact`, `on_behalf`, and `locality` (`id`, `name`). A worker's detail adds the family fields, `email`, `how_to_find`, `family_phone`, `help`, `other_help`, `consent_text`, coordinates when stored, `members`, and `looks`. The first worker detail read for that pair creates the empty-note look before the response is sent.
+`GET /enrolments` and `GET /enrolments/:id` require a token. A worker with no locality assignment receives `403` from the list, with code `FORBIDDEN` and message "No locality is linked to this account." A linked worker with nothing to show receives `200` and an empty array. A submitter's detail is the `201` shape plus looks (`id`, `worker_name`, `looked_at`, `note`). A worker's list items are `id`, `submitted_at`, `place_name`, `head_name`, `enroler_contact`, `on_behalf`, and `locality` (`id`, `name`). A worker's detail adds the family fields, `email`, `how_to_find`, `family_phone`, `help`, `other_help`, `consent_text`, coordinates when stored, `members`, and `looks`. The first worker detail read for that pair creates the empty-note look before the response is sent.
 
 `POST /enrolments/:id/looks` with `{ "note": "Called the enroler, no answer" }` is worker-only for a locality they are linked to. `201` returns the look. A submitter receives 404.
 
