@@ -587,3 +587,288 @@ async function clickLabel(page: Awaited<ReturnType<typeof mountSuspended>>, labe
   if (!button) throw new Error(`${label} is missing`)
   await button.trigger('click')
 }
+
+const caseIn = 'This case is in. No visit is set.'
+const signUpSentence = 'Sign up with this email to see who has looked and whether a visit is set.'
+const selfConsent = 'Submission means the family consents. That consent is confirmed at the verification visit.'
+const behalfConsent = 'This case is valid and will be checked at a visit. It may not be enrolled unless the family consents then.'
+
+type CapturedRequest = {
+  url: string
+  method: string
+  authorization: string | null
+  json: Record<string, unknown>
+}
+
+function stubEnrolment(status: number, body: unknown) {
+  const calls: CapturedRequest[] = []
+  let release = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const headers = new Headers(init?.headers)
+    calls.push({
+      url: String(input),
+      method: init?.method ?? 'GET',
+      authorization: headers.get('Authorization'),
+      json: JSON.parse(String(init?.body)) as Record<string, unknown>
+    })
+    await gate
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => body
+    }
+  }))
+  return { calls, release }
+}
+
+describe('notes for the community worker', () => {
+  it('walks every stage and confirms the case, including the sign-up sentence', async () => {
+    const { calls, release } = stubEnrolment(201, { id: 'case-1' })
+    const page = await mountSuspended(IndexPage)
+
+    await page.get('#phone').setValue('+60 12-345 6789')
+    await page.get('#email').setValue('siti@example.com')
+    await page.get('button.primary').trigger('click')
+    expect(page.get<HTMLInputElement>('#family-phone').element.value).toBe('+60 12-345 6789')
+
+    await goBack(page)
+    await page.get('#phone').setValue('012-345 6789')
+    await page.get('button.primary').trigger('click')
+    expect(page.get<HTMLInputElement>('#family-phone').element.value).toBe('012-345 6789')
+
+    await page.get('#place').setValue('Block 4')
+    await page.get('#head-name').setValue('Aminah')
+    await page.get('#age').setValue('34')
+    await page.get('input[value="female"]').setValue(true)
+    await page.get('#description').setValue('Runs a food stall at night.')
+    expect(Number(page.get('#description').attributes('rows'))).toBeGreaterThanOrEqual(3)
+    await page.get('#education').setValue(true)
+    await page.get('#working').setValue(true)
+    await page.get('#job').setValue('Food stall')
+    await page.get('#amount').setValue('800')
+    await page.get('button.primary').trigger('click')
+
+    await clickLabel(page, 'Add a person')
+    expect(page.get<HTMLInputElement>('input[name="member-0-gender"][value="unspecified"]').element.checked).toBe(true)
+    await page.get('#member-0-name').setValue('Sarah')
+    await page.get('#member-0-age').setValue('15')
+    await page.get('button.primary').trigger('click')
+
+    expect(page.text()).toContain('Notes for the community worker')
+    expect(page.text()).toContain('Step 4 of 4')
+    expect(page.text()).toContain('Food')
+    expect(page.text()).toContain('Clothing')
+    expect(page.text()).toContain('School supplies')
+    expect(page.text()).toContain('Help applying to a body (for example social security, welfare, or a tithe body)')
+    expect(Number(page.get('#how-to-find').attributes('rows'))).toBeGreaterThanOrEqual(3)
+    expect(Number(page.get('#other-help').attributes('rows'))).toBeGreaterThanOrEqual(3)
+    expect(page.get('#submit').attributes('disabled')).toBeUndefined()
+
+    await page.get('#how-to-find').setValue('Blue door beside the food stall.')
+    await page.get('#other-help').setValue('A school uniform')
+    await page.get('input[value="school_supplies"]').setValue(true)
+    await page.get('input[value="food"]').setValue(true)
+    await goBack(page)
+    expect(page.text()).toContain('Step 3 of 4')
+    await page.get('button.primary').trigger('click')
+    expect(page.get<HTMLTextAreaElement>('#how-to-find').element.value).toBe('Blue door beside the food stall.')
+    expect(page.get<HTMLTextAreaElement>('#other-help').element.value).toBe('A school uniform')
+    expect(page.get<HTMLInputElement>('input[value="food"]').element.checked).toBe(true)
+    expect(page.get<HTMLInputElement>('input[value="clothing"]').element.checked).toBe(false)
+
+    const pending = page.get('#submit').trigger('click')
+    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    await page.get('#submit').trigger('click')
+    expect(calls).toHaveLength(1)
+    release()
+    await pending
+    await vi.waitFor(() => {
+      expect(page.text()).toContain(caseIn)
+    })
+
+    const request = calls[0]!
+    const url = new URL(request.url)
+    expect(url.origin).toBe('http://localhost:3000')
+    expect(url.pathname).toBe('/enrolments')
+    expect(request.method).toBe('POST')
+    expect(request.authorization).toBeNull()
+    expect(request.json).toEqual({
+      on_behalf: false,
+      consent_text: selfConsent,
+      enroler_contact: '012-345 6789',
+      email: 'siti@example.com',
+      place_name: 'Block 4',
+      family_phone: '012-345 6789',
+      how_to_find: 'Blue door beside the food stall.',
+      help: [ 'food', 'school_supplies' ],
+      other_help: 'A school uniform',
+      members: [
+        {
+          role: 'head',
+          name: 'Aminah',
+          age: 34,
+          gender: 'female',
+          description: 'Runs a food stall at night.',
+          in_education: true,
+          working: true,
+          job: 'Food stall',
+          monthly_amount: 800
+        },
+        {
+          role: 'member',
+          name: 'Sarah',
+          age: 15,
+          gender: 'unspecified',
+          description: '',
+          in_education: false,
+          working: false
+        }
+      ]
+    })
+
+    expect(page.text()).toContain(caseIn)
+    expect(page.text()).toContain(signUpSentence)
+    expect(page.text()).toContain('siti@example.com')
+    expect(page.text()).not.toContain('Step 4 of 4')
+    expect(page.find('#submit').exists()).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('omits the sign-up sentence when no email was entered', async () => {
+    const { calls, release } = stubEnrolment(201, { id: 'case-2' })
+    const page = await mountSuspended(IndexPage)
+    await page.get('input[value="behalf"]').setValue(true)
+    await page.get('#phone').setValue('+60 12-345 6789')
+    await page.get('button.primary').trigger('click')
+    expect(page.get<HTMLInputElement>('#family-phone').element.value).toBe('')
+    await page.get('#place').setValue('Block 4')
+    await page.get('#head-name').setValue('Aminah')
+    await page.get('button.primary').trigger('click')
+    await page.get('button.primary').trigger('click')
+    const pending = page.get('#submit').trigger('click')
+    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    release()
+    await pending
+    await vi.waitFor(() => {
+      expect(page.text()).toContain(caseIn)
+    })
+
+    expect(calls[0]!.json).toMatchObject({
+      on_behalf: true,
+      consent_text: behalfConsent,
+      family_phone: '',
+      how_to_find: '',
+      help: [],
+      other_help: ''
+    })
+    expect(calls[0]!.json.members).toEqual([
+      {
+        role: 'head',
+        name: 'Aminah',
+        gender: 'unspecified',
+        description: '',
+        in_education: false,
+        working: false
+      }
+    ])
+    expect(calls[0]!.json).not.toHaveProperty('email')
+    expect(calls[0]!.json).not.toHaveProperty('latitude')
+    expect(calls[0]!.json).not.toHaveProperty('longitude')
+    expect(page.text()).toContain(caseIn)
+    expect(page.text()).not.toContain(signUpSentence)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the API message and keeps stage 4 when the enrolment is rejected', async () => {
+    const { calls, release } = stubEnrolment(422, {
+      error: { code: 'VALIDATION_ERROR', message: 'Age is not an integer', details: { members: [ 'age is not an integer' ] } }
+    })
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#place').setValue('Block 4')
+    await page.get('#head-name').setValue('Aminah')
+    await page.get('#age').setValue('about 800')
+    await page.get('button.primary').trigger('click')
+    await page.get('button.primary').trigger('click')
+    await page.get('#how-to-find').setValue('Blue door')
+    const pending = page.get('#submit').trigger('click')
+    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    release()
+    await pending
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('Age is not an integer')
+    })
+
+    expect(calls[0]!.json.members).toEqual([
+      expect.objectContaining({ role: 'head', name: 'Aminah', age: 'about 800' })
+    ])
+    expect(page.text()).toContain('Age is not an integer')
+    expect(page.text()).toContain('Notes for the community worker')
+    expect(page.text()).not.toContain(caseIn)
+    expect(page.get<HTMLTextAreaElement>('#how-to-find').element.value).toBe('Blue door')
+    await goBack(page)
+    await goBack(page)
+    expect(page.get<HTMLInputElement>('#age').element.value).toBe('about 800')
+    expect(page.get<HTMLInputElement>('#head-name').element.value).toBe('Aminah')
+    vi.unstubAllGlobals()
+  })
+
+  it('sends the device point only while the place is still the suggested name', async () => {
+    const calls: CapturedRequest[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (!init?.body) {
+        return { ok: true, status: 200, json: async () => ({ locality: { name: 'Block 4' } }) }
+      }
+      calls.push({
+        url,
+        method: init.method ?? 'GET',
+        authorization: new Headers(init.headers).get('Authorization'),
+        json: JSON.parse(String(init.body)) as Record<string, unknown>
+      })
+      return { ok: true, status: 201, json: async () => ({ id: 'case-3' }) }
+    }))
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition(success: PositionCallback) {
+          success({ coords: { latitude: 3.1, longitude: 101.7 } } as GeolocationPosition)
+        }
+      }
+    })
+
+    const suggested = await mountSuspended(IndexPage)
+    await openFamily(suggested)
+    await suggested.get('#use-location').trigger('click')
+    await vi.waitFor(() => {
+      expect(suggested.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    })
+    await suggested.get('#head-name').setValue('Aminah')
+    await suggested.get('button.primary').trigger('click')
+    await suggested.get('button.primary').trigger('click')
+    await suggested.get('#submit').trigger('click')
+    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    expect(calls[0]!.json.latitude).toBe(3.1)
+    expect(calls[0]!.json.longitude).toBe(101.7)
+
+    const renamed = await mountSuspended(IndexPage)
+    await openFamily(renamed)
+    await renamed.get('#use-location').trigger('click')
+    await vi.waitFor(() => {
+      expect(renamed.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    })
+    await renamed.get('#place').setValue('Somewhere else')
+    await renamed.get('#head-name').setValue('Aminah')
+    await renamed.get('button.primary').trigger('click')
+    await renamed.get('button.primary').trigger('click')
+    await renamed.get('#submit').trigger('click')
+    await vi.waitFor(() => expect(calls).toHaveLength(2))
+    expect(calls[1]!.json).not.toHaveProperty('latitude')
+    expect(calls[1]!.json).not.toHaveProperty('longitude')
+    expect(calls[1]!.json.place_name).toBe('Somewhere else')
+    vi.unstubAllGlobals()
+  })
+})

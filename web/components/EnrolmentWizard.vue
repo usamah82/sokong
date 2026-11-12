@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { FamilyMember } from './MemberFields.vue'
+import { enrolmentPayload } from '../utils/enrolment'
 
 const stage = ref(1)
 const mode = ref<'self' | 'behalf'>('self')
@@ -11,7 +12,7 @@ const latitude = ref<number | null>(null)
 const longitude = ref<number | null>(null)
 const suggestion = ref<null | { kind: 'suggested', name: string } | { kind: 'renamed' } | { kind: 'read' }>(null)
 const locationRequest = ref(0)
-const { suggestLocality } = useApi()
+const { suggestLocality, submitEnrolment } = useApi()
 const familyPhone = ref('')
 const familyPhoneTouched = ref(false)
 const head = ref<FamilyMember>({
@@ -25,6 +26,12 @@ const head = ref<FamilyMember>({
   amount: ''
 })
 const others = ref<FamilyMember[]>([])
+const howToFind = ref('')
+const otherHelp = ref('')
+const help = ref<string[]>([])
+const confirmed = ref(false)
+const submitError = ref('')
+const submitting = ref(false)
 const { t } = useI18n()
 
 watch(place, (value) => {
@@ -63,6 +70,38 @@ function useLocation() {
   }, () => {})
 }
 
+async function submit() {
+  if (submitting.value) return
+  submitting.value = true
+  submitError.value = ''
+  try {
+    const result = await submitEnrolment(enrolmentPayload({
+      onBehalf: mode.value === 'behalf',
+      consentText: mode.value === 'behalf' ? t('wizard.enroler.consentBehalf') : t('wizard.enroler.consentSelf'),
+      phone: phone.value,
+      email: email.value,
+      place: place.value,
+      familyPhone: familyPhoneShown.value,
+      latitude: latitude.value,
+      longitude: longitude.value,
+      howToFind: howToFind.value,
+      help: help.value,
+      otherHelp: otherHelp.value,
+      head: head.value,
+      others: others.value
+    }))
+    if (result.ok) {
+      confirmed.value = true
+      return
+    }
+    submitError.value = result.message
+  } catch {
+    // A failed request leaves stage 4 and the typed values.
+  } finally {
+    submitting.value = false
+  }
+}
+
 const familyPhoneShown = computed({
   get() {
     if (familyPhoneTouched.value) return familyPhone.value
@@ -78,7 +117,9 @@ const familyPhoneShown = computed({
 <template>
   <main class="phone">
     <p class="mark">{{ t('wizard.mark') }}</p>
-    <p class="step">{{ t('wizard.step', { current: stage, total: 4 }) }}</p>
+    <p v-if="!confirmed" class="step">{{ t('wizard.step', { current: stage, total: 4 }) }}</p>
+    <EnrolmentConfirmation v-if="confirmed" :email="email" />
+    <template v-else>
     <StageEnroler
       v-if="stage === 1"
       v-model:mode="mode"
@@ -104,10 +145,16 @@ const familyPhoneShown = computed({
       @back="stage = 2"
       @next="stage = 4"
     />
-    <section v-else>
-      <div class="actions">
-        <button class="secondary" type="button" @click="stage = 3">{{ t('wizard.back') }}</button>
-      </div>
-    </section>
+    <StageNotes
+      v-else
+      v-model:how-to-find="howToFind"
+      v-model:other-help="otherHelp"
+      v-model:help="help"
+      :error="submitError"
+      :submitting="submitting"
+      @back="stage = 3"
+      @submit="submit"
+    />
+    </template>
   </main>
 </template>

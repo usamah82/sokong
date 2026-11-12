@@ -45,6 +45,21 @@
       "person": "Person",
       "add": "Add a person",
       "remove": "Remove"
+    },
+    "notes": {
+      "title": "Notes for the community worker",
+      "howToFind": "How to find them",
+      "help": "Help",
+      "food": "Food",
+      "clothing": "Clothing",
+      "schoolSupplies": "School supplies",
+      "helpApplying": "Help applying to a body (for example social security, welfare, or a tithe body)",
+      "other": "A help that is not in the list",
+      "submit": "Submit"
+    },
+    "confirmation": {
+      "title": "This case is in. No visit is set.",
+      "signUp": "Sign up with this email to see who has looked and whether a visit is set."
     }
   }
 }
