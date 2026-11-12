@@ -24,7 +24,7 @@ function goNext(event?: Event) {
 </script>
 
 <template>
-  <form @submit.prevent="goNext">
+  <form novalidate @submit.prevent="goNext">
     <h1>{{ t('wizard.enroler.title') }}</h1>
     <fieldset>
       <legend>{{ t('wizard.enroler.legend') }}</legend>
