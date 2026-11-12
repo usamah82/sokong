@@ -7,11 +7,11 @@ import IndexPage from '../../pages/index.vue'
 
 const locale = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../i18n/locales/en.json'), 'utf8')
-) as { shell: { sentence: string } }
+) as { wizard: { enroler: { self: string } } }
 
 describe('shell', () => {
   it('renders the English sentence from the locale file', async () => {
     const page = await mountSuspended(IndexPage)
-    expect(page.text()).toContain(locale.shell.sentence)
+    expect(page.text()).toContain(locale.wizard.enroler.self)
   })
 })

@@ -1,5 +1,25 @@
 {
   "shell": {
     "sentence": "The shell is ready."
+  },
+  "wizard": {
+    "mark": "Sokong",
+    "step": "Step {current} of {total}",
+    "next": "Next",
+    "back": "Back",
+    "enroler": {
+      "title": "Who is enrolling",
+      "legend": "Enrolment",
+      "self": "This is my family",
+      "behalf": "I am enrolling this family for them",
+      "consentSelf": "Submission means the family consents. That consent is confirmed at the verification visit.",
+      "consentBehalf": "This case is valid and will be checked at a visit. It may not be enrolled unless the family consents then.",
+      "phone": "Your phone",
+      "phoneError": "Enter a phone number, for example +60 12-345 6789.",
+      "email": "Email, optional"
+    },
+    "family": {
+      "title": "The family"
+    }
   }
 }
