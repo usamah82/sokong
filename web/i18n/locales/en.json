@@ -10,6 +10,18 @@
     "signIn": "Sign in",
     "signUp": "Sign up"
   },
+  "worker": {
+    "unlinked": "No locality is linked to this account.",
+    "empty": "No enrolments yet.",
+    "enroler": "Enroler phone",
+    "members": "The family",
+    "noHelp": "No help was named.",
+    "yes": "Yes",
+    "no": "No",
+    "looks": "Looks",
+    "note": "Note",
+    "addNote": "Add note"
+  },
   "progress": {
     "mark": "Sokong",
     "quiet": "This case is in. No one has looked. No visit is set.",

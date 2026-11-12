@@ -92,8 +92,27 @@ describe('sign in', () => {
     expect(page.text()).not.toContain('secret-token')
     expect(page.text()).not.toContain('correct horse battery staple')
     expect(sessionStorage.getItem('sokong.token')).toBe('secret-token')
+    expect(sessionStorage.getItem('sokong.role')).toBe('submitter')
     expect(sessionStorage.getItem('other')).toBe('kept')
     vi.unstubAllGlobals()
+  })
+
+  it.each([
+    { id: 'account-1', email: 'siti@example.com' },
+    { id: 'account-1', email: 'siti@example.com', role: '' },
+    { id: 'account-1', email: 'siti@example.com', role: 1 }
+  ])('stores the token and leaves a missing role unset', async (account) => {
+    stubSession(200, { token: 'secret-token', account })
+    const page = await mountSuspended(SignInPage)
+    await fill(page)
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => {
+      expect(navigated).toEqual([ '/enrolments' ])
+    })
+    expect(sessionStorage.getItem('sokong.token')).toBe('secret-token')
+    expect(sessionStorage.getItem('sokong.role')).toBeNull()
+    vi.unstubAllGlobals()
+    navigated.length = 0
   })
 
   it('shows a wrong pair and an unconfirmed account without storing a token', async () => {
@@ -150,6 +169,7 @@ describe('sign in', () => {
       }
     }))
     sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'submitter')
     sessionStorage.setItem('other', 'kept')
     const page = await mountSuspended(SignInPage)
     await vi.waitFor(() => {
@@ -180,6 +200,7 @@ describe('sign in', () => {
     expect(calls[1]!.method).toBe('POST')
     expect(calls[1]!.authorization).toBeNull()
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    expect(sessionStorage.getItem('sokong.role')).toBeNull()
     vi.unstubAllGlobals()
   })
 

@@ -78,6 +78,19 @@ describe('submitter progress', () => {
     vi.unstubAllGlobals()
   })
 
+  it('does not tell a submitter that there are no enrolments yet', async () => {
+    stubFetch(200, [])
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'submitter')
+    const page = await mountSuspended(EnrolmentsPage)
+    await vi.waitFor(() => {
+      expect(page.find('#cases').exists()).toBe(true)
+    })
+    expect(page.text()).not.toContain('No enrolments yet.')
+    expect(page.text()).not.toContain('No locality is linked to this account.')
+    vi.unstubAllGlobals()
+  })
+
   it('opens sign-in when the token is missing or rejected', async () => {
     const calls = stubFetch(200, [])
     await mountSuspended(EnrolmentsPage)

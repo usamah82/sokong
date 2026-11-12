@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import type { SubmitterEnrolment } from '../../composables/useApi'
+import type { SubmitterEnrolment, WorkerSummary } from '../../composables/useApi'
 
-const enrolments = ref<SubmitterEnrolment[]>([])
+const enrolments = ref<Array<SubmitterEnrolment | WorkerSummary>>([])
+const unlinked = ref(false)
+const loaded = ref(false)
 const submitting = ref(false)
-const { hasToken, clearToken, signOut } = useAuth()
+const { hasToken, clearToken, signOut, role } = useAuth()
 const { listEnrolments } = useApi()
 const { t } = useI18n()
 
@@ -16,11 +18,17 @@ onMounted(async () => {
   try {
     const result = await listEnrolments()
     if (!result.ok) {
-      clearToken()
-      await navigateTo('/sign-in')
+      if (result.reason === 'unauthenticated') {
+        clearToken()
+        await navigateTo('/sign-in')
+        return
+      }
+      unlinked.value = true
+      loaded.value = true
       return
     }
     enrolments.value = result.enrolments
+    loaded.value = true
   } catch {
     // A failed read leaves the token so a reload can try again.
   }
@@ -43,9 +51,13 @@ async function endSession() {
 <template>
   <main class="phone">
     <p class="mark">{{ t('progress.mark') }}</p>
-    <ul class="cases">
+    <h1 v-if="unlinked">{{ t('worker.unlinked') }}</h1>
+    <h1 v-else-if="loaded && role() === 'worker' && enrolments.length === 0">{{ t('worker.empty') }}</h1>
+    <ul v-else-if="loaded" id="cases" class="cases">
       <li v-for="enrolment in enrolments" :key="enrolment.id">
-        <NuxtLink :id="`case-${enrolment.id}`" :to="`/enrolments/${enrolment.id}`">{{ enrolment.place_name }}</NuxtLink>
+        <NuxtLink :id="`case-${enrolment.id}`" :to="`/enrolments/${enrolment.id}`">
+          {{ enrolment.place_name }}<template v-if="'head_name' in enrolment"> {{ enrolment.head_name }}</template>
+        </NuxtLink>
       </li>
     </ul>
     <div class="actions">

@@ -1,17 +1,24 @@
 type SignInResult = { ok: true } | { ok: false, message: string }
 
 const tokenKey = 'sokong.token'
+const roleKey = 'sokong.role'
 
 export function useAuth() {
   const config = useRuntimeConfig()
 
   return {
     hasToken(): boolean {
-      return sessionStorage.getItem(tokenKey) !== null
+      return typeof sessionStorage !== 'undefined' && sessionStorage.getItem(tokenKey) !== null
+    },
+
+    role(): string | null {
+      if (typeof sessionStorage === 'undefined') return null
+      return sessionStorage.getItem(roleKey)
     },
 
     clearToken() {
       sessionStorage.removeItem(tokenKey)
+      sessionStorage.removeItem(roleKey)
     },
 
     async signIn(body: { email: string, password: string }): Promise<SignInResult> {
@@ -24,9 +31,15 @@ export function useAuth() {
         body: JSON.stringify(body)
       })
       if (response.status === 200) {
-        const payload = await response.json().catch(() => null) as { token?: unknown } | null
+        const payload = await response.json().catch(() => null) as {
+          token?: unknown
+          account?: { role?: unknown }
+        } | null
         if (typeof payload?.token !== 'string' || payload.token === '') throw new Error('session was not created')
         sessionStorage.setItem(tokenKey, payload.token)
+        if (typeof payload.account?.role === 'string' && payload.account.role !== '') {
+          sessionStorage.setItem(roleKey, payload.account.role)
+        }
         return { ok: true }
       }
       const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
@@ -49,6 +62,7 @@ export function useAuth() {
         if (response.status !== 204 && response.status !== 401) throw new Error('session was not revoked')
       }
       sessionStorage.removeItem(tokenKey)
+      sessionStorage.removeItem(roleKey)
     }
   }
 }
