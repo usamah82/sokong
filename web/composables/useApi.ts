@@ -4,6 +4,12 @@ type LocalitySuggestion = {
 
 type EnrolmentResult = { ok: true } | { ok: false, message: string }
 
+type AccountField = 'email' | 'password' | 'password_confirmation'
+
+type AccountResult = { ok: true } | { ok: false, message: string, field: AccountField | null }
+
+const accountFields: AccountField[] = [ 'email', 'password', 'password_confirmation' ]
+
 export function useApi() {
   const config = useRuntimeConfig()
 
@@ -32,7 +38,7 @@ export function useApi() {
       throw new Error('enrolment was not saved')
     },
 
-    async createAccount(body: { email: string, password: string, password_confirmation: string }): Promise<EnrolmentResult> {
+    async createAccount(body: { email: string, password: string, password_confirmation: string }): Promise<AccountResult> {
       const response = await fetch(new URL('/accounts', config.public.apiBase), {
         method: 'POST',
         headers: {
@@ -42,8 +48,14 @@ export function useApi() {
         body: JSON.stringify(body)
       })
       if (response.status === 201) return { ok: true }
-      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
-      if (response.status === 422 || response.status === 429) return { ok: false, message: payload?.error?.message ?? '' }
+      const payload = await response.json().catch(() => null) as {
+        error?: { message?: string, details?: Record<string, unknown> }
+      } | null
+      if (response.status === 422 || response.status === 429) {
+        const details = payload?.error?.details
+        const field = details ? accountFields.find((key) => Object.prototype.hasOwnProperty.call(details, key)) ?? null : null
+        return { ok: false, message: payload?.error?.message ?? '', field }
+      }
       throw new Error('account was not created')
     }
   }

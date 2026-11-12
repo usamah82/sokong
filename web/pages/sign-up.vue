@@ -5,6 +5,7 @@ const email = ref('')
 const password = ref('')
 const confirmation = ref('')
 const error = ref('')
+const errorField = ref<'email' | 'password' | 'password_confirmation' | null>(null)
 const sent = ref(false)
 const submitting = ref(false)
 const { createAccount } = useApi()
@@ -14,6 +15,7 @@ async function submit() {
   if (submitting.value) return
   submitting.value = true
   error.value = ''
+  errorField.value = null
   try {
     const result = await createAccount({
       email: email.value,
@@ -25,6 +27,7 @@ async function submit() {
       return
     }
     error.value = result.message
+    errorField.value = result.field
   } catch {
     // A failed request leaves the form and the typed values.
   } finally {
@@ -42,15 +45,18 @@ async function submit() {
     </div>
     <form v-else novalidate @submit.prevent="submit">
       <h1>{{ t('signUp.title') }}</h1>
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
+      <p v-if="error && !errorField" class="notice" role="alert">{{ error }}</p>
       <label class="field">{{ t('signUp.email') }}
-        <input id="email" v-model="email" type="email" autocomplete="email">
+        <input id="email" v-model="email" type="email" autocomplete="email" :aria-invalid="errorField === 'email' || undefined">
+        <p v-if="errorField === 'email'" class="error" role="alert">{{ error }}</p>
       </label>
       <label class="field">{{ t('signUp.password') }}
-        <input id="password" v-model="password" type="password" autocomplete="new-password">
+        <input id="password" v-model="password" type="password" autocomplete="new-password" :aria-invalid="errorField === 'password' || undefined">
+        <p v-if="errorField === 'password'" class="error" role="alert">{{ error }}</p>
       </label>
       <label class="field">{{ t('signUp.confirmation') }}
-        <input id="password-confirmation" v-model="confirmation" type="password" autocomplete="new-password">
+        <input id="password-confirmation" v-model="confirmation" type="password" autocomplete="new-password" :aria-invalid="errorField === 'password_confirmation' || undefined">
+        <p v-if="errorField === 'password_confirmation'" class="error" role="alert">{{ error }}</p>
       </label>
       <div class="actions">
         <button id="create-account" class="primary" type="submit" :disabled="submitting">{{ t('signUp.submit') }}</button>
