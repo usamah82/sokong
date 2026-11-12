@@ -159,7 +159,10 @@ describe('locality boundary', () => {
     const calls = stubFetch(() => ({ status: 500, body: {} }))
     sessionStorage.setItem('sokong.token', 'secret-token')
     const page = await mountSuspended(LocalityPage, { route: '/localities/locality-1' })
-    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    await vi.waitFor(() => {
+      expect(page.get('#sign-out').attributes('disabled')).toBeUndefined()
+    })
+    expect(calls).toHaveLength(1)
     expect(page.find('#name').exists()).toBe(false)
     expect(page.find('#save').exists()).toBe(false)
     vi.unstubAllGlobals()
