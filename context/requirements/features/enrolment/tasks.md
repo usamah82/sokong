@@ -398,14 +398,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Enable the `rack-cors` gem already named in the Gemfile so the Nuxt dev server can call the API. The only allowed origin is `http://localhost:3001`.
 
 **Acceptance criteria:**
-- [ ] A request from `http://localhost:3001` receives `Access-Control-Allow-Origin` for that origin on the enrolment routes.
-- [ ] A request from any other origin does not receive that allow-origin value.
-- [ ] `GET /up` still returns success.
+- [x] A request from `http://localhost:3001` receives `Access-Control-Allow-Origin` for that origin on the enrolment routes.
+- [x] A request from any other origin does not receive that allow-origin value.
+- [x] `GET /up` still returns success.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/cors_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: an OPTIONS preflight from `http://localhost:3001` is allowed.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/cors_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: an OPTIONS preflight from `http://localhost:3001` is allowed.
 
 **Dependencies:** Task 3
 
