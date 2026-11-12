@@ -5,7 +5,9 @@ class EnrolmentsController < ApplicationController
     require_account
     return if performed?
 
-    render json: visible_enrolments.map { |enrolment| enrolment_json(enrolment) }
+    render json: visible_enrolments.map { |enrolment|
+      current_account.role == "worker" ? worker_summary_json(enrolment) : enrolment_json(enrolment)
+    }
   end
 
   def show
@@ -13,10 +15,13 @@ class EnrolmentsController < ApplicationController
     return if performed?
 
     enrolment = visible_enrolments.find_by(id: params[:id])
-    if enrolment
-      render json: enrolment_json(enrolment)
+    return render_not_found unless enrolment
+
+    if current_account.role == "worker"
+      record_first_look(enrolment)
+      render json: worker_detail_json(enrolment)
     else
-      render json: { error: { code: "NOT_FOUND", message: "Not found" } }, status: :not_found
+      render json: enrolment_json(enrolment)
     end
   end
 
@@ -33,11 +38,69 @@ class EnrolmentsController < ApplicationController
 
   private
     def visible_enrolments
-      return Enrolment.none unless current_account.role == "submitter"
+      relation = Enrolment.includes(:locality, :members, :looks).order(submitted_at: :desc, created_at: :desc)
+      case current_account.role
+      when "submitter"
+        relation.where("lower(email) = ?", current_account.email_normalized)
+      when "worker"
+        relation.where(locality_id: current_account.locality_assignments.select(:locality_id))
+      else
+        Enrolment.none
+      end
+    end
 
-      Enrolment.includes(:locality, :members)
-        .where("lower(email) = ?", current_account.email_normalized)
-        .order(submitted_at: :desc, created_at: :desc)
+    def record_first_look(enrolment)
+      enrolment.with_lock do
+        return if enrolment.looks.exists?(account_id: current_account.id)
+
+        enrolment.looks.create!(
+          account: current_account,
+          worker_name: current_account.name,
+          looked_at: Time.current,
+          note: ""
+        )
+      end
+    end
+
+    def render_not_found
+      render json: { error: { code: "NOT_FOUND", message: "Not found" } }, status: :not_found
+    end
+
+    def worker_summary_json(enrolment)
+      {
+        id: enrolment.id,
+        submitted_at: enrolment.submitted_at.utc.iso8601,
+        place_name: enrolment.place_name,
+        head_name: enrolment.members.find { |member| member.role == "head" }&.name,
+        enroler_contact: enrolment.enroler_contact,
+        on_behalf: enrolment.on_behalf,
+        locality: { id: enrolment.locality.id, name: enrolment.locality.name }
+      }
+    end
+
+    def worker_detail_json(enrolment)
+      worker_summary_json(enrolment).merge(
+        email: enrolment.email,
+        how_to_find: enrolment.how_to_find,
+        family_phone: enrolment.family_phone,
+        help: enrolment.help,
+        other_help: enrolment.other_help,
+        consent_text: enrolment.consent_text,
+        latitude: enrolment.latitude&.to_f,
+        longitude: enrolment.longitude&.to_f,
+        members: enrolment.members.map { |member| member_json(member) },
+        looks: enrolment.looks.map { |look| look_json(look) },
+        visit_at: nil
+      )
+    end
+
+    def look_json(look)
+      {
+        id: look.id,
+        worker_name: look.worker_name,
+        looked_at: look.looked_at.utc.iso8601,
+        note: look.note
+      }
     end
 
     def queue_invitation(enrolment)
@@ -66,7 +129,11 @@ class EnrolmentsController < ApplicationController
         other_help: enrolment.other_help,
         locality: { id: enrolment.locality.id, name: enrolment.locality.name },
         members: enrolment.members.map { |member| member_json(member) },
-        progress: { case_in: true, looks: [], visit_at: nil }
+        progress: {
+          case_in: true,
+          looks: enrolment.looks.map { |look| look_json(look) },
+          visit_at: nil
+        }
       }
     end
 
