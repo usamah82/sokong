@@ -10,6 +10,14 @@
     "signIn": "Sign in",
     "signUp": "Sign up"
   },
+  "signIn": {
+    "mark": "Sokong",
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "signOut": "Sign out"
+  },
   "signUp": {
     "mark": "Sokong",
     "title": "Sign up",
