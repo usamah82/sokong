@@ -100,6 +100,7 @@ label.field { display: block; margin: 0 0 16px; }
 
 input[type="text"],
 input[type="email"],
+input[type="password"],
 input[type="tel"],
 textarea {
   width: 100%;
@@ -124,6 +125,12 @@ input:focus, textarea:focus, button:focus-visible {
   margin: 8px 0 0;
   color: var(--error);
   font-size: 14px;
+}
+
+.notice {
+  margin: 0 0 16px;
+  color: var(--error);
+  font-size: 15px;
 }
 
 input[aria-invalid="true"] { border-color: var(--error); }
