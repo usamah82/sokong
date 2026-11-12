@@ -422,14 +422,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Create `web/` with the current Nuxt docs, `@nuxtjs/i18n`, and Vitest. English is the only locale, `defaultLocale` is `en`, and the routing strategy is `no_prefix`. Pages live at `web/pages/`. The dev server uses port `3001`. Root `bin/ci` runs the Rails gate and then `npm test` and `npm run lint`. The GitHub workflow runs those web checks on a pull request. One page renders a string from `en.json` so the shell is proven. Apply no product screen yet.
 
 **Acceptance criteria:**
-- [ ] `cd web && npm run dev -- --port 3001` serves the shell, and the visible sentence comes from `web/i18n/locales/en.json`.
-- [ ] `npm test` and `npm run lint` pass. Root `bin/ci` runs them after the Rails gate. The GitHub workflow runs the same web checks.
-- [ ] The dependency set is the scaffold, `@nuxtjs/i18n`, and the Vitest setup the tests need. Any other package is left out of this task.
+- [x] `cd web && npm run dev -- --port 3001` serves the shell, and the visible sentence comes from `web/i18n/locales/en.json`.
+- [x] `npm test` and `npm run lint` pass. Root `bin/ci` runs them after the Rails gate. The GitHub workflow runs the same web checks.
+- [x] The dependency set is the scaffold, `@nuxtjs/i18n`, and the Vitest setup the tests need. Any other package is left out of this task.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test && npm run lint`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: open `http://localhost:3001` and confirm the locale string renders. Confirm `web/pages/` is the pages directory. If Nuxt cannot use that path, update `spec.md` and stop.
+- [x] Tests pass: `cd web && npm test && npm run lint`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: open `http://localhost:3001` and confirm the locale string renders. Confirm `web/pages/` is the pages directory. If Nuxt cannot use that path, update `spec.md` and stop.
 
 **Dependencies:** Task 15
 
@@ -445,9 +445,9 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 15–16
 
-- [ ] `bin/ci` from the repository root exits 0, including web test and lint
-- [ ] The API allows `http://localhost:3001` and no other origin
-- [ ] The web shell renders one English string from the locale file
+- [x] `bin/ci` from the repository root exits 0, including web test and lint
+- [x] The API allows `http://localhost:3001` and no other origin
+- [x] The web shell renders one English string from the locale file
 
 ## Task 17: Who is enrolling
 
