@@ -2,6 +2,12 @@
   "shell": {
     "sentence": "The shell is ready."
   },
+  "confirm": {
+    "mark": "Sokong",
+    "confirmed": "This email is confirmed. Sign in.",
+    "signIn": "Sign in",
+    "signUp": "Sign up"
+  },
   "signUp": {
     "mark": "Sokong",
     "title": "Sign up",

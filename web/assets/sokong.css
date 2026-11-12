@@ -149,13 +149,17 @@ button.block {
   margin-top: 8px;
 }
 
-button {
+button, a.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: 10px 14px;
   border: 1px solid var(--accent);
   border-radius: 4px;
   font: inherit;
   font-weight: 650;
+  text-decoration: none;
 }
 
 .primary {
