@@ -320,14 +320,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `POST /enrolments/:id/looks` appends a look with the note for a worker linked to that locality. The note is non-blank text up to 2000 characters. A submitter receives `404`. The submitter's detail lists looks in time order. The post queues no mail.
 
 **Acceptance criteria:**
-- [ ] A linked worker receives `201` with the look: `id`, `worker_name`, `looked_at`, and `note`.
-- [ ] A blank note or a note over 2000 characters returns `422` and adds no look. A submitter and a worker of another locality receive `404`.
-- [ ] The matching submitter sees the empty-note look and the note in `looked_at` order. `visit_at` is still null. No mail is queued.
+- [x] A linked worker receives `201` with the look: `id`, `worker_name`, `looked_at`, and `note`.
+- [x] A blank note or a note over 2000 characters returns `422` and adds no look. A submitter and a worker of another locality receive `404`.
+- [x] The matching submitter sees the empty-note look and the note in `looked_at` order. `visit_at` is still null. No mail is queued.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: post a note as the worker, then read the enrolment as the submitter and see that note.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: post a note as the worker, then read the enrolment as the submitter and see that note.
 
 **Dependencies:** Task 11
 
