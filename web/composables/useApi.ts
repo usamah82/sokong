@@ -30,6 +30,21 @@ export function useApi() {
       const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
       if (response.status === 422) return { ok: false, message: payload?.error?.message ?? '' }
       throw new Error('enrolment was not saved')
+    },
+
+    async createAccount(body: { email: string, password: string, password_confirmation: string }): Promise<EnrolmentResult> {
+      const response = await fetch(new URL('/accounts', config.public.apiBase), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      })
+      if (response.status === 201) return { ok: true }
+      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
+      if (response.status === 422 || response.status === 429) return { ok: false, message: payload?.error?.message ?? '' }
+      throw new Error('account was not created')
     }
   }
 }

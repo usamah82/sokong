@@ -2,6 +2,15 @@
   "shell": {
     "sentence": "The shell is ready."
   },
+  "signUp": {
+    "mark": "Sokong",
+    "title": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "confirmation": "Password confirmation",
+    "submit": "Create account",
+    "sent": "Check your email to confirm this address. Then sign in."
+  },
   "wizard": {
     "mark": "Sokong",
     "step": "Step {current} of {total}",
