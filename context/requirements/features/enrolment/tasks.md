@@ -714,14 +714,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `/localities/:id` lets a linked worker set the name, the center, and the radius. The page uses the same tokens as the wizard. A `422` shows the API message. A `404` says the locality is not available. Saving does not claim to move existing enrolments.
 
 **Acceptance criteria:**
-- [ ] A valid name, center, and radius from 1 through 200000 saves and shows the returned values. Clearing the circle sends nulls and shows an empty circle.
-- [ ] A radius without a center shows the `422` message and keeps the form values.
-- [ ] At 390 CSS pixels the page does not scroll horizontally.
+- [x] A valid name, center, and radius from 1 through 200000 saves and shows the returned values. Clearing the circle sends nulls and shows an empty circle.
+- [x] A radius without a center shows the `422` message and keeps the form values.
+- [x] At 390 CSS pixels the page does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: as the linked worker, set a center and radius, reload, and confirm the values stuck. Open an enrolment saved earlier and confirm it still names the same locality.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: as the linked worker, set a center and radius, reload, and confirm the values stuck. Open an enrolment saved earlier and confirm it still names the same locality.
 
 **Dependencies:** Tasks 13 and 24
 
@@ -734,8 +734,8 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: Complete
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] Every acceptance line in Tasks 1–27 is checked
-- [ ] At 390 CSS pixels, each wizard stage, the enrolment confirmation, sign-up, email confirmation, sign-in, submitter progress, and the worker case scroll vertically and do not scroll horizontally
-- [ ] `GET /up` still returns success
-- [ ] Ready for the human to merge `feature/enrolment` into `main`. The loop stops here under ADR-0007.
+- [x] `bin/ci` from the repository root exits 0
+- [x] Every acceptance line in Tasks 1–27 is checked
+- [x] At 390 CSS pixels, each wizard stage, the enrolment confirmation, sign-up, email confirmation, sign-in, submitter progress, and the worker case scroll vertically and do not scroll horizontally
+- [x] `GET /up` still returns success
+- [x] Ready for the human to merge `feature/enrolment` into `main`. The loop stops here under ADR-0007.
