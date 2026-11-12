@@ -139,9 +139,51 @@ describe('worker cases', () => {
     expect(page.text()).toContain('+60129876543')
     expect(page.text()).toContain('+60123456789')
     expect(page.text()).toContain('Rahim')
-    expect(page.get('#member-member-1').text()).toContain('Male')
+    const member = page.get('#member-member-1').text()
+    expect(member).toContain('Male')
+    expect(member).toContain('Tall')
+    expect(member).toContain('In education')
+    expect(member).toContain('No')
+    expect(member).toContain('Working')
+    expect(member).toContain('Yes')
+    expect(member).toContain('Driver')
+    expect(member).toContain('800')
     expect(calls.filter((call) => call.method === 'POST')).toHaveLength(0)
     expect(new URL(calls[0]!.url).pathname).toBe('/enrolments/case-1')
+    vi.unstubAllGlobals()
+  })
+
+  it('names the help that was asked', async () => {
+    stubFetch(() => ({
+      status: 200,
+      body: detail([ emptyLook ], [ 'food', 'help_applying' ], 'A school uniform')
+    }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('A school uniform')
+    })
+    expect(page.text()).toContain('Food')
+    expect(page.text()).toContain('Help applying to a body (for example social security, welfare, or a tithe body)')
+    expect(page.text()).not.toContain(noHelp)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the place and the head name on the list', async () => {
+    const calls = stubFetch(() => ({ status: 200, body: [ summary ] }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    const page = await mountSuspended(EnrolmentsPage)
+    await vi.waitFor(() => {
+      expect(page.get('#case-case-1').text()).toContain('Rahim')
+    })
+    expect(page.get('#case-case-1').text()).toContain('Block 4')
+    expect(page.get('#case-case-1').attributes('href')).toBe('/enrolments/case-1')
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.method).toBe('GET')
+    expect(new URL(calls[0]!.url).pathname).toBe('/enrolments')
+    expect(page.text()).not.toContain(empty)
     vi.unstubAllGlobals()
   })
 

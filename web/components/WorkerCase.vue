@@ -68,6 +68,10 @@ async function submit() {
       <p>{{ member.name }}</p>
       <p>{{ gender(member.gender) }}<template v-if="member.age !== null">, {{ member.age }}</template></p>
       <p v-if="member.description">{{ member.description }}</p>
+      <p>{{ t('wizard.family.education') }} {{ member.in_education ? t('worker.yes') : t('worker.no') }}</p>
+      <p>{{ t('wizard.family.working') }} {{ member.working ? t('worker.yes') : t('worker.no') }}</p>
+      <p v-if="member.job.trim()"><span class="label">{{ t('wizard.family.job') }}</span> {{ member.job }}</p>
+      <p v-if="member.monthly_amount !== null"><span class="label">{{ t('wizard.family.amount') }}</span> {{ member.monthly_amount }}</p>
     </article>
     <h2 class="label">{{ t('wizard.notes.help') }}</h2>
     <p v-if="!helpNamed" id="no-help">{{ t('worker.noHelp') }}</p>

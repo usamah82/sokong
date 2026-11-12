@@ -53,7 +53,7 @@ async function endSession() {
     <p class="mark">{{ t('progress.mark') }}</p>
     <h1 v-if="unlinked">{{ t('worker.unlinked') }}</h1>
     <h1 v-else-if="loaded && role() === 'worker' && enrolments.length === 0">{{ t('worker.empty') }}</h1>
-    <ul v-else-if="loaded" class="cases">
+    <ul v-else-if="loaded" id="cases" class="cases">
       <li v-for="enrolment in enrolments" :key="enrolment.id">
         <NuxtLink :id="`case-${enrolment.id}`" :to="`/enrolments/${enrolment.id}`">
           {{ enrolment.place_name }}<template v-if="'head_name' in enrolment"> {{ enrolment.head_name }}</template>
