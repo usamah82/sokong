@@ -263,14 +263,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `GET /enrolments` and `GET /enrolments/:id` require a token. A submitter sees enrolments whose stored email matches the account email, case-insensitively, newest `submitted_at` first. Detail is the `201` shape plus `looks`. Anonymous callers receive `401`. An authenticated caller who must not see the record, including an unknown id, receives `404` with `NOT_FOUND` and no further detail.
 
 **Acceptance criteria:**
-- [ ] The matching submitter sees the case, an empty `looks` array, and `visit_at` null. Another submitter's enrolment is absent from the list and `404` on detail.
-- [ ] A missing token returns `401`. A known token for a record that account must not see returns `404` with code `NOT_FOUND`, message "Not found", and no `details`.
-- [ ] This read does not insert a look and does not enqueue mail. An unconfirmed account has no token to call this route.
+- [x] The matching submitter sees the case, an empty `looks` array, and `visit_at` null. Another submitter's enrolment is absent from the list and `404` on detail.
+- [x] A missing token returns `401`. A known token for a record that account must not see returns `404` with code `NOT_FOUND`, message "Not found", and no `details`.
+- [x] This read does not insert a look and does not enqueue mail. An unconfirmed account has no token to call this route.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: confirm the enrolment email, sign in, and `GET /enrolments` returns that case only.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: confirm the enrolment email, sign in, and `GET /enrolments` returns that case only.
 
 **Dependencies:** Task 8
 
@@ -283,11 +283,11 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 8–10
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] An enrolment can still be submitted with no account
-- [ ] Sign-up returns no token. After confirmation, the matching submitter can sign in and read that the case is in, with no looks and no visit
-- [ ] An unconfirmed account, a different account, and an anonymous caller cannot read the record
-- [ ] The sixth sign-up from one IP in an hour returns `429` and creates nothing
+- [x] `bin/ci` from the repository root exits 0
+- [x] An enrolment can still be submitted with no account
+- [x] Sign-up returns no token. After confirmation, the matching submitter can sign in and read that the case is in, with no looks and no visit
+- [x] An unconfirmed account, a different account, and an anonymous caller cannot read the record
+- [x] The sixth sign-up from one IP in an hour returns `429` and creates nothing
 
 ## Task 11: Record a worker's first look
 
