@@ -809,6 +809,65 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_not_found
   end
 
+  test "a linked worker appends a note and the submitter sees looks in time order" do
+    enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    get "/enrolments/#{enrolment.id}", headers: bearer(token)
+    assert_response :ok
+    empty = Look.order(:created_at).last
+
+    assert_no_enqueued_jobs do
+      assert_difference "Look.count", 1 do
+        post "/enrolments/#{enrolment.id}/looks",
+          params: { note: "Called the enroler, no answer" },
+          headers: bearer(token),
+          as: :json
+      end
+    end
+    assert_response :created
+    note = Look.order(:created_at).last
+    assert_equal(
+      {
+        "id" => note.id,
+        "worker_name" => "Aman",
+        "looked_at" => note.looked_at.utc.iso8601,
+        "note" => "Called the enroler, no answer"
+      },
+      response.parsed_body
+    )
+
+    assert_no_difference "Look.count" do
+      post "/enrolments/#{enrolment.id}/looks", params: { note: "   " }, headers: bearer(token), as: :json
+      assert_response :unprocessable_content
+      assert_equal "Note is required", response.parsed_body.dig("error", "message")
+      post "/enrolments/#{enrolment.id}/looks", params: { note: "a" * 2001 }, headers: bearer(token), as: :json
+      assert_response :unprocessable_content
+      assert_equal "Note is too long", response.parsed_body.dig("error", "message")
+    end
+
+    post "/enrolments/#{enrolment.id}/looks", params: { note: "a" * 2000 }, headers: bearer(token), as: :json
+    assert_response :created
+
+    stranger = worker_token(name: "Farid", locality: create_locality(name: "Other Block", created_at: Time.current))
+    post "/enrolments/#{enrolment.id}/looks", params: { note: "Nope" }, headers: bearer(stranger), as: :json
+    assert_not_found
+
+    submitter = confirmed_token(email: "siti@example.com")
+    assert_no_enqueued_jobs do
+      post "/enrolments/#{enrolment.id}/looks", params: { note: "Nope" }, headers: bearer(submitter), as: :json
+    end
+    assert_not_found
+
+    get "/enrolments/#{enrolment.id}", headers: bearer(submitter)
+    assert_response :ok
+    body = response.parsed_body
+    assert_nil body.dig("progress", "visit_at")
+    assert_equal [ empty.note, "Called the enroler, no answer", "a" * 2000 ], body.dig("progress", "looks").map { |look| look["note"] }
+    assert_equal [ "Aman", "Aman", "Aman" ], body.dig("progress", "looks").map { |look| look["worker_name"] }
+    times = body.dig("progress", "looks").map { |look| look["looked_at"] }
+    assert_equal times.sort, times
+  end
+
   INVITATION_BODY = "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set."
 
   class RaisingQueueAdapter
