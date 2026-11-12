@@ -454,14 +454,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Stage 1 of the wizard. "This is my family" is selected on arrival. The consent sentence swaps with the mode. Next stays disabled until the phone matches the spec pattern. Email is optional. The step indicator shows the stage number and name. Typed values survive a later Back. Copy and tokens come from the spec and `design.md`.
 
 **Acceptance criteria:**
-- [ ] The two choices and the two consent sentences match `spec.md` word for word, read through `en.json`. A bad phone shows "Enter a phone number, for example +60 12-345 6789." and blocks Next.
-- [ ] Back from a later stub stage returns with the phone, email, and mode intact.
-- [ ] At 390 CSS pixels wide the stage scrolls vertically and does not scroll horizontally. Inputs are at least 44px tall.
+- [x] The two choices and the two consent sentences match `spec.md` word for word, read through `en.json`. A bad phone shows "Enter a phone number, for example +60 12-345 6789." and blocks Next.
+- [x] Back from a later stub stage returns with the phone, email, and mode intact.
+- [x] At 390 CSS pixels wide the stage scrolls vertically and does not scroll horizontally. Inputs are at least 44px tall.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: in the browser at 390 CSS pixels, switch to on behalf, enter a bad phone, then a valid phone, go forward and back, and confirm the values and the sentence.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: in the browser at 390 CSS pixels, switch to on behalf, enter a bad phone, then a valid phone, go forward and back, and confirm the values and the sentence.
 
 **Dependencies:** Task 16
 
