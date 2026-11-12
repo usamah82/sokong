@@ -641,14 +641,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `/sign-in` calls `POST /sessions` and stores the token in `sessionStorage` under `sokong.token`. A wrong pair shows "Email or password is wrong". An unconfirmed account shows "Confirm your email to sign in". Sign-out clears the token and calls `DELETE /sessions`.
 
 **Acceptance criteria:**
-- [ ] A confirmed pair stores the token and opens `/enrolments`. "Email or password is wrong" and "Confirm your email to sign in" each leave storage empty.
-- [ ] Sign-out removes `sokong.token` and a following API call has no bearer token.
-- [ ] At 390 CSS pixels the page does not scroll horizontally.
+- [x] A confirmed pair stores the token and opens `/enrolments`. "Email or password is wrong" and "Confirm your email to sign in" each leave storage empty.
+- [x] Sign-out removes `sokong.token` and a following API call has no bearer token.
+- [x] At 390 CSS pixels the page does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: sign in, reload, confirm the token is still in `sessionStorage`, then sign out and confirm it is gone.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: sign in, reload, confirm the token is still in `sessionStorage`, then sign out and confirm it is gone.
 
 **Dependencies:** Tasks 8 and 23
 
