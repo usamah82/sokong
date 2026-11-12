@@ -691,6 +691,68 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     ActiveJob::Base.queue_adapter = previous
   end
 
+  test "a matching submitter reads their cases newest first and no one else's" do
+    older = submit_enrolment(email: "SITI@example.com", name: "Siti")
+    newer = submit_enrolment(email: "siti@example.com", name: "Aminah")
+    other = submit_enrolment(email: "other@example.com", name: "Rahim")
+    older.update!(submitted_at: 2.hours.ago)
+    newer.update!(submitted_at: 1.hour.ago)
+
+    token = confirmed_token(email: "  Siti@Example.com ")
+    assert_no_enqueued_jobs do
+      assert_no_difference -> { look_count } do
+        get "/enrolments", headers: bearer(token)
+      end
+    end
+
+    assert_response :ok
+    assert_equal [ enrolment_json(newer.reload), enrolment_json(older.reload) ], response.parsed_body
+    assert_empty response.parsed_body.first.dig("progress", "looks")
+    assert_nil response.parsed_body.first.dig("progress", "visit_at")
+    assert_not_includes response.parsed_body.map { |row| row["id"] }, other.id
+
+    assert_no_enqueued_jobs do
+      assert_no_difference -> { look_count } do
+        get "/enrolments/#{newer.id}", headers: bearer(token)
+      end
+    end
+    assert_response :ok
+    assert_equal enrolment_json(newer.reload), response.parsed_body
+
+    get "/enrolments/#{other.id}", headers: bearer(token)
+    assert_not_found
+    get "/enrolments/#{SecureRandom.uuid}", headers: bearer(token)
+    assert_not_found
+
+    other_token = confirmed_token(email: "Other@Example.com")
+    get "/enrolments", headers: bearer(other_token)
+    assert_response :ok
+    assert_equal [ other.id ], response.parsed_body.map { |row| row["id"] }
+    get "/enrolments/#{newer.id}", headers: bearer(other_token)
+    assert_not_found
+  end
+
+  test "enrolment reads without a token are rejected" do
+    enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
+
+    get "/enrolments"
+    assert_sign_in_required
+    get "/enrolments/#{enrolment.id}"
+    assert_sign_in_required
+
+    post "/accounts", params: {
+      email: "siti@example.com",
+      password: "correct horse battery staple",
+      password_confirmation: "correct horse battery staple"
+    }, as: :json
+    assert_response :created
+    post "/sessions", params: { email: "siti@example.com", password: "correct horse battery staple" }, as: :json
+    assert_response :unauthorized
+    assert_equal 0, AuthToken.count
+    get "/enrolments"
+    assert_sign_in_required
+  end
+
   INVITATION_BODY = "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set."
 
   class RaisingQueueAdapter
@@ -750,6 +812,57 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
       assert_equal "VALIDATION_ERROR", error["code"]
       assert_equal message, error["message"]
       assert_equal details, error["details"]
+    end
+
+    def submit_enrolment(email:, name:)
+      post "/enrolments", params: valid_enrolment.merge(
+        email: email,
+        members: [ { role: "head", name: name, gender: "unspecified" } ]
+      ), as: :json
+      assert_response :created
+      Enrolment.order(:created_at).last
+    end
+
+    def confirmed_token(email:)
+      password = "correct horse battery staple"
+      post "/accounts", params: {
+        email: email,
+        password: password,
+        password_confirmation: password
+      }, as: :json
+      assert_response :created
+      perform_enqueued_jobs
+      raw = ActionMailer::Base.deliveries.last.body.to_s[/token=([^&\s]+)/, 1]
+      post "/account_verifications", params: { token: raw }, as: :json
+      assert_response :no_content
+      post "/sessions", params: { email: email, password: password }, as: :json
+      assert_response :ok
+      response.parsed_body.fetch("token")
+    end
+
+    def bearer(token)
+      { "Authorization" => "Bearer #{token}" }
+    end
+
+    def assert_sign_in_required
+      assert_response :unauthorized
+      assert_equal "UNAUTHENTICATED", response.parsed_body.dig("error", "code")
+      assert_equal "Sign in is required", response.parsed_body.dig("error", "message")
+    end
+
+    def assert_not_found
+      assert_response :not_found
+      error = response.parsed_body.fetch("error")
+      assert_equal [ "code", "message" ], error.keys.sort
+      assert_equal "NOT_FOUND", error["code"]
+      assert_equal "Not found", error["message"]
+      assert_not error.key?("details")
+    end
+
+    def look_count
+      return 0 unless Enrolment.connection.data_source_exists?("looks")
+
+      Enrolment.connection.select_value("SELECT COUNT(*) FROM looks").to_i
     end
 
     def enrolment_json(enrolment)

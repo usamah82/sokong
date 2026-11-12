@@ -1,6 +1,25 @@
 class EnrolmentsController < ApplicationController
   wrap_parameters false
 
+  def index
+    require_account
+    return if performed?
+
+    render json: visible_enrolments.map { |enrolment| enrolment_json(enrolment) }
+  end
+
+  def show
+    require_account
+    return if performed?
+
+    enrolment = visible_enrolments.find_by(id: params[:id])
+    if enrolment
+      render json: enrolment_json(enrolment)
+    else
+      render json: { error: { code: "NOT_FOUND", message: "Not found" } }, status: :not_found
+    end
+  end
+
   def create
     submission = EnrolmentSubmission.new(params)
     if (error = submission.error_envelope)
@@ -13,6 +32,14 @@ class EnrolmentsController < ApplicationController
   end
 
   private
+    def visible_enrolments
+      return Enrolment.none unless current_account.role == "submitter"
+
+      Enrolment.includes(:locality, :members)
+        .where("lower(email) = ?", current_account.email_normalized)
+        .order(submitted_at: :desc, created_at: :desc)
+    end
+
     def queue_invitation(enrolment)
       return if enrolment.email.blank?
 
