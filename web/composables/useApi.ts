@@ -8,6 +8,8 @@ type AccountField = 'email' | 'password' | 'password_confirmation'
 
 type AccountResult = { ok: true } | { ok: false, message: string, field: AccountField | null }
 
+type ConfirmResult = { ok: true } | { ok: false, reason: 'invalid' | 'limited' }
+
 const accountFields: AccountField[] = [ 'email', 'password', 'password_confirmation' ]
 
 export function useApi() {
@@ -59,7 +61,7 @@ export function useApi() {
       throw new Error('account was not created')
     },
 
-    async confirmEmail(token: string): Promise<AccountResult> {
+    async confirmEmail(token: string): Promise<ConfirmResult> {
       const response = await fetch(new URL('/account_verifications', config.public.apiBase), {
         method: 'POST',
         headers: {
@@ -69,12 +71,8 @@ export function useApi() {
         body: JSON.stringify({ token })
       })
       if (response.status === 204) return { ok: true }
-      const payload = await response.json().catch(() => null) as {
-        error?: { message?: string, details?: Record<string, unknown> }
-      } | null
-      if (response.status === 422 || response.status === 429) {
-        return { ok: false, message: payload?.error?.message ?? '', field: null }
-      }
+      if (response.status === 429) return { ok: false, reason: 'limited' }
+      if (response.status === 422) return { ok: false, reason: 'invalid' }
       throw new Error('email was not confirmed')
     }
   }

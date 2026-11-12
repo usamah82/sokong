@@ -76,17 +76,58 @@ describe('email confirmation', () => {
     vi.unstubAllGlobals()
   })
 
-  it('shows too many attempts and does not store a token', async () => {
+  it('shows too many attempts without offering another account', async () => {
+    sessionStorage.setItem('sokong.token', 'already-here')
     const calls = stubVerification(429, {
-      error: { code: 'RATE_LIMITED', message: 'Too many attempts. Try again later.', details: {} }
+      error: { code: 'RATE_LIMITED', message: 'Too many attempts. Try again later.', details: {} },
+      token: 'secret-token'
     })
     const page = await mountSuspended(ConfirmPage, { route: `/confirm?token=${token}` })
     await vi.waitFor(() => {
       expect(page.text()).toContain('Too many attempts. Try again later.')
     })
     expect(page.text()).not.toContain(confirmed)
+    expect(page.text()).not.toContain(token)
+    expect(page.text()).not.toContain('secret-token')
+    expect(page.find('#sign-up').exists()).toBe(false)
+    expect(page.find('#sign-in').exists()).toBe(false)
     expect(calls).toHaveLength(1)
     expect(calls[0]!.json).toEqual({ token })
+    expect(sessionStorage.getItem('sokong.token')).toBe('already-here')
+    vi.unstubAllGlobals()
+  })
+
+  it('shows an invalid link without posting when the token is missing', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    for (const route of [ '/confirm', '/confirm?token=' ]) {
+      const page = await mountSuspended(ConfirmPage, { route })
+      expect(page.text()).toContain(invalid)
+      expect(page.get('#sign-up').attributes('href')).toBe('/sign-up')
+      expect(page.find('#sign-in').exists()).toBe(false)
+      expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    }
+    const repeated = await mountSuspended(ConfirmPage, {
+      route: { path: '/confirm', query: { token: [ 'one', 'two' ] } }
+    })
+    expect(repeated.text()).toContain(invalid)
+    expect(repeated.get('#sign-up').attributes('href')).toBe('/sign-up')
+    expect(fetchMock).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it('stays pending when confirmation returns 500', async () => {
+    const calls = stubVerification(500, { error: { message: 'Something else' } })
+    const page = await mountSuspended(ConfirmPage, { route: `/confirm?token=${token}` })
+    await vi.waitFor(() => {
+      expect(calls).toHaveLength(1)
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(page.text()).not.toContain(confirmed)
+    expect(page.text()).not.toContain(invalid)
+    expect(page.text()).not.toContain('Something else')
+    expect(page.find('#sign-up').exists()).toBe(false)
+    expect(page.find('#sign-in').exists()).toBe(false)
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
     vi.unstubAllGlobals()
   })

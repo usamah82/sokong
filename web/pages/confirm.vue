@@ -2,21 +2,19 @@
 import { onMounted, ref } from 'vue'
 
 const route = useRoute()
-const status = ref<'pending' | 'confirmed' | 'invalid'>('pending')
-const message = ref('')
+const status = ref<'pending' | 'confirmed' | 'invalid' | 'limited'>('pending')
 const { confirmEmail } = useApi()
 const { t } = useI18n()
 
 onMounted(async () => {
   const token = typeof route.query.token === 'string' ? route.query.token : ''
+  if (token === '') {
+    status.value = 'invalid'
+    return
+  }
   try {
     const result = await confirmEmail(token)
-    if (result.ok) {
-      status.value = 'confirmed'
-      return
-    }
-    status.value = 'invalid'
-    message.value = result.message
+    status.value = result.ok ? 'confirmed' : result.reason
   } catch {
     // A failed request stays pending so a reload can post the same token.
   }
@@ -33,10 +31,13 @@ onMounted(async () => {
       </div>
     </div>
     <div v-else-if="status === 'invalid'" class="confirm">
-      <h1>{{ message }}</h1>
+      <h1>{{ t('confirm.invalid') }}</h1>
       <div class="actions">
         <NuxtLink id="sign-up" class="primary" to="/sign-up">{{ t('confirm.signUp') }}</NuxtLink>
       </div>
+    </div>
+    <div v-else-if="status === 'limited'" class="confirm">
+      <h1>{{ t('confirm.limited') }}</h1>
     </div>
   </main>
 </template>
