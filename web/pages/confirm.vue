@@ -18,7 +18,7 @@ onMounted(async () => {
     status.value = 'invalid'
     message.value = result.message
   } catch {
-    status.value = 'invalid'
+    // A failed request stays pending so a reload can post the same token.
   }
 })
 </script>

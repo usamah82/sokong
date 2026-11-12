@@ -75,4 +75,38 @@ describe('email confirmation', () => {
     expect(sessionStorage.getItem('sokong.token')).toBe('already-here')
     vi.unstubAllGlobals()
   })
+
+  it('shows too many attempts and does not store a token', async () => {
+    const calls = stubVerification(429, {
+      error: { code: 'RATE_LIMITED', message: 'Too many attempts. Try again later.', details: {} }
+    })
+    const page = await mountSuspended(ConfirmPage, { route: `/confirm?token=${token}` })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('Too many attempts. Try again later.')
+    })
+    expect(page.text()).not.toContain(confirmed)
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.json).toEqual({ token })
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('leaves the page pending when the request fails', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new Error('offline')
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const page = await mountSuspended(ConfirmPage, { route: `/confirm?token=${token}` })
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(page.text()).not.toContain(confirmed)
+    expect(page.text()).not.toContain(invalid)
+    expect(page.find('#sign-up').exists()).toBe(false)
+    expect(page.find('#sign-in').exists()).toBe(false)
+    expect(page.text()).not.toContain(token)
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    vi.unstubAllGlobals()
+  })
 })
