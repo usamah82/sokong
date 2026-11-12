@@ -593,14 +593,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `/sign-up` collects email, password, and confirmation and calls `POST /accounts`. It does not write `sessionStorage`. A `201` replaces the form with "Check your email to confirm this address. Then sign in." and shows the address that was typed. A `422` or `429` shows the API message and stays on the form. Copy and tokens come from `spec.md` and `design.md`.
 
 **Acceptance criteria:**
-- [ ] A matching password of at least 12 characters shows "Check your email to confirm this address. Then sign in." and leaves `sessionStorage` without `sokong.token`.
-- [ ] A `422` shows the API message, including "Password confirmation does not match". A `429` shows "Too many attempts. Try again later."
-- [ ] At 390 CSS pixels the page scrolls vertically and does not scroll horizontally.
+- [x] A matching password of at least 12 characters shows "Check your email to confirm this address. Then sign in." and leaves `sessionStorage` without `sokong.token`.
+- [x] A `422` shows the API message, including "Password confirmation does not match". A `429` shows "Too many attempts. Try again later."
+- [x] At 390 CSS pixels the page scrolls vertically and does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: sign up in the browser at 390 CSS pixels and confirm the check-email sentence, and that `sessionStorage` has no token.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: sign up in the browser at 390 CSS pixels and confirm the check-email sentence, and that `sessionStorage` has no token.
 
 **Dependencies:** Tasks 7 and 16
 
