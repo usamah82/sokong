@@ -142,10 +142,9 @@ describe('worker cases', () => {
     const member = page.get('#member-member-1').text()
     expect(member).toContain('Male')
     expect(member).toContain('Tall')
-    expect(member).toContain('In education')
-    expect(member).toContain('No')
-    expect(member).toContain('Working')
-    expect(member).toContain('Yes')
+    expect(member).toContain('40')
+    expect(member).toContain('In education No')
+    expect(member).toContain('Working Yes')
     expect(member).toContain('Driver')
     expect(member).toContain('800')
     expect(calls.filter((call) => call.method === 'POST')).toHaveLength(0)
@@ -167,6 +166,94 @@ describe('worker cases', () => {
     expect(page.text()).toContain('Food')
     expect(page.text()).toContain('Help applying to a body (for example social security, welfare, or a tithe body)')
     expect(page.text()).not.toContain(noHelp)
+    vi.unstubAllGlobals()
+  })
+
+  it('names clothing and school supplies without other help', async () => {
+    stubFetch(() => ({
+      status: 200,
+      body: detail([ emptyLook ], [ 'clothing', 'school_supplies' ])
+    }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('School supplies')
+    })
+    expect(page.text()).toContain('Clothing')
+    expect(page.text()).not.toContain('clothing')
+    expect(page.text()).not.toContain('school_supplies')
+    expect(page.text()).not.toContain(noHelp)
+    vi.unstubAllGlobals()
+  })
+
+  it('names other help when no key was chosen', async () => {
+    stubFetch(() => ({
+      status: 200,
+      body: detail([ emptyLook ], [], 'A school uniform')
+    }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('A school uniform')
+    })
+    expect(page.text()).not.toContain(noHelp)
+    vi.unstubAllGlobals()
+  })
+
+  it('treats blank other help as no help named', async () => {
+    stubFetch(() => ({ status: 200, body: detail([ emptyLook ], [], '   ') }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain(noHelp)
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a member who is in education and not working', async () => {
+    const body = detail([ emptyLook ])
+    body.members.push({
+      id: 'member-2',
+      role: 'other',
+      name: 'Siti',
+      age: null,
+      gender: 'female',
+      description: '',
+      in_education: true,
+      working: false,
+      job: '',
+      monthly_amount: null
+    })
+    stubFetch(() => ({ status: 200, body }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => {
+      expect(page.get('#member-member-2').text()).toContain('Siti')
+    })
+    const person = page.get('#member-member-2').text()
+    expect(person).toContain('Female')
+    expect(person).toContain('In education Yes')
+    expect(person).toContain('Working No')
+    expect(person).not.toContain('Job')
+    expect(person).not.toContain('Rough monthly amount')
+    expect(page.get('#member-member-1').text()).toContain('Rahim')
+    vi.unstubAllGlobals()
+  })
+
+  it('shows looks in time order, with no note on the empty look', async () => {
+    const noted = { id: 'look-note', worker_name: 'Aminah', looked_at: '2026-11-12T10:00:00Z', note: 'Called the enroler, no answer' }
+    stubFetch(() => ({ status: 200, body: detail([ noted, emptyLook ]) }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain('Called the enroler, no answer')
+    })
+    const rows = page.findAll('.look')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]!.text()).toContain('Aminah')
+    expect(rows[0]!.text()).toContain('2026-11-12T09:00:00Z')
+    expect(rows[0]!.text()).not.toContain('Called the enroler, no answer')
+    expect(rows[1]!.text()).toContain('Called the enroler, no answer')
     vi.unstubAllGlobals()
   })
 
@@ -221,6 +308,112 @@ describe('worker cases', () => {
     expect(again.findAll('#look-look-empty')).toHaveLength(1)
     expect(again.findAll('.look')).toHaveLength(2)
     expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('signs out when a note is rejected', async () => {
+    stubFetch((method) => {
+      if (method === 'POST') return { status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }
+      return { status: 200, body: detail([ emptyLook ]) }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#look-look-empty').exists()).toBe(true))
+    await page.get('#note').setValue('Called the enroler, no answer')
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    expect(sessionStorage.getItem('sokong.role')).toBeNull()
+    expect(page.findAll('.look')).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a rejected note and keeps the typed text', async () => {
+    stubFetch((method) => {
+      if (method === 'POST') return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Note is required' } } }
+      return { status: 200, body: detail([ emptyLook ]) }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#note').exists()).toBe(true))
+    await page.get('#note').setValue('Called the enroler, no answer')
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(page.text()).toContain('Note is required'))
+    expect(page.get<HTMLTextAreaElement>('#note').element.value).toBe('Called the enroler, no answer')
+    expect(page.findAll('.look')).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the typed note when the save fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'POST') throw new Error('offline')
+      return { ok: true, status: 200, json: async () => detail([ emptyLook ]) }
+    }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#note').exists()).toBe(true))
+    await page.get('#note').setValue('Called the enroler, no answer')
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(page.get('#add-note').attributes('disabled')).toBeUndefined())
+    expect(page.get<HTMLTextAreaElement>('#note').element.value).toBe('Called the enroler, no answer')
+    expect(page.findAll('.look')).toHaveLength(1)
+    expect(navigated).toEqual([])
+
+    vi.stubGlobal('fetch', vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      if (method === 'POST') return { ok: false, status: 404, json: async () => ({ error: { code: 'NOT_FOUND', message: 'Not found' } }) }
+      return { ok: true, status: 200, json: async () => detail([ emptyLook ]) }
+    }))
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(page.get('#add-note').attributes('disabled')).toBeUndefined())
+    expect(page.get<HTMLTextAreaElement>('#note').element.value).toBe('Called the enroler, no answer')
+    expect(page.findAll('.look')).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('sends one note while the save is in flight, then clears the field', async () => {
+    const posts: number[] = []
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    vi.stubGlobal('fetch', vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'POST') {
+        posts.push(1)
+        await gate
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ id: 'look-note', worker_name: 'Aminah', looked_at: '2026-11-12T10:00:00Z', note: 'Called the enroler, no answer' })
+        }
+      }
+      return { ok: true, status: 200, json: async () => detail([ emptyLook ]) }
+    }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#note').exists()).toBe(true))
+    await page.get('#note').setValue('Called the enroler, no answer')
+    const pending = page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(posts).toHaveLength(1))
+    expect(page.get('#add-note').attributes('disabled')).toBeDefined()
+    await page.get('form').trigger('submit')
+    expect(posts).toHaveLength(1)
+    release()
+    await pending
+    await vi.waitFor(() => expect(page.get<HTMLTextAreaElement>('#note').element.value).toBe(''))
+    expect(page.findAll('.look')).toHaveLength(2)
+    vi.unstubAllGlobals()
+  })
+
+  it('clears the role when the list is rejected', async () => {
+    stubFetch(() => ({ status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    await mountSuspended(EnrolmentsPage)
+    await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    expect(sessionStorage.getItem('sokong.role')).toBeNull()
     vi.unstubAllGlobals()
   })
 })

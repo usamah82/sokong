@@ -813,6 +813,21 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_not_found
   end
 
+  test "an unlinked worker cannot read or annotate an enrolment" do
+    enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
+    token = worker_token(name: "Noor")
+
+    assert_no_difference "Look.count" do
+      get "/enrolments/#{enrolment.id}", headers: bearer(token)
+      assert_not_found
+      post "/enrolments/#{enrolment.id}/looks",
+        params: { note: "Called the enroler, no answer" },
+        headers: bearer(token),
+        as: :json
+      assert_not_found
+    end
+  end
+
   test "a linked worker with no enrolments receives an empty list" do
     locality = create_locality(name: "Quiet Block", created_at: Time.current)
     token = worker_token(name: "Aman", locality:)

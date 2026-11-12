@@ -97,6 +97,24 @@ describe('sign in', () => {
     vi.unstubAllGlobals()
   })
 
+  it.each([
+    { id: 'account-1', email: 'siti@example.com' },
+    { id: 'account-1', email: 'siti@example.com', role: '' },
+    { id: 'account-1', email: 'siti@example.com', role: 1 }
+  ])('stores the token and leaves a missing role unset', async (account) => {
+    stubSession(200, { token: 'secret-token', account })
+    const page = await mountSuspended(SignInPage)
+    await fill(page)
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => {
+      expect(navigated).toEqual([ '/enrolments' ])
+    })
+    expect(sessionStorage.getItem('sokong.token')).toBe('secret-token')
+    expect(sessionStorage.getItem('sokong.role')).toBeNull()
+    vi.unstubAllGlobals()
+    navigated.length = 0
+  })
+
   it('shows a wrong pair and an unconfirmed account without storing a token', async () => {
     stubSession(401, {
       token: 'secret-token',
