@@ -12,8 +12,13 @@ const valid = computed(() => phoneMatches(phone.value))
 const showError = computed(() => phone.value !== '' && !valid.value)
 const consent = computed(() => t(mode.value === 'self' ? 'wizard.enroler.consentSelf' : 'wizard.enroler.consentBehalf'))
 
-function goNext() {
+function goNext(event?: Event) {
   if (!valid.value) return
+  if (event?.type === 'submit') {
+    // Chrome warns if the form leaves the document before submit finishes.
+    setTimeout(() => emit('next'), 0)
+    return
+  }
   emit('next')
 }
 </script>
@@ -48,7 +53,7 @@ function goNext() {
       <input id="email" v-model="email" type="email" autocomplete="email">
     </label>
     <div class="actions">
-      <button class="primary" type="submit" :disabled="!valid" @click="goNext">{{ t('wizard.next') }}</button>
+      <button class="primary" type="submit" :disabled="!valid" @click.prevent="goNext">{{ t('wizard.next') }}</button>
     </div>
   </form>
 </template>
