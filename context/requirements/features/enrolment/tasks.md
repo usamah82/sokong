@@ -560,14 +560,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Stage 4 collects how to find them, the four help choices, and a help that is not in the list. All may be empty. Description, how to find them, and the other-help field are textareas of at least three lines. Submit is available only on this stage and sends one `POST /enrolments`. The confirmation says the case is in and that no visit is set. When an email was entered, it also says to sign up with that email. There is no step indicator and no second submit on the confirmation.
 
 **Acceptance criteria:**
-- [ ] The help labels match the spec. An empty stage still submits. The textareas are at least three lines and keep their text on Back.
-- [ ] A `201` replaces the wizard with "This case is in. No visit is set." The sign-up sentence appears only when an email was entered. A `422` shows the API message and stays on stage 4 with the typed values kept.
-- [ ] The component test walks all four stages, including back, self phone-copy, on-behalf empty family phone, gender, integer age, and the textareas, then asserts the confirmation.
+- [x] The help labels match the spec. An empty stage still submits. The textareas are at least three lines and keep their text on Back.
+- [x] A `201` replaces the wizard with "This case is in. No visit is set." The sign-up sentence appears only when an email was entered. A `422` shows the API message and stays on stage 4 with the typed values kept.
+- [x] The component test walks all four stages, including back, self phone-copy, on-behalf empty family phone, gender, integer age, and the textareas, then asserts the confirmation.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: at 390 CSS pixels, complete all four stages against the API, with and without an email, and confirm the two confirmation states. Confirm there is no horizontal scroll.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: at 390 CSS pixels, complete all four stages against the API, with and without an email, and confirm the two confirmation states. Confirm there is no horizontal scroll.
 
 **Dependencies:** Tasks 3 and 20
 
@@ -583,10 +583,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 20–21
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] The wizard submits one enrolment and shows that the case is in and that no visit is set
-- [ ] An email shows the sign-up sentence. A blank email omits it
-- [ ] Stages 3 and 4 and the confirmation fit a 390 CSS pixel width
+- [x] `bin/ci` from the repository root exits 0
+- [x] The wizard submits one enrolment and shows that the case is in and that no visit is set
+- [x] An email shows the sign-up sentence. A blank email omits it
+- [x] Stages 3 and 4 and the confirmation fit a 390 CSS pixel width
 
 ## Task 22: Sign-up page
 
