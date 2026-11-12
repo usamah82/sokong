@@ -1,9 +1,36 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+import type { FamilyMember } from './MemberFields.vue'
+
 const stage = ref(1)
 const mode = ref<'self' | 'behalf'>('self')
 const phone = ref('')
 const email = ref('')
+const place = ref('')
+const familyPhone = ref('')
+const familyPhoneTouched = ref(false)
+const head = ref<FamilyMember>({
+  name: '',
+  age: '',
+  gender: 'unspecified',
+  description: '',
+  education: false,
+  working: false,
+  job: '',
+  amount: ''
+})
 const { t } = useI18n()
+
+const familyPhoneShown = computed({
+  get() {
+    if (familyPhoneTouched.value) return familyPhone.value
+    return mode.value === 'self' ? phone.value : ''
+  },
+  set(value: string) {
+    familyPhoneTouched.value = true
+    familyPhone.value = value
+  }
+})
 </script>
 
 <template>
@@ -17,10 +44,18 @@ const { t } = useI18n()
       v-model:email="email"
       @next="stage = 2"
     />
+    <StageFamily
+      v-else-if="stage === 2"
+      v-model:place="place"
+      v-model:family-phone="familyPhoneShown"
+      v-model:head="head"
+      @back="stage = 1"
+      @next="stage = 3"
+    />
     <section v-else>
-      <h1>{{ t('wizard.family.title') }}</h1>
+      <h1>{{ t('wizard.members.title') }}</h1>
       <div class="actions">
-        <button class="secondary" type="button" @click="stage = 1">{{ t('wizard.back') }}</button>
+        <button class="secondary" type="button" @click="stage = 2">{{ t('wizard.back') }}</button>
       </div>
     </section>
   </main>
