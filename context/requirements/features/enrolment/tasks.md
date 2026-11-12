@@ -344,14 +344,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `PATCH /localities/:id` lets a linked worker set the name, the center, and `radius_metres` from 1 through 200000. A radius without a center is `422`. Clearing the center and the radius together is allowed. A submitter or a worker of another locality receives `404`. Enrolments already saved keep their `locality_id`.
 
 **Acceptance criteria:**
-- [ ] `200` returns `id`, `name`, `latitude`, `longitude`, and `radius_metres` for a worker linked to that locality.
-- [ ] A radius without a center, a radius outside 1 through 200000, or a name outside 1–200 characters returns `422`. Sending null latitude, longitude, and radius clears the circle.
-- [ ] A submitter and a worker linked only to a different locality receive `404`. An enrolment saved before the patch still points at the same locality id.
+- [x] `200` returns `id`, `name`, `latitude`, `longitude`, and `radius_metres` for a worker linked to that locality.
+- [x] A radius without a center, a radius outside 1 through 200000, or a name outside 1–200 characters returns `422`. Sending null latitude, longitude, and radius clears the circle.
+- [x] A submitter and a worker linked only to a different locality receive `404`. An enrolment saved before the patch still points at the same locality id.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/localities_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: patch a center and radius as the linked worker, then confirm an older enrolment still has the same `locality_id`.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/localities_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: patch a center and radius as the linked worker, then confirm an older enrolment still has the same `locality_id`.
 
 **Dependencies:** Task 8
 
