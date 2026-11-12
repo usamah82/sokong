@@ -2,6 +2,14 @@
   "shell": {
     "sentence": "The shell is ready."
   },
+  "confirm": {
+    "mark": "Sokong",
+    "confirmed": "This email is confirmed. Sign in.",
+    "invalid": "Confirmation link is invalid",
+    "limited": "Too many attempts. Try again later.",
+    "signIn": "Sign in",
+    "signUp": "Sign up"
+  },
   "signUp": {
     "mark": "Sokong",
     "title": "Sign up",
