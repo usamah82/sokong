@@ -19,7 +19,24 @@
       "email": "Email, optional"
     },
     "family": {
-      "title": "The family"
+      "title": "The family",
+      "place": "Place",
+      "familyPhone": "Family phone, optional",
+      "head": "Head of the family",
+      "name": "Name",
+      "age": "Age",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "unspecified": "Unspecified",
+      "description": "Description",
+      "education": "In education",
+      "working": "Working",
+      "job": "Job",
+      "amount": "Rough monthly amount"
+    },
+    "members": {
+      "title": "Other people in the family"
     }
   }
 }
