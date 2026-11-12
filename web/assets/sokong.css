@@ -64,6 +64,12 @@ legend, .label {
 
 h2.label { margin: 0 0 8px; font-size: 14px; }
 
+.person {
+  margin: 0 0 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
 .choice, .check {
   display: flex;
   gap: 10px;

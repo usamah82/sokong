@@ -24,6 +24,7 @@ const head = ref<FamilyMember>({
   job: '',
   amount: ''
 })
+const others = ref<FamilyMember[]>([])
 const { t } = useI18n()
 
 watch(place, (value) => {
@@ -97,10 +98,15 @@ const familyPhoneShown = computed({
       @back="stage = 1"
       @next="stage = 3"
     />
+    <StageMembers
+      v-else-if="stage === 3"
+      v-model:people="others"
+      @back="stage = 2"
+      @next="stage = 4"
+    />
     <section v-else>
-      <h1>{{ t('wizard.members.title') }}</h1>
       <div class="actions">
-        <button class="secondary" type="button" @click="stage = 2">{{ t('wizard.back') }}</button>
+        <button class="secondary" type="button" @click="stage = 3">{{ t('wizard.back') }}</button>
       </div>
     </section>
   </main>

@@ -13,6 +13,7 @@ export type FamilyMember = {
 
 <script setup lang="ts">
 const person = defineModel<FamilyMember>('person', { required: true })
+const props = defineProps<{ scope?: string }>()
 const { t } = useI18n()
 
 const genders = [
@@ -20,39 +21,46 @@ const genders = [
   [ 'female', 'wizard.family.female' ],
   [ 'unspecified', 'wizard.family.unspecified' ]
 ] as const
+
+const genderName = computed(() => props.scope ? `${props.scope}-gender` : 'gender')
+
+function inputId(name: string) {
+  if (props.scope) return `${props.scope}-${name}`
+  return name === 'name' ? 'head-name' : name
+}
 </script>
 
 <template>
   <label class="field">{{ t('wizard.family.name') }}
-    <input id="head-name" v-model="person.name" type="text" autocomplete="name">
+    <input :id="inputId('name')" v-model="person.name" type="text" autocomplete="name">
   </label>
   <label class="field">{{ t('wizard.family.age') }}
-    <input id="age" v-model="person.age" type="text" inputmode="numeric">
+    <input :id="inputId('age')" v-model="person.age" type="text" inputmode="numeric">
   </label>
   <fieldset>
     <legend>{{ t('wizard.family.gender') }}</legend>
     <label v-for="[value, label] in genders" :key="value" class="choice">
-      <input v-model="person.gender" type="radio" name="gender" :value="value">
+      <input v-model="person.gender" type="radio" :name="genderName" :value="value">
       <span>{{ t(label) }}</span>
     </label>
   </fieldset>
   <label class="field">{{ t('wizard.family.description') }}
-    <textarea id="description" v-model="person.description" rows="3" />
+    <textarea :id="inputId('description')" v-model="person.description" rows="3" />
   </label>
   <label class="check">
-    <input id="education" v-model="person.education" type="checkbox">
+    <input :id="inputId('education')" v-model="person.education" type="checkbox">
     <span>{{ t('wizard.family.education') }}</span>
   </label>
   <label class="check">
-    <input id="working" v-model="person.working" type="checkbox">
+    <input :id="inputId('working')" v-model="person.working" type="checkbox">
     <span>{{ t('wizard.family.working') }}</span>
   </label>
   <template v-if="person.working">
     <label class="field">{{ t('wizard.family.job') }}
-      <input id="job" v-model="person.job" type="text">
+      <input :id="inputId('job')" v-model="person.job" type="text">
     </label>
     <label class="field">{{ t('wizard.family.amount') }}
-      <input id="amount" v-model="person.amount" type="text" inputmode="numeric">
+      <input :id="inputId('amount')" v-model="person.amount" type="text" inputmode="numeric">
     </label>
   </template>
 </template>

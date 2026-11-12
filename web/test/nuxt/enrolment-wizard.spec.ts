@@ -500,3 +500,90 @@ function holdLocation() {
     }
   }
 }
+
+describe('other people in the family', () => {
+  it('continues with nobody else, and keeps named people across Back', async () => {
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#place').setValue('Block 4')
+    await page.get('#head-name').setValue('Aminah')
+    await page.get('button.primary').trigger('click')
+
+    expect(page.text()).toContain('Other people in the family')
+    expect(page.text()).toContain('Step 3 of 4')
+    expect(page.text()).toContain('You can add other people, or continue if the head is the only person.')
+    expect(page.text()).not.toContain('Head of the family')
+    expect(page.find('#head-name').exists()).toBe(false)
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await page.get('button.primary').trigger('click')
+    expect(page.text()).toContain('Step 4 of 4')
+    expect(page.text()).not.toContain('Other people in the family')
+
+    await goBack(page)
+    expect(page.text()).toContain('Step 3 of 4')
+    await clickLabel(page, 'Add a person')
+    expect(page.text()).not.toContain('You can add other people, or continue if the head is the only person.')
+    expect(page.text()).toContain('Person')
+    expect(page.get('button.primary').attributes('disabled')).toBeDefined()
+
+    await page.get('#member-0-name').setValue('   ')
+    expect(page.get('button.primary').attributes('disabled')).toBeDefined()
+    await page.get('button.primary').trigger('click')
+    expect(page.text()).toContain('Step 3 of 4')
+
+    await page.get('#member-0-name').setValue('Sarah')
+    await page.get('#member-0-age').setValue('15')
+    await page.get('input[name="member-0-gender"][value="female"]').setValue(true)
+    await page.get('#member-0-description').setValue('At school in the afternoon.')
+    expect(Number(page.get('#member-0-description').attributes('rows'))).toBeGreaterThanOrEqual(3)
+    expect(page.find('#member-0-job').exists()).toBe(false)
+    await page.get('#member-0-education').setValue(true)
+    await page.get('#member-0-working').setValue(true)
+    await page.get('#member-0-job').setValue('Weekend stall')
+    await page.get('#member-0-amount').setValue('800')
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await clickLabel(page, 'Add a person')
+    expect(page.get('button.primary').attributes('disabled')).toBeDefined()
+    await page.get('#member-1-name').setValue('Yusof')
+    await page.get('input[name="member-1-gender"][value="male"]').setValue(true)
+    expect(page.get<HTMLInputElement>('input[name="member-0-gender"][value="female"]').element.checked).toBe(true)
+    expect(page.get<HTMLInputElement>('input[name="member-1-gender"][value="unspecified"]').element.checked).toBe(false)
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await page.get('#member-1-working').setValue(true)
+    expect(page.find('#member-1-job').exists()).toBe(true)
+    await page.get('#member-1-working').setValue(false)
+    expect(page.find('#member-1-job').exists()).toBe(false)
+    expect(page.find('#member-0-job').exists()).toBe(true)
+
+    const remove = page.findAll('button').find((button) => button.text() === 'Remove')
+    if (!remove) throw new Error('Remove is missing')
+    await remove.trigger('click')
+
+    const names = page.findAll('input[id$="-name"]')
+    expect(names).toHaveLength(1)
+    expect((names[0]!.element as HTMLInputElement).value).toBe('Yusof')
+    expect(page.text()).not.toContain('Sarah')
+    expect(page.get<HTMLInputElement>('input[name="member-0-gender"][value="male"]').element.checked).toBe(true)
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await goBack(page)
+    expect(page.get<HTMLInputElement>('#head-name').element.value).toBe('Aminah')
+    expect(page.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    await page.get('button.primary').trigger('click')
+
+    expect(page.text()).toContain('Step 3 of 4')
+    expect(page.get<HTMLInputElement>('#member-0-name').element.value).toBe('Yusof')
+    expect(page.text()).not.toContain('Sarah')
+    expect(page.get<HTMLInputElement>('input[name="member-0-gender"][value="male"]').element.checked).toBe(true)
+    expect(page.find('#member-0-job').exists()).toBe(false)
+  })
+})
+
+async function clickLabel(page: Awaited<ReturnType<typeof mountSuspended>>, label: string) {
+  const button = page.findAll('button').find((item) => item.text() === label)
+  if (!button) throw new Error(`${label} is missing`)
+  await button.trigger('click')
+}

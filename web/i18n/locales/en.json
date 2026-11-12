@@ -40,7 +40,11 @@
       "read": "Your current location was read. Name the place."
     },
     "members": {
-      "title": "Other people in the family"
+      "title": "Other people in the family",
+      "empty": "You can add other people, or continue if the head is the only person.",
+      "person": "Person",
+      "add": "Add a person",
+      "remove": "Remove"
     }
   }
 }
