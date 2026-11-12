@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   resources :account_verifications, only: :create
   post "sessions", to: "sessions#create"
   delete "sessions", to: "sessions#destroy"
-  resources :localities, only: [] do
+  resources :localities, only: :update do
     get "suggestion", on: :collection
   end
 
