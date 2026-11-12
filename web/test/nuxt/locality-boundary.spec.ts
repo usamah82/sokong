@@ -155,6 +155,26 @@ describe('locality boundary', () => {
     vi.unstubAllGlobals()
   })
 
+  it('does not open the editor when the load fails', async () => {
+    const calls = stubFetch(() => ({ status: 500, body: {} }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(LocalityPage, { route: '/localities/locality-1' })
+    await vi.waitFor(() => expect(calls).toHaveLength(1))
+    expect(page.find('#name').exists()).toBe(false)
+    expect(page.find('#save').exists()).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('opens sign-in when the load is rejected', async () => {
+    stubFetch(() => ({ status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(LocalityPage, { route: '/localities/locality-1' })
+    await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    expect(page.find('#name').exists()).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
   it('says the locality is not available', async () => {
     stubFetch(() => ({ status: 404, body: { error: { code: 'NOT_FOUND', message: 'Not found' } } }))
     sessionStorage.setItem('sokong.token', 'secret-token')

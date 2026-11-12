@@ -23,7 +23,6 @@ onMounted(async () => {
     return
   }
   await save({})
-  loaded.value = true
 })
 
 function shown(value: number | null) {
@@ -64,6 +63,7 @@ async function save(body: Record<string, unknown>) {
       return
     }
     apply(result.locality)
+    loaded.value = true
   } catch {
     // A failed save leaves the typed values.
   } finally {
