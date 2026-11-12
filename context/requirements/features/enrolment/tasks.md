@@ -665,14 +665,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `/enrolments` and `/enrolments/:id` for a submitter. With no looks, the detail says "This case is in. No one has looked. No visit is set." Looks render in time order with the worker's name, the time, and the note. A `401` sends the person to sign-in. A `404` says the case is not available.
 
 **Acceptance criteria:**
-- [ ] No looks shows that exact sentence. A note from the API shows under the worker's name in time order. `visit_at` null shows that no visit is set.
-- [ ] Another account's id shows the not-available state. A missing token opens `/sign-in`.
-- [ ] At 390 CSS pixels the list and the detail scroll vertically and do not scroll horizontally.
+- [x] No looks shows that exact sentence. A note from the API shows under the worker's name in time order. `visit_at` null shows that no visit is set.
+- [x] Another account's id shows the not-available state. A missing token opens `/sign-in`.
+- [x] At 390 CSS pixels the list and the detail scroll vertically and do not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: submit an enrolment with an email, confirm that email, sign in, open the case, then as a worker add a note and confirm the submitter sees it after reload.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: submit an enrolment with an email, confirm that email, sign in, open the case, then as a worker add a note and confirm the submitter sees it after reload.
 
 **Dependencies:** Tasks 10 and 24
 
