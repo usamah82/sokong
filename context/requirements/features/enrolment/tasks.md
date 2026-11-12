@@ -480,14 +480,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Stage 2 collects the place, the optional family phone, and the head. Next requires a place name and a head name. Gender starts on Unspecified and offers only Male, Female, and Unspecified. Age is an integer or blank. Job and the monthly amount render only when working is on. On self-enrolment the family phone starts as the enroler's phone and keeps copying until the submitter edits or clears it. Switching to on behalf clears the family phone only while it is still that copy. On behalf, the family phone starts empty.
 
 **Acceptance criteria:**
-- [ ] Next is available only when the place name and the head name are non-blank. Back returns to stage 1 with both stages' values kept.
-- [ ] Self-enrolment copies the enroler phone until the family phone is edited or cleared. A later change to the enroler phone updates the family phone only while the copy is still automatic. On behalf starts empty and clears an automatic copy when switching modes.
-- [ ] Gender offers only those three labels. Age accepts an integer or blank. Job and amount are hidden when working is off. The component test covers this stage.
+- [x] Next is available only when the place name and the head name are non-blank. Back returns to stage 1 with both stages' values kept.
+- [x] Self-enrolment copies the enroler phone until the family phone is edited or cleared. A later change to the enroler phone updates the family phone only while the copy is still automatic. On behalf starts empty and clears an automatic copy when switching modes.
+- [x] Gender offers only those three labels. Age accepts an integer or blank. Job and amount are hidden when working is off. The component test covers this stage.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: at 390 CSS pixels, confirm the phone-copy rules, the working fields, and that Back keeps the head's name.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: at 390 CSS pixels, confirm the phone-copy rules, the working fields, and that Back keeps the head's name.
 
 **Dependencies:** Task 17
 
