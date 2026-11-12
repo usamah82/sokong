@@ -10,6 +10,14 @@
     "signIn": "Sign in",
     "signUp": "Sign up"
   },
+  "progress": {
+    "mark": "Sokong",
+    "quiet": "This case is in. No one has looked. No visit is set.",
+    "in": "This case is in.",
+    "noVisit": "No visit is set.",
+    "missing": "This case is not available.",
+    "signOut": "Sign out"
+  },
   "signIn": {
     "mark": "Sokong",
     "title": "Sign in",

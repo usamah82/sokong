@@ -244,7 +244,9 @@ describe('sign in', () => {
     const calls: CapturedRequest[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       calls.push(capture(input, init))
-      return { ok: true, status: 204, json: async () => ({}) }
+      const method = init?.method ?? 'GET'
+      if (method === 'DELETE') return { ok: true, status: 204, json: async () => ({}) }
+      return { ok: true, status: 200, json: async () => [] }
     }))
     sessionStorage.setItem('sokong.token', 'secret-token')
     const page = await mountSuspended(EnrolmentsPage)
@@ -255,8 +257,9 @@ describe('sign in', () => {
     await vi.waitFor(() => {
       expect(sessionStorage.getItem('sokong.token')).toBeNull()
     })
-    expect(calls[0]!.method).toBe('DELETE')
-    expect(calls[0]!.authorization).toBe('Bearer secret-token')
+    const revoked = calls.find((call) => call.method === 'DELETE')
+    expect(revoked?.method).toBe('DELETE')
+    expect(revoked?.authorization).toBe('Bearer secret-token')
     expect(navigated).toEqual([ '/sign-in' ])
     vi.unstubAllGlobals()
   })

@@ -6,6 +6,14 @@ export function useAuth() {
   const config = useRuntimeConfig()
 
   return {
+    hasToken(): boolean {
+      return sessionStorage.getItem(tokenKey) !== null
+    },
+
+    clearToken() {
+      sessionStorage.removeItem(tokenKey)
+    },
+
     async signIn(body: { email: string, password: string }): Promise<SignInResult> {
       const response = await fetch(new URL('/sessions', config.public.apiBase), {
         method: 'POST',

@@ -143,6 +143,26 @@ button.block {
   margin: 0 0 16px;
 }
 
+.cases {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.cases a {
+  display: block;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.look { margin: 0 0 16px; }
+
+.look p, .worker { margin: 0 0 4px; }
+
+.look time { color: var(--muted); font-size: 14px; }
+
 .actions {
   display: flex;
   gap: 8px;
