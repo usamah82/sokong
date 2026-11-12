@@ -5,6 +5,8 @@ class Account < ApplicationRecord
 
   has_one :email_confirmation, dependent: :destroy
   has_many :auth_tokens, dependent: :destroy
+  has_many :locality_assignments, dependent: :destroy
+  has_many :looks, dependent: :destroy
 
   before_validation :assign_email_normalized
 

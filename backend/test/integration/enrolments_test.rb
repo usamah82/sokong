@@ -753,6 +753,62 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
     assert_sign_in_required
   end
 
+  test "a linked worker lists a summary and the first detail records one empty look" do
+    older = submit_enrolment(email: "siti@example.com", name: "Siti")
+    newer = submit_enrolment(email: "aminah@example.com", name: "Aminah")
+    older.update!(submitted_at: 2.hours.ago)
+    newer.update!(submitted_at: 1.hour.ago)
+    other = submit_enrolment(email: "rahim@example.com", name: "Rahim")
+    other.update!(locality: create_locality(name: "Other Block", created_at: Time.current))
+
+    token = worker_token(name: "Aman", locality: newer.locality)
+    assert_no_enqueued_jobs do
+      assert_no_difference "Look.count" do
+        get "/enrolments", headers: bearer(token)
+      end
+    end
+
+    assert_response :ok
+    assert_equal [ worker_summary(newer.reload), worker_summary(older.reload) ], response.parsed_body
+
+    assert_no_enqueued_jobs do
+      assert_difference "Look.count", 1 do
+        get "/enrolments/#{newer.id}", headers: bearer(token)
+      end
+    end
+    assert_response :ok
+    look = Look.order(:created_at).last
+    assert_equal "Aman", look.worker_name
+    assert_equal "", look.note
+    assert_equal newer.id, look.enrolment_id
+    assert_equal worker_detail(newer.reload, [ look ]), response.parsed_body
+    assert_nil response.parsed_body["visit_at"]
+
+    assert_no_enqueued_jobs do
+      assert_no_difference "Look.count" do
+        get "/enrolments/#{newer.id}", headers: bearer(token)
+      end
+    end
+    assert_response :ok
+    assert_equal worker_detail(newer.reload, [ look ]), response.parsed_body
+
+    stranger = worker_token(name: "Farid", locality: other.locality)
+    get "/enrolments/#{newer.id}", headers: bearer(stranger)
+    assert_not_found
+    assert_equal 1, Look.count
+
+    unlinked = worker_token(name: "Noor")
+    get "/enrolments", headers: bearer(unlinked)
+    assert_response :ok
+    assert_equal [], response.parsed_body
+
+    submitter = confirmed_token(email: "siti@example.com")
+    assert_no_difference "Look.count" do
+      get "/enrolments/#{newer.id}", headers: bearer(submitter)
+    end
+    assert_not_found
+  end
+
   INVITATION_BODY = "An enrolment was received. Sign up with this email address to see whether anyone has looked and whether a visit is set."
 
   class RaisingQueueAdapter
@@ -857,6 +913,68 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
       assert_equal "NOT_FOUND", error["code"]
       assert_equal "Not found", error["message"]
       assert_not error.key?("details")
+    end
+
+    def worker_token(name:, locality: nil)
+      account = Account.create!(
+        email: "worker-#{SecureRandom.hex(4)}@example.com",
+        password: "correct horse battery staple",
+        role: "worker",
+        name: name,
+        email_confirmed_at: Time.current
+      )
+      LocalityAssignment.create!(account:, locality:) if locality
+      post "/sessions", params: { email: account.email, password: "correct horse battery staple" }, as: :json
+      assert_response :ok
+      response.parsed_body.fetch("token")
+    end
+
+    def worker_summary(enrolment)
+      {
+        "id" => enrolment.id,
+        "submitted_at" => enrolment.submitted_at.utc.iso8601,
+        "place_name" => enrolment.place_name,
+        "head_name" => enrolment.members.find { |member| member.role == "head" }.name,
+        "enroler_contact" => enrolment.enroler_contact,
+        "on_behalf" => enrolment.on_behalf,
+        "locality" => { "id" => enrolment.locality.id, "name" => enrolment.locality.name }
+      }
+    end
+
+    def worker_detail(enrolment, looks)
+      worker_summary(enrolment).merge(
+        "email" => enrolment.email,
+        "how_to_find" => enrolment.how_to_find,
+        "family_phone" => enrolment.family_phone,
+        "help" => enrolment.help,
+        "other_help" => enrolment.other_help,
+        "consent_text" => enrolment.consent_text,
+        "latitude" => enrolment.latitude&.to_f,
+        "longitude" => enrolment.longitude&.to_f,
+        "members" => enrolment.members.map { |member|
+          {
+            "id" => member.id,
+            "role" => member.role,
+            "name" => member.name,
+            "age" => member.age,
+            "gender" => member.gender,
+            "description" => member.description,
+            "in_education" => member.in_education,
+            "working" => member.working,
+            "job" => member.job,
+            "monthly_amount" => member.monthly_amount
+          }
+        },
+        "looks" => looks.map { |look|
+          {
+            "id" => look.id,
+            "worker_name" => look.worker_name,
+            "looked_at" => look.looked_at.utc.iso8601,
+            "note" => look.note
+          }
+        },
+        "visit_at" => nil
+      )
     end
 
     def look_count

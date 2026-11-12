@@ -2,6 +2,7 @@ class Enrolment < ApplicationRecord
   belongs_to :family_unit
   belongs_to :locality
   has_many :members, -> { order(:position) }, through: :family_unit
+  has_many :looks, -> { order(:looked_at, :created_at) }, dependent: :destroy
 
   def self.record!(**attributes)
     transaction do

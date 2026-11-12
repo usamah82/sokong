@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_120100) do
   create_table "accounts", id: { type: :string, limit: 36 }, force: :cascade do |t|
     t.string "email", null: false
     t.string "email_normalized", null: false
@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220000) do
     t.datetime "email_confirmed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name", default: "", null: false
     t.index ["email_normalized"], name: "index_accounts_on_email_normalized", unique: true
   end
 
@@ -102,6 +103,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220000) do
     t.index ["locality_id"], name: "index_locality_assignments_on_locality_id"
   end
 
+  create_table "looks", id: { type: :string, limit: 36 }, force: :cascade do |t|
+    t.string "enrolment_id", limit: 36, null: false
+    t.string "account_id", limit: 36, null: false
+    t.string "worker_name", null: false
+    t.datetime "looked_at", null: false
+    t.string "note", default: "", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_looks_on_account_id"
+    t.index ["enrolment_id"], name: "index_looks_on_enrolment_id"
+  end
+
   add_foreign_key "auth_tokens", "accounts"
   add_foreign_key "email_confirmations", "accounts"
   add_foreign_key "enrolments", "family_units"
@@ -109,4 +122,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_220000) do
   add_foreign_key "family_members", "family_units"
   add_foreign_key "locality_assignments", "accounts"
   add_foreign_key "locality_assignments", "localities"
+  add_foreign_key "looks", "accounts"
+  add_foreign_key "looks", "enrolments"
 end
