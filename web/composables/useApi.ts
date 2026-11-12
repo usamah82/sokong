@@ -78,6 +78,18 @@ type LookResult =
   | { ok: true, look: Look }
   | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
 
+export type LocalityBoundary = {
+  id: string
+  name: string
+  latitude: number | null
+  longitude: number | null
+  radius_metres: number | null
+}
+
+type LocalityResult =
+  | { ok: true, locality: LocalityBoundary }
+  | { ok: false, reason: 'unauthenticated' | 'missing' | 'invalid', message: string }
+
 const accountFields: AccountField[] = [ 'email', 'password', 'password_confirmation' ]
 
 export function useApi() {
@@ -182,6 +194,25 @@ export function useApi() {
       if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
       if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
       throw new Error('note was not saved')
+    },
+
+    async updateLocality(id: string, body: Record<string, unknown>): Promise<LocalityResult> {
+      const token = sessionStorage.getItem('sokong.token')
+      const response = await fetch(new URL(`/localities/${id}`, config.public.apiBase), {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body)
+      })
+      if (response.status === 200) return { ok: true, locality: await response.json() as LocalityBoundary }
+      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
+      if (response.status === 404) return { ok: false, reason: 'missing', message: payload?.error?.message ?? '' }
+      if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
+      throw new Error('locality was not saved')
     }
   }
 }
