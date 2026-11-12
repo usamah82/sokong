@@ -324,8 +324,12 @@ describe('place suggestion', () => {
     })
     expect(page.text()).toContain(suggested)
     expect(page.text()).toContain(elsewhere)
-    expect(String(fetchMock.mock.calls[0][0])).toContain('latitude=3.1')
-    expect(String(fetchMock.mock.calls[0][0])).toContain('longitude=101.7')
+    const url = new URL(String(fetchMock.mock.calls[0][0]))
+    expect(url.origin).toBe('http://localhost:3000')
+    expect(url.pathname).toBe('/localities/suggestion')
+    expect(url.searchParams.get('latitude')).toBe('3.1')
+    expect(url.searchParams.get('longitude')).toBe('101.7')
+    expect(fetchMock.mock.calls[0][1]).toBeUndefined()
     expect(page.get('#place').attributes('data-latitude')).toBe('3.1')
     expect(page.get('#place').attributes('data-longitude')).toBe('101.7')
 
@@ -364,4 +368,135 @@ describe('place suggestion', () => {
     await page.get('#head-name').setValue('Aminah')
     expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
   })
+
+  it('keeps the suggestion across Next and drops it when the name changes later', async () => {
+    stubPlace('named')
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#use-location').trigger('click')
+    await vi.waitFor(() => {
+      expect(page.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    })
+    await page.get('#head-name').setValue('Aminah')
+    await page.get('button.primary').trigger('click')
+    expect(page.text()).toContain('Other people in the family')
+    await goBack(page)
+    expect(page.text()).toContain(suggested)
+    expect(page.text()).toContain(elsewhere)
+    expect(page.get('#place').attributes('data-latitude')).toBe('3.1')
+    expect(page.get('#place').attributes('data-longitude')).toBe('101.7')
+
+    await page.get('#place').setValue('Somewhere else')
+    expect(page.text()).not.toContain(suggested)
+    expect(page.text()).toContain(elsewhere)
+    expect(page.get('#place').attributes('data-latitude')).toBeUndefined()
+    expect(page.get('#place').attributes('data-longitude')).toBeUndefined()
+  })
+
+  it('replaces a suggestion when a later point has no locality', async () => {
+    const held = holdLocation()
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#use-location').trigger('click')
+    await held.answer(0, { locality: { name: 'Block 4' } })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain(suggested)
+    })
+
+    await page.get('#use-location').trigger('click')
+    await held.answer(1, { locality: null })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain(nameThePlace)
+    })
+    expect(page.text()).not.toContain(suggested)
+    expect(page.text()).not.toContain(elsewhere)
+    expect(page.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    expect(page.get('#place').attributes('data-latitude')).toBeUndefined()
+    expect(page.get('#place').attributes('data-longitude')).toBeUndefined()
+  })
+
+  it('ignores a suggestion that arrives after the place was typed', async () => {
+    const held = holdLocation()
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#use-location').trigger('click')
+    await page.get('#place').setValue('Kampung X')
+    await held.answer(0, { locality: { name: 'Block 4' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(page.get<HTMLInputElement>('#place').element.value).toBe('Kampung X')
+    expect(page.text()).not.toContain(suggested)
+    expect(page.get('#place').attributes('data-latitude')).toBeUndefined()
+  })
+
+  it('keeps the newer lookup when an older response arrives later', async () => {
+    const held = holdLocation()
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#use-location').trigger('click')
+    await page.get('#use-location').trigger('click')
+    await held.answer(1, { locality: null })
+    await vi.waitFor(() => {
+      expect(page.text()).toContain(nameThePlace)
+    })
+    await held.answer(0, { locality: { name: 'Block 4' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(page.text()).toContain(nameThePlace)
+    expect(page.text()).not.toContain(suggested)
+    expect(page.get('#place').attributes('data-latitude')).toBeUndefined()
+  })
+
+  it('keeps the current suggestion when the suggestion request fails', async () => {
+    const held = holdLocation()
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#use-location').trigger('click')
+    await held.answer(0, { locality: { name: 'Block 4' } })
+    await vi.waitFor(() => {
+      expect(page.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    })
+    await page.get('#use-location').trigger('click')
+    await held.fail(1)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(page.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    expect(page.text()).toContain(suggested)
+    expect(page.text()).toContain(elsewhere)
+    expect(page.get('#place').attributes('data-latitude')).toBe('3.1')
+  })
 })
+
+function holdLocation() {
+  const fixes: PositionCallback[] = []
+  const calls: Array<{ resolve: (body: unknown) => void, reject: (error: Error) => void }> = []
+  Object.defineProperty(navigator, 'geolocation', {
+    configurable: true,
+    value: {
+      getCurrentPosition(success: PositionCallback) {
+        fixes.push(success)
+      }
+    }
+  })
+  vi.stubGlobal('fetch', () => new Promise((resolve, reject) => {
+    calls.push({
+      resolve: (body) => resolve({ ok: true, json: async () => body }),
+      reject
+    })
+  }))
+  return {
+    async answer(index: number, body: unknown) {
+      const started = calls.length
+      fixes[index]!({ coords: { latitude: 3.1, longitude: 101.7 } } as GeolocationPosition)
+      await vi.waitFor(() => {
+        expect(calls.length).toBe(started + 1)
+      })
+      calls[started]!.resolve(body)
+    },
+    async fail(index: number) {
+      const started = calls.length
+      fixes[index]!({ coords: { latitude: 3.1, longitude: 101.7 } } as GeolocationPosition)
+      await vi.waitFor(() => {
+        expect(calls.length).toBe(started + 1)
+      })
+      calls[started]!.reject(new Error('offline'))
+    }
+  }
+}

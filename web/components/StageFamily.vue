@@ -7,48 +7,14 @@ const head = defineModel<FamilyMember>('head', { required: true })
 const latitude = defineModel<number | null>('latitude', { required: true })
 const longitude = defineModel<number | null>('longitude', { required: true })
 
-const emit = defineEmits<{ back: [], next: [] }>()
-const { t } = useI18n()
-const { suggestLocality } = useApi()
+defineProps<{
+  suggestion: null | { kind: 'suggested', name: string } | { kind: 'renamed' } | { kind: 'read' }
+}>()
 
-const suggestedName = ref<string | null>(null)
-const showSuggested = ref(false)
-const showElsewhere = ref(false)
-const showRead = ref(false)
+const emit = defineEmits<{ back: [], next: [], locate: [] }>()
+const { t } = useI18n()
 
 const ready = computed(() => place.value.trim() !== '' && head.value.name.trim() !== '')
-
-watch(place, (value) => {
-  if (suggestedName.value !== null && value !== suggestedName.value) {
-    showSuggested.value = false
-    latitude.value = null
-    longitude.value = null
-  }
-})
-
-function useLocation() {
-  if (!navigator.geolocation) return
-  navigator.geolocation.getCurrentPosition(async (position) => {
-    const { latitude: lat, longitude: lng } = position.coords
-    const body = await suggestLocality(lat, lng)
-    const name = body.locality?.name
-    if (name) {
-      suggestedName.value = name
-      showSuggested.value = true
-      showElsewhere.value = true
-      showRead.value = false
-      latitude.value = lat
-      longitude.value = lng
-      place.value = name
-      return
-    }
-    suggestedName.value = null
-    showSuggested.value = false
-    latitude.value = null
-    longitude.value = null
-    showRead.value = true
-  }, () => {})
-}
 </script>
 
 <template>
@@ -63,10 +29,10 @@ function useLocation() {
         :data-longitude="longitude ?? undefined"
       >
     </label>
-    <button id="use-location" class="secondary block" type="button" @click="useLocation">{{ t('wizard.family.locate') }}</button>
-    <p v-if="showSuggested" class="hint">{{ t('wizard.family.suggested') }}</p>
-    <p v-if="showElsewhere" class="hint">{{ t('wizard.family.elsewhere') }}</p>
-    <p v-if="showRead" class="hint">{{ t('wizard.family.read') }}</p>
+    <button id="use-location" class="secondary block" type="button" @click="emit('locate')">{{ t('wizard.family.locate') }}</button>
+    <p v-if="suggestion?.kind === 'suggested'" class="hint">{{ t('wizard.family.suggested') }}</p>
+    <p v-if="suggestion?.kind === 'suggested' || suggestion?.kind === 'renamed'" class="hint">{{ t('wizard.family.elsewhere') }}</p>
+    <p v-if="suggestion?.kind === 'read'" class="hint">{{ t('wizard.family.read') }}</p>
     <label class="field">{{ t('wizard.family.familyPhone') }}
       <input id="family-phone" v-model="familyPhone" type="tel" autocomplete="tel">
     </label>
