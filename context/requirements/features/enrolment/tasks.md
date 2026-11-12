@@ -368,14 +368,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Add the three rake commands from the spec. They are not HTTP routes. `sokong:worker` creates a community worker. `sokong:locality` creates a locality and prints its id. `sokong:assign` links that account to that locality and succeeds again when the link is already there.
 
 **Acceptance criteria:**
-- [ ] `sokong:worker` with `EMAIL`, `NAME`, and a `PASSWORD` of at least 12 characters creates a confirmed community worker and queues no confirmation message. A duplicate email or a short password fails and creates nothing.
-- [ ] `sokong:locality` with `NAME` prints the new id. `sokong:assign` with that email and id creates the link, and a second run leaves a single link.
-- [ ] An unknown email or an unknown locality id fails. No public route creates a worker or a link.
+- [x] `sokong:worker` with `EMAIL`, `NAME`, and a `PASSWORD` of at least 12 characters creates a confirmed community worker and queues no confirmation message. A duplicate email or a short password fails and creates nothing.
+- [x] `sokong:locality` with `NAME` prints the new id. `sokong:assign` with that email and id creates the link, and a second run leaves a single link.
+- [x] An unknown email or an unknown locality id fails. No public route creates a worker or a link.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/tasks/sokong_rake_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: run the three commands from `backend` as written in `spec.md` and confirm the worker can sign in.
+- [x] Tests pass: `cd backend && bin/rails test test/tasks/sokong_rake_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: run the three commands from `backend` as written in `spec.md` and confirm the worker can sign in.
 
 **Dependencies:** Tasks 7 and 8
 
@@ -387,11 +387,11 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 11–14
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] The linked worker sees members, place, how to find them, phones, enroler contact, and help
-- [ ] The first detail read stores one look, a note appears for the submitter, and `visit_at` stays empty
-- [ ] Editing a locality name or circle does not move an enrolment already saved
-- [ ] The operator command creates a confirmed worker and sends no confirmation mail
+- [x] `bin/ci` from the repository root exits 0
+- [x] The linked worker sees members, place, how to find them, phones, enroler contact, and help
+- [x] The first detail read stores one look, a note appears for the submitter, and `visit_at` stays empty
+- [x] Editing a locality name or circle does not move an enrolment already saved
+- [x] The operator command creates a confirmed worker and sends no confirmation mail
 
 ## Task 15: Allow the web origin
 
