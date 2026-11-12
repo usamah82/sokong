@@ -10,6 +10,16 @@
     "signIn": "Sign in",
     "signUp": "Sign up"
   },
+  "boundary": {
+    "unavailable": "This locality is not available.",
+    "name": "Name",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "radius": "Radius in metres",
+    "save": "Save",
+    "clear": "Clear the circle",
+    "open": "Boundary"
+  },
   "worker": {
     "unlinked": "No locality is linked to this account.",
     "empty": "No enrolments yet.",

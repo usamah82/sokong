@@ -60,6 +60,7 @@ async function submit() {
   <div class="worker-case">
     <h1>{{ enrolment.place_name }}</h1>
     <p><span class="label">{{ t('wizard.family.place') }}</span> {{ enrolment.place_name }}</p>
+    <p><NuxtLink :id="`locality-${enrolment.locality.id}`" :to="`/localities/${enrolment.locality.id}`">{{ t('boundary.open') }}</NuxtLink></p>
     <p><span class="label">{{ t('wizard.notes.howToFind') }}</span> {{ enrolment.how_to_find }}</p>
     <p><span class="label">{{ t('wizard.family.familyPhone') }}</span> {{ enrolment.family_phone }}</p>
     <p><span class="label">{{ t('worker.enroler') }}</span> {{ enrolment.enroler_contact }}</p>
