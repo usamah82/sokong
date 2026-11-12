@@ -294,14 +294,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** A community worker linked to the enrolment's locality can list and open it. List items are the worker summary in the spec. Detail adds the family fields. The first detail read for that worker and enrolment inserts one look with the worker's name, the time, and an empty note, before the response is sent. A second open does not insert another. Opening the list does not insert one. A worker of another locality receives `404`.
 
 **Acceptance criteria:**
-- [ ] The linked worker's list returns `id`, `submitted_at`, `place_name`, `head_name`, `enroler_contact`, `on_behalf`, and `locality`, newest first, and inserts no look.
-- [ ] The first detail read returns the family fields and one empty-note look. The second detail read returns that same look once. `visit_at` stays null. No mail is queued.
-- [ ] A worker with no link to that locality, and a submitter requesting the worker-only fields by guessing, receives `404`. A worker with no links who lists enrolments receives `200` and an empty array.
+- [x] The linked worker's list returns `id`, `submitted_at`, `place_name`, `head_name`, `enroler_contact`, `on_behalf`, and `locality`, newest first, and inserts no look.
+- [x] The first detail read returns the family fields and one empty-note look. The second detail read returns that same look once. `visit_at` stays null. No mail is queued.
+- [x] A worker with no link to that locality, and a submitter requesting the worker-only fields by guessing, receives `404`. A worker with no links who lists enrolments receives `200` and an empty array.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: create a confirmed worker and a link in the console, open the detail twice, and confirm one look row.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/enrolments_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: create a confirmed worker and a link in the console, open the detail twice, and confirm one look row.
 
 **Dependencies:** Task 10
 
