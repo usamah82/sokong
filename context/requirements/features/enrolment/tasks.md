@@ -505,14 +505,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** "Use my current location" asks the device for a point and calls `GET /localities/suggestion`. When a name comes back, it fills the place field and the screen says "This place was suggested from your current location." and "You can name a different place if you are not with the family." Editing the place name removes the suggested-from-location sentence. When the device returns a point and the suggestion is null, the screen says "Your current location was read. Name the place." Refusing the device, or never using the control, still allows Next once a place name is typed.
 
 **Acceptance criteria:**
-- [ ] A successful suggestion fills the place name and shows both sentences from the spec. Changing the name removes "This place was suggested from your current location."
-- [ ] A point with no suggested locality shows "Your current location was read. Name the place." A refusal still allows Next after a typed place name.
-- [ ] The point is sent on submit only when the place name is still the suggested name. The component test covers the three outcomes with a stubbed geolocation and a stubbed API.
+- [x] A successful suggestion fills the place name and shows both sentences from the spec. Changing the name removes "This place was suggested from your current location."
+- [x] A point with no suggested locality shows "Your current location was read. Name the place." A refusal still allows Next after a typed place name.
+- [x] The point is sent on submit only when the place name is still the suggested name. The component test covers the three outcomes with a stubbed geolocation and a stubbed API.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: at 390 CSS pixels, with the API running and one locality center stored, use the control, then change the name and confirm the suggestion sentence disappears.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: at 390 CSS pixels, with the API running and one locality center stored, use the control, then change the name and confirm the suggestion sentence disappears.
 
 **Dependencies:** Tasks 4 and 18
 
@@ -526,10 +526,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 17–19
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] Stages 1 and 2 keep typed values across Back
-- [ ] The location control fills a suggested name and drops that sentence when the name changes
-- [ ] Both stages fit a 390 CSS pixel width without horizontal scrolling
+- [x] `bin/ci` from the repository root exits 0
+- [x] Stages 1 and 2 keep typed values across Back
+- [x] The location control fills a suggested name and drops that sentence when the name changes
+- [x] Both stages fit a 390 CSS pixel width without horizontal scrolling
 
 ## Task 20: Other people in the family
 
