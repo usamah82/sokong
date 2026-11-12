@@ -762,16 +762,18 @@ describe('notes for the community worker', () => {
       family_phone: '',
       how_to_find: '',
       help: [],
-      other_help: '',
-      members: [
-        {
-          role: 'head',
-          name: 'Aminah',
-          gender: 'unspecified',
-          working: false
-        }
-      ]
+      other_help: ''
     })
+    expect(calls[0]!.json.members).toEqual([
+      {
+        role: 'head',
+        name: 'Aminah',
+        gender: 'unspecified',
+        description: '',
+        in_education: false,
+        working: false
+      }
+    ])
     expect(calls[0]!.json).not.toHaveProperty('email')
     expect(calls[0]!.json).not.toHaveProperty('latitude')
     expect(calls[0]!.json).not.toHaveProperty('longitude')
