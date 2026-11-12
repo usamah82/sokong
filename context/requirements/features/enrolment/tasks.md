@@ -689,14 +689,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The same routes render the worker list and detail when the account is a community worker. No link shows "No locality is linked to this account." A link and no enrolments shows "No enrolments yet." Detail shows the members, place, how to find them, phones, enroler contact, and help. The first open is the detail GET, which records the look on the API. A note form posts the note. Opening the list records nothing.
 
 **Acceptance criteria:**
-- [ ] The two empty sentences match the spec. The detail shows the family fields the worker payload includes, and that no help was named when help is empty.
-- [ ] Submitting a note shows it in the look list. A second visit to the detail does not duplicate the empty-note look.
-- [ ] At 390 CSS pixels the worker case scrolls vertically and does not scroll horizontally.
+- [x] The two empty sentences match the spec. The detail shows the family fields the worker payload includes, and that no help was named when help is empty.
+- [x] Submitting a note shows it in the look list. A second visit to the detail does not duplicate the empty-note look.
+- [x] At 390 CSS pixels the worker case scrolls vertically and does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npm test`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: sign in as a linked worker, open a case twice, add a note, and confirm one empty look plus the note. Sign in as a worker with no link and confirm the empty sentence.
+- [x] Tests pass: `cd web && npm test`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: sign in as a linked worker, open a case twice, add a note, and confirm one empty look plus the note. Sign in as a worker with no link and confirm the empty sentence.
 
 **Dependencies:** Tasks 12 and 24
 
