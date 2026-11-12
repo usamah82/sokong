@@ -147,7 +147,17 @@ describe('the family', () => {
     expect(Number(page.get('#description').attributes('rows'))).toBeGreaterThanOrEqual(3)
     await page.get('input[value="female"]').setValue(true)
     await page.get('#education').setValue(true)
+    await page.get('#family-phone').setValue('60123456789')
     expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await page.get('button.primary').trigger('click')
+    expect(page.text()).toContain('Other people in the family')
+    expect(page.text()).toContain('Step 3 of 4')
+
+    await page.get('button.secondary').trigger('click')
+    expect(page.get<HTMLInputElement>('#place').element.value).toBe('Block 4')
+    expect(page.get<HTMLInputElement>('#head-name').element.value).toBe('Aminah')
+    expect(page.get<HTMLInputElement>('#family-phone').element.value).toBe('60123456789')
 
     await page.get('button.secondary').trigger('click')
     expect(page.get<HTMLInputElement>('#phone').element.value).toBe('+60 12-345 6789')
@@ -208,6 +218,35 @@ describe('the family', () => {
     await page.get('input[value="behalf"]').setValue(true)
     await page.get('button.primary').trigger('click')
     expect(page.get<HTMLInputElement>('#family-phone').element.value).toBe('60111111111')
+  })
+
+  it('does not require a family phone, and keeps one typed on behalf', async () => {
+    const page = await mountSuspended(IndexPage)
+    await page.get('input[value="behalf"]').setValue(true)
+    await openFamily(page)
+    await page.get('#place').setValue('Block 4')
+    await page.get('#head-name').setValue('Aminah')
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await page.get('#family-phone').setValue('Mary at the shop')
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
+
+    await page.get('#family-phone').setValue('60111111111')
+    await page.get('button.secondary').trigger('click')
+    await page.get('input[value="self"]').setValue(true)
+    await page.get('button.primary').trigger('click')
+    expect(page.get<HTMLInputElement>('#family-phone').element.value).toBe('60111111111')
+  })
+
+  it('allows in education and working together', async () => {
+    const page = await mountSuspended(IndexPage)
+    await openFamily(page)
+    await page.get('#education').setValue(true)
+    await page.get('#working').setValue(true)
+    expect(page.get<HTMLInputElement>('#education').element.checked).toBe(true)
+    expect(page.get<HTMLInputElement>('#working').element.checked).toBe(true)
+    expect(page.get('#job').exists()).toBe(true)
+    expect(page.get('#amount').exists()).toBe(true)
   })
 
   it('offers only three genders, an integer or blank age, and job fields only while working', async () => {
