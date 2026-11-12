@@ -30,13 +30,25 @@ describe('who is enrolling', () => {
 
     await page.get('#phone').setValue('Mary at the shop')
     expect(page.text()).toContain(copy.phoneError)
-    expect(page.get('button').attributes('disabled')).toBeDefined()
+    expect(page.get('button.primary').attributes('disabled')).toBeDefined()
+
+    for (const bad of [ '123', 'phone: 0123456789' ]) {
+      await page.get('#phone').setValue(bad)
+      expect(page.text()).toContain(copy.phoneError)
+      expect(page.get('button.primary').attributes('disabled')).toBeDefined()
+      await page.get('button.primary').trigger('click')
+      expect(page.text()).toContain('Who is enrolling')
+    }
+
+    await page.get('#phone').setValue('012-345 6789')
+    expect(page.text()).not.toContain(copy.phoneError)
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
 
     await page.get('#phone').setValue('+60 12-345 6789')
     await page.get('#email').setValue('siti@example.com')
-    expect(page.text()).not.toContain(copy.phoneError)
+    expect(page.get('button.primary').attributes('disabled')).toBeUndefined()
 
-    await page.get('form').trigger('submit')
+    await page.get('button.primary').trigger('click')
     expect(page.text()).toContain('The family')
 
     await page.get('button').trigger('click')
