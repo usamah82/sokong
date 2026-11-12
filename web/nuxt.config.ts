@@ -9,6 +9,11 @@ export default defineNuxtConfig({
   devServer: {
     port: 3001
   },
+  runtimeConfig: {
+    public: {
+      apiBase: 'http://localhost:3000'
+    }
+  },
   modules: [ '@nuxtjs/i18n', '@nuxt/eslint' ],
   i18n: {
     defaultLocale: 'en',

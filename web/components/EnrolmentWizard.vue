@@ -7,6 +7,8 @@ const mode = ref<'self' | 'behalf'>('self')
 const phone = ref('')
 const email = ref('')
 const place = ref('')
+const latitude = ref<number | null>(null)
+const longitude = ref<number | null>(null)
 const familyPhone = ref('')
 const familyPhoneTouched = ref(false)
 const head = ref<FamilyMember>({
@@ -49,6 +51,8 @@ const familyPhoneShown = computed({
       v-model:place="place"
       v-model:family-phone="familyPhoneShown"
       v-model:head="head"
+      v-model:latitude="latitude"
+      v-model:longitude="longitude"
       @back="stage = 1"
       @next="stage = 3"
     />

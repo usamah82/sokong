@@ -33,7 +33,11 @@
       "education": "In education",
       "working": "Working",
       "job": "Job",
-      "amount": "Rough monthly amount"
+      "amount": "Rough monthly amount",
+      "locate": "Use my current location",
+      "suggested": "This place was suggested from your current location.",
+      "elsewhere": "You can name a different place if you are not with the family.",
+      "read": "Your current location was read. Name the place."
     },
     "members": {
       "title": "Other people in the family"
