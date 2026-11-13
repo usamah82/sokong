@@ -2,7 +2,7 @@
 
 Interview, spec, design, and plan are separate sessions. Paste the prompt. Fill `<slug>` and `<idea>`. Do not ask one of those sessions to continue into the next phase. The diagrams are in [flows.md](flows.md).
 
-After you set `plan-approved`, paste Run once. That session works every remaining task. ADR-0007 is the rule.
+After you set `plan-approved`, paste Run once. That session works every remaining task. A GitHub or CI wake is still that session. ADR-0007 is the rule.
 
 The agent should follow `repo-workflow` without being reminded. Naming the upstream skill in the prompt keeps it from drifting.
 
@@ -91,6 +91,11 @@ in the feature README. Do not edit the spec.
 A checkpoint is checked after the tasks above it are merged. No pull request
 for the checkpoint. A failure inside the spec is a commit on the feature branch.
 A failure that needs a spec change stops the loop.
+
+A GitHub or CI notification is not a stop. Waiting for review or CI may end the
+turn. On the wake, check tasks.md. If an unchecked task remains and the feature
+README does not name a spec or task change waiting on me, start that task before
+ending the turn. Stop only for the two stops in ADR-0007.
 
 When no unchecked tasks remain, set in-review and stop. I will merge
 feature/<slug> into main.
