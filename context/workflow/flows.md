@@ -69,7 +69,7 @@ stateDiagram-v2
 
 ## One task, one pull request
 
-The feature branch is `feature/<slug>`. Enrolment's is `feature/enrolment`, still ahead of `main`. Each task is a short-lived branch and one pull request into that feature branch. The implementer opens it, runs the review loop below, and merges it. Pull requests [#7](https://github.com/usamah82/sokong/pull/7) and [#8](https://github.com/usamah82/sokong/pull/8) merged into `feature/enrolment`. [#4](https://github.com/usamah82/sokong/pull/4) and [#5](https://github.com/usamah82/sokong/pull/5) merged into `cursor/record-product-answers`; `feature/enrolment` continues that line.
+The feature branch is `feature/<slug>`. Enrolment's was `feature/enrolment`. It is on `main`, and the feature status is `done`. Each task is a short-lived branch and one pull request into that feature branch. The implementer opens it, runs the review loop below, and merges it. Pull requests [#7](https://github.com/usamah82/sokong/pull/7) and [#8](https://github.com/usamah82/sokong/pull/8) merged into `feature/enrolment`. [#4](https://github.com/usamah82/sokong/pull/4) and [#5](https://github.com/usamah82/sokong/pull/5) merged into `cursor/record-product-answers`; `feature/enrolment` continues that line.
 
 The human merges `feature/<slug>` into `main` after the last task. A merge to `main` still leaves production deploy as its own request. Hosting is undecided.
 
