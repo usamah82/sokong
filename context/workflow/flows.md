@@ -115,9 +115,9 @@ It stops, sets `in-review`, and writes the reason in the feature README when:
 
 - a finding can be fixed only by changing `spec.md` or that task's acceptance
 - the same act-on finding is still open after one fix attempt
-- no unchecked tasks remain
+- no unchecked tasks remain. If the feature has a screen a person can open, record one video walkthrough of those screens first
 
-On the last of those, the human merges the feature branch to `main` and sets `done`.
+On the last of those, the human merges the feature branch to `main` and sets `done`. The walkthrough is in the message that set `in-review`.
 
 ```mermaid
 sequenceDiagram
@@ -146,7 +146,7 @@ sequenceDiagram
       Impl->>PR: Merge into the feature branch when the act-on list is clear and bin/ci is green
     end
   end
-  Impl->>Human: No tasks left. Merge the feature branch to main.
+  Impl->>Human: No tasks left. Walk through the screens on video, then the human merges the feature branch to main.
 ```
 
 A local SDK agent for this loop uses `Agent.create` with `local: { cwd, settingSources: ["project"] }` and a model id. The personas in `.cursor/agents/*.md` are the subagents. The parent spawns them with the Agent tool, so the `task` tool stays allowed. Cloud `autoCreatePR` targets the default base, which is the wrong base for these pull requests. The Run prompt is the way to start the loop. A wrapper script is not in the repo.
@@ -158,6 +158,6 @@ A local SDK agent for this loop uses `Agent.create` with `local: { cwd, settingS
 | Interview | `intent.md` | Human confirms |
 | Spec | `spec.md` | Human approves, after design when there is a screen |
 | Plan | `plan.md`, `tasks.md` | Human approves when more than one task remains |
-| Run | Every remaining task, merged into the feature branch | A spec change, a stuck finding, or no tasks left |
+| Run | Every remaining task, merged into the feature branch, then one video walkthrough when the feature has a screen | A spec change, a stuck finding, or no tasks left |
 | Feature branch to `main` | — | Human merges, then sets `done` |
 | Deploy | — | Human asks, after an ADR names a host |

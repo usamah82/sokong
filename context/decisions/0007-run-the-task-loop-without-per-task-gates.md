@@ -41,7 +41,7 @@ The implementer acts on the bands those personas already use for "fix before mer
 The implementer stops and sets `in-review`, with the reason in the feature README, in two cases:
 
 1. A finding can be fixed only by changing `spec.md` or that task's acceptance. The implementer does not edit the spec.
-2. No unchecked tasks remain. The human merges `feature/<slug>` into `main`, then sets `done`.
+2. No unchecked tasks remain. Before that stop, when the feature has a screen a person can open, the implementer records one video walkthrough of those screens and includes it in the message that sets `in-review`. A feature with no screen skips the recording. The walkthrough is evidence for the human. It becomes the spec-change stop only when what it shows can be fixed only by changing the spec. The human merges `feature/<slug>` into `main`, then sets `done`.
 
 If the same act-on finding is still open after one fix attempt, that is case 1 for this loop: stop, name the finding, and wait. Production deploy stays a separate human request. Hosting is undecided.
 
