@@ -1,6 +1,6 @@
 # Master feature list
 
-Catalog only. No row is the spec. The enrolment feature has an approved spec at `context/requirements/features/enrolment/`. Status is `spec-approved`. A spec starts when a human names the feature and the questions that block it are answered in [open-questions.md](open-questions.md).
+Catalog only. No row is the spec. The enrolment feature has an approved spec at `context/requirements/features/enrolment/`. Status is `done`. A spec starts when a human names the feature and the questions that block it are answered in [open-questions.md](open-questions.md).
 
 "Deck" means the behavior is in [sokong-and-mara.pdf](sokong-and-mara.pdf). "Gap" means the deck requires it, or names it as a loose end, and does not describe it as a product behavior. Concepts are in [concepts.md](concepts.md).
 

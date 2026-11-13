@@ -94,7 +94,7 @@ you have an idea
   → deploy and monitor only when you have asked for production
 ```
 
-Status names and file paths are in `repo-workflow`. Enrolment's task pull requests merge into `feature/enrolment`, which is still ahead of `main`.
+Status names and file paths are in `repo-workflow`. Enrolment's task pull requests merged into `feature/enrolment`. That branch is on `main`, and the feature status is `done`.
 
 ## What is already in place
 
