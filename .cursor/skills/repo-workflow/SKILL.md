@@ -73,7 +73,7 @@ Stop the turn, even if you could keep going:
 - After the plan, when more than one task is left. A single small task may be implemented in a later turn of the same session only if the human already approved the spec and asked you to build it.
 - During the task loop, when a finding can be fixed only by changing `spec.md` or that task's acceptance. Say so in the feature README and set `in-review`. Leave the spec unchanged.
 - During the task loop, when the same act-on finding is still open after one fix attempt. Set `in-review` and name the finding.
-- When no unchecked tasks remain. Set `in-review`. The human merges `feature/<slug>` into `main`, then sets `done`.
+- When no unchecked tasks remain. If the feature has a screen a person can open, record one video walkthrough of those screens first, then set `in-review`. The human merges `feature/<slug>` into `main`, then sets `done`.
 - Before any production deploy.
 
 A typo, a failing test for already-accepted behavior, or a dependency bump does not need a new feature folder. Name the existing spec or ADR in the commit instead.

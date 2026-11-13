@@ -97,7 +97,16 @@ turn. On the wake, check tasks.md. If an unchecked task remains and the feature
 README does not name a spec or task change waiting on me, start that task before
 ending the turn. Stop only for the two stops in ADR-0007.
 
-When no unchecked tasks remain, set in-review and stop. I will merge
+When no unchecked tasks remain, and this feature has a screen a person can
+open, record one video walkthrough before you set in-review. Use the running
+app, at 390 CSS pixels when the spec says phone width. Sign in as each role
+the screens belong to. Show each screen's primary action, and the empty and
+error states the spec names. Start the recording at the first screen and stop
+when the last action is done. Save that recording and put it in your final
+message. Discard a failed take and record again. If the feature has no screen,
+skip the recording and say so. A walkthrough that shows a bug inside the spec
+is a commit on the feature branch. A walkthrough that needs a spec change
+stops the loop. Do not edit the spec. Then set in-review and stop. I will merge
 feature/<slug> into main.
 Do not merge to main. Do not deploy.
 ```

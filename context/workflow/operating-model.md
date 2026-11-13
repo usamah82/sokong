@@ -89,7 +89,8 @@ you have an idea
   → one implementer runs every remaining task
   → for each task it opens a pull request into the feature branch, spawns the review personas, applies the act-on findings, and merges
   → it stops if a finding would change the spec or the task
-  → when no tasks remain, you merge the feature branch to main
+  → when no tasks remain, and the feature has a screen, it records one video walkthrough
+  → you merge the feature branch to main
   → deploy and monitor only when you have asked for production
 ```
 
@@ -109,6 +110,6 @@ Status names and file paths are in `repo-workflow`. Enrolment's task pull reques
 2. Start an interview session with the prompt in `prompts.md`. Answer one question at a time. Confirm the intent file.
 3. Run spec, then design when the spec has a screen, then plan, each in a new session, and approve each.
 4. Paste the Run prompt once. The implementer takes every remaining task, reviews it through the personas, and merges each task pull request into the feature branch.
-5. When it stops with no tasks left, merge the feature branch to `main`.
+5. When it stops with no tasks left, watch the video walkthrough if the feature has a screen, then merge the feature branch to `main`.
 
 Leave deploy until that feature needs a server. Write the hosting ADR then, and replace the placeholder in `config/deploy.yml` in the same change.
