@@ -11,6 +11,7 @@ The interview covers the record a phone enrolment needs: F01 Localities, F02 Acc
 - Design: [design.md](design.md)
 - Plan: [plan.md](plan.md)
 - Tasks: [tasks.md](tasks.md)
+- Walkthrough: [enrolment-walkthrough.mp4](enrolment-walkthrough.mp4)
 - Pull requests: [#4](https://github.com/usamah82/sokong/pull/4), [#5](https://github.com/usamah82/sokong/pull/5), [#7](https://github.com/usamah82/sokong/pull/7), [#8](https://github.com/usamah82/sokong/pull/8), [#11](https://github.com/usamah82/sokong/pull/11), [#13](https://github.com/usamah82/sokong/pull/13), [#14](https://github.com/usamah82/sokong/pull/14), [#15](https://github.com/usamah82/sokong/pull/15), [#17](https://github.com/usamah82/sokong/pull/17), [#18](https://github.com/usamah82/sokong/pull/18), [#19](https://github.com/usamah82/sokong/pull/19), [#20](https://github.com/usamah82/sokong/pull/20), [#21](https://github.com/usamah82/sokong/pull/21), [#22](https://github.com/usamah82/sokong/pull/22), [#23](https://github.com/usamah82/sokong/pull/23), [#24](https://github.com/usamah82/sokong/pull/24), [#25](https://github.com/usamah82/sokong/pull/25), [#26](https://github.com/usamah82/sokong/pull/26), [#27](https://github.com/usamah82/sokong/pull/27), [#28](https://github.com/usamah82/sokong/pull/28), [#29](https://github.com/usamah82/sokong/pull/29), [#30](https://github.com/usamah82/sokong/pull/30), [#31](https://github.com/usamah82/sokong/pull/31), [#33](https://github.com/usamah82/sokong/pull/33), [#34](https://github.com/usamah82/sokong/pull/34)
 
 ## Status
