@@ -2,7 +2,7 @@
 
 Status: interviewing
 
-Interview for F06, the verification visit. Usamah named this feature on 2026-11-16. The catalog row is the idea. Nothing is confirmed yet.
+Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Nothing is confirmed yet.
 
 ## Links
 
