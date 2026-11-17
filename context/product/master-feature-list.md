@@ -8,6 +8,8 @@ The proposed first cluster, not an approval, is the record a phone enrolment nee
 
 F24 is deferred. The share counts every family in the locality, and Sokong only tracks families that need support, so the other features do not wait on it. F36 is the ownership question Q2 set aside. F37 is contesting a checkbox, which Q5 set aside. The first locale is English, and both clients are localizable (Q15, ADR-0006).
 
+On 2026-11-16 Usamah kept the verification interview on the ideal first visit. That interview is F06 and F07, in `requirements/features/verification-visit/`. He set it to `intent-confirmed` on 2026-11-17. Duplicate enrolments and their reconciliation are F38, and F38 waits for its own interview.
+
 ## A. Place and people
 
 | ID | Feature | What someone can do | Source | Blocked by |
@@ -23,7 +25,8 @@ F24 is deferred. The share counts every family in the locality, and Sokong only 
 | F04 | Enrolment | A family enrols itself, or a community member enrols them and leaves their own contact. The form is short: who is in the unit, the needs that count for this locality and this family, location, phone if there is one. On-behalf data needed to help is stored, sourced, and shown to community workers. No office and no early rejection. | Deck | — |
 | F05 | Enrolment progress | The person who submitted can see who has looked, what they said, and when the first visit is. | Deck | — |
 | F06 | Verification visit | A worker schedules a face-to-face visit, aims for within a week, records the basket taken, the consent, and the identity check, and writes the story the form could not hold. Facts the worker has seen and verified outrank the enrolment. | Deck | — |
-| F07 | Qualification and the scam record | Mark the family qualified or disqualified. Keep a disqualified record and match a later enrolment against basic details and contact so a scam cannot re-enter. Registrations from other organizations land in the same list. | Deck | — |
+| F07 | Qualification | Mark the family qualified or disqualified after the verification visit. A qualified family can move into Empowerment. A disqualified family stays on record and is not promoted. | Deck | — |
+| F38 | Duplicate enrolments | Flag a later enrolment that looks like an earlier one and link the two. The likeness is a loose fingerprint of the enrolment details. If the earlier enrolment is qualified, mark the later one duplicated and leave the worker nothing to do. If the earlier one is disqualified, the worker still verifies the later enrolment and can qualify or disqualify it. | Usamah, 2026-11-16 | F07 |
 
 ## C. The Mara record
 
@@ -70,7 +73,7 @@ F24 is deferred. The share counts every family in the locality, and Sokong only 
 |---|---|---|---|---|
 | F27 | Consent and retention | Record who consented, to what, and when. On-behalf data needed to help is stored before that consent, with its source, for community workers. Keep dropped and disqualified records only as far as the privacy rule that gets written down. A family can ask what is held. | Deck names PDPA and GDPR as open | — |
 | F28 | Partner verification | The community workers of a locality check a benefactor or a facilitator before their offer can be matched, and keep a record of a fake charity. | Loose end | — |
-| F29 | Likely duplicates | Keep one list of family units across organizations. When a new registration looks like an existing unit, tell the organizations that help may overlap so it can be spread. | Loose end | — |
+| F29 | Likely duplicates | Keep one list of family units across organizations. When a new registration looks like an existing unit, tell the organizations that help may overlap so it can be spread. A later Sokong enrolment that looks like an earlier one is F38. | Loose end | — |
 | F30 | Notifications | Tell the worker, the person who enrolled, and the family when a registration is seen, a visit is set, or a visit is late. | Deck, the Sarah story | — |
 
 ## H. Held until you say otherwise
@@ -96,7 +99,7 @@ F01 Localities
   └─ F02 Accounts
        └─ F03 Family record
             ├─ F04 Enrolment ── F05 Progress
-            │        └─ F06 Visit ── F07 Qualification
+            │        └─ F06 Visit ── F07 Qualification ── F38 Duplicate enrolments
             │                 └─ F09 Story
             │                 └─ F08 Assessment ── F11 Direction
             │                          └─ F14 Reassessment ── F15 Graduation
@@ -107,4 +110,5 @@ F23 Caseload outcomes sit on F08 and F15
 F24 Nation measure is deferred. It counts families Sokong does not track, and it is not required to enrol the first family
 F36 Local custody waits until a human asks for that PRD
 F37 Contesting a checkbox waits until a human asks for that PRD
+F38 Duplicate enrolments waits for its own interview. It needs the qualified and disqualified marks from F07
 ```
