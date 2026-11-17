@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sokong verification visit</title>
+  <style>
+    :root {
+      --paper: #f3f0e8;
+      --sheet: #fffcf7;
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #d4cec3;
+      --accent: #1e3a2f;
+      --accent-ink: #fffcf7;
+      --error: #8c1d1d;
+      --space: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.45 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .phone {
+      width: 390px;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 20px var(--space) 32px;
+      background: var(--sheet);
+    }
+
+    .mark {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 4px 0 16px;
+      font-size: 22px;
+      line-height: 1.25;
+      font-weight: 650;
+    }
+
+    h2 {
+      margin: 20px 0 8px;
+      font-size: 18px;
+      line-height: 1.3;
+      font-weight: 650;
+    }
+
+    p { margin: 0 0 12px; }
+
+    .aim, .late, .note {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .late { padding: 12px; background: var(--paper); }
+
+    label.field, .choice-set { display: block; margin: 0 0 16px; }
+
+    fieldset {
+      border: 0;
+      margin: 0 0 16px;
+      padding: 0;
+      min-inline-size: 0;
+    }
+
+    .label, legend {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .enrolment {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .verified {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fff;
+      color: inherit;
+      font: inherit;
+    }
+
+    textarea { min-height: 4.8em; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    input[aria-invalid="true"] { border-color: var(--error); }
+
+    .error {
+      margin: 8px 0 0;
+      color: var(--error);
+      font-size: 14px;
+    }
+
+    .choice, .check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 0 0 10px;
+    }
+
+    .choice input, .check input { margin-top: 4px; }
+
+    .actions { display: flex; gap: 8px; margin-top: 8px; }
+
+    button, .person-btn, .stage {
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--accent);
+      font: inherit;
+      font-weight: 650;
+      text-align: left;
+    }
+
+    .primary {
+      flex: 1;
+      background: var(--accent);
+      color: var(--accent-ink);
+      text-align: center;
+    }
+
+    .secondary { text-align: center; }
+
+    button.block { display: block; width: 100%; margin: 0 0 12px; }
+
+    .stages { list-style: none; margin: 0 0 16px; padding: 0; }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      margin: 0 0 8px;
+    }
+
+    .stage.current { background: var(--paper); }
+
+    .stage small {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .people { list-style: none; margin: 0 0 16px; padding: 0; }
+
+    .person-btn { display: block; width: 100%; margin: 0 0 8px; }
+
+    .person-btn.open { background: var(--paper); }
+
+    .person {
+      margin: 0 0 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    time { font-variant-numeric: tabular-nums; }
+
+    .cases { list-style: none; margin: 0; padding: 0; }
+
+    .cases a {
+      display: block;
+      margin: 0 0 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .cases small { display: block; color: var(--muted); font-size: 14px; }
+
+    .look { margin: 0 0 16px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+    .worker { margin: 0; font-weight: 650; }
+  </style>
+</head>
+<body>
+  <main class="phone" id="app"></main>
+  <script>
+    const stages = [
+      ["who", "Who is here"],
+      ["formation", "How the family formed"],
+      ["else", "Who else stays"],
+      ["day", "A day in their life"],
+      ["together", "How they are together"],
+      ["house", "The house and the meals"],
+      ["needs", "What they need"],
+      ["boxes", "The first two boxes"]
+    ];
+
+    const params = new URLSearchParams(location.search);
+    const name = params.get("screen") || "set-visit";
+
+    const saved = {
+      who: false,
+      formation: true,
+      else: false,
+      day: true,
+      together: false,
+      house: false,
+      needs: true,
+      boxes: false
+    };
+
+    function field(label, value, extra) {
+      const invalid = extra && extra.invalid ? ' aria-invalid="true"' : "";
+      const type = extra && extra.type ? extra.type : "text";
+      const error = extra && extra.error ? `<p class="error">${extra.error}</p>` : "";
+      const prior = extra && extra.enrolment ? `<p class="enrolment">Enrolment ${extra.enrolment}</p>` : "";
+      const verified = extra && extra.verified ? `<p class="verified">${extra.verified}</p>` : "";
+      return `<label class="field"><span class="label">${label}</span>${prior}${verified}<input type="${type}" value="${value || ""}"${invalid}>${error}</label>`;
+    }
+
+    function area(label, value) {
+      return `<label class="field"><span class="label">${label}</span><textarea rows="3">${value || ""}</textarea></label>`;
+    }
+
+    function yesNo(label, answer, enrolment) {
+      const prior = enrolment ? `<p class="enrolment">Enrolment ${enrolment}</p>` : "";
+      return `<fieldset class="choice-set"><legend>${label}</legend>${prior}
+        <label class="choice"><input type="radio" name="${label}" ${answer === "yes" ? "checked" : ""}> Yes</label>
+        <label class="choice"><input type="radio" name="${label}" ${answer === "no" ? "checked" : ""}> No</label>
+      </fieldset>`;
+    }
+
+    function check(label, on) {
+      return `<label class="check"><input type="checkbox" ${on ? "checked" : ""}> ${label}</label>`;
+    }
+
+    function anything(value) {
+      return area("Anything else they said", value);
+    }
+
+    function stageList(current, done) {
+      const items = stages.map(([id, label]) => {
+        const state = id === current ? "Current" : "";
+        const kept = done || saved[id] ? "Saved" : "Not saved";
+        const text = [state, kept].filter(Boolean).join(" · ");
+        return `<li><button type="button" class="stage${id === current ? " current" : ""}">${label}<small>${text}</small></button></li>`;
+      }).join("");
+      return `<h2>Interview</h2><ol class="stages">${items}</ol>`;
+    }
+
+    function visitHeader(mode) {
+      const late = mode === "late";
+      const time = late ? "25 November 2026 at 09:00" : "24 November 2026 at 09:00";
+      const iso = late ? "2026-11-25T01:00:00Z" : "2026-11-24T01:00:00Z";
+      return `
+        <p class="aim">Aim for a visit within a week of the enrolment.</p>
+        ${late ? '<p class="late">This visit is later than a week after the enrolment.</p>' : ""}
+        <label class="field"><span class="label">Visit time</span>
+          <time datetime="${iso}">${time}</time>
+        </label>
+        <button class="primary block" type="button">Change visit</button>`;
+    }
+
+    function caseTop() {
+      return `<p class="mark">Sokong</p><h1>Block 4</h1>`;
+    }
+
+    function nav(which) {
+      const back = which === "first" ? "" : `<button class="secondary" type="button">Back</button>`;
+      const next = which === "last" ? "" : `<button class="primary" type="button">Next</button>`;
+      return `<div class="actions">${back}${next}</div>`;
+    }
+
+    function people(openAbsent, phoneError, added) {
+      const phone = phoneError
+        ? field("Phone", "Mary at the shop", { invalid: true, type: "tel", error: "Enter a phone number, for example +60 12-345 6789.", enrolment: "+60 12-345 6789" })
+        : field("Phone", "+60 12-345 6789", { type: "tel", enrolment: "+60 12-345 6789" });
+      const absent = openAbsent ? `
+        ${check("Absent", true)}
+        ${field("Since when", "Last year")}
+        ${area("Why", "The father left for work in another town.")}` : check("Absent", false);
+      return `
+        <p>The children are the people recorded here.</p>
+        <ul class="people">
+          <li><button class="person-btn open" type="button">Aminah</button></li>
+          <li><button class="person-btn" type="button">Sarah</button></li>
+          ${added ? `<li><button class="person-btn" type="button">Farid</button><button class="secondary block" type="button">Remove</button></li>` : ""}
+        </ul>
+        <div class="person">
+          ${field("Full name", "Aminah", { enrolment: "Aminah" })}
+          ${field("Birth date", "1992-04-03")}
+          <label class="field"><span class="label">Gender</span><p class="enrolment">Enrolment Female</p>
+            <select><option>Male</option><option selected>Female</option><option>Unspecified</option></select>
+          </label>
+          ${phone}
+          ${field("Identification", "")}
+          ${absent}
+        </div>
+        <button class="secondary block" type="button">Add a person</button>
+        <label class="choice"><input type="radio" name="identity"> Identity was verified</label>
+        <label class="choice"><input type="radio" name="identity" checked> Identity was not verified</label>
+        ${anything("")}
+        ${nav("first")}`;
+    }
+
+    const bodies = {
+      "set-visit": () => `
+        ${caseTop()}
+        <p class="aim">Aim for a visit within a week of the enrolment.</p>
+        <p>Set the visit before recording it.</p>
+        <label class="field"><span class="label">Visit time</span><input type="text"></label>
+        <button class="primary block" type="button">Set visit</button>`,
+
+      "visit-invalid": () => `
+        ${caseTop()}
+        <p class="aim">Aim for a visit within a week of the enrolment.</p>
+        <p>Set the visit before recording it.</p>
+        <label class="field"><span class="label">Visit time</span><input type="text" value="Tuesday" aria-invalid="true"><p class="error">Visit time is invalid</p></label>
+        <button class="primary block" type="button">Set visit</button>`,
+
+      "visit-late": () => `
+        ${caseTop()}
+        ${visitHeader("late")}
+        ${stageList("who")}
+        <h2>Who is here</h2>
+        ${people(false, false)}`,
+
+      "who-is-here": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("who")}
+        <h2>Who is here</h2>
+        ${people(false, false, true)}`,
+
+      "who-absent": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("who")}
+        <h2>Who is here</h2>
+        ${people(true, false)}`,
+
+      "who-error": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("who")}
+        <h2>Who is here</h2>
+        ${people(false, true)}`,
+
+      formation: () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("formation")}
+        <h2>How the family formed</h2>
+        ${area("When did you two get together?", "We married in 2008.")}
+        ${area("How did you two get together?", "We met through acquaintances at the market.")}
+        ${area("Where are you two from originally?", "Aminah is from this district. Her husband is from the next state.")}
+        ${area("If either parent is absent, since when and why?", "The father has been away since last year for work.")}
+        ${anything("")}
+        ${nav()}`,
+
+      "who-else": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("else")}
+        <h2>Who else stays</h2>
+        <p>Children are recorded in Who is here.</p>
+        ${area("Who else stays with you, and why?", "Aminah's mother stays here. She cannot live alone.")}
+        ${area("Do you have to take care of elderly parents?", "Yes. Aminah cooks for her mother and helps her wash.")}
+        ${anything("")}
+        ${nav()}`,
+
+      "daily-life": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("day")}
+        <h2>A day in their life</h2>
+        <ul class="people">
+          <li><button class="person-btn open" type="button">Aminah</button></li>
+          <li><button class="person-btn" type="button">Sarah</button></li>
+        </ul>
+        ${yesNo("Are you working?", "yes", "Yes")}
+        ${yesNo("Are you in school?", "no", "No")}
+        ${field("What job?", "Food stall", { enrolment: "Food stall" })}
+        ${field("How much do you earn?", "800", { enrolment: "800" })}
+        ${area("Any previous jobs?", "She packed goods at a shop before the stall.")}
+        ${area("Any skills to highlight?", "She cooks for a crowd and keeps the day's takings.")}
+        ${area("If you wish for a new job or income, what would that be?", "A stall with a roof, closer to the flat.")}
+        ${area("How are you doing in school?", "")}
+        ${field("Where is your school?", "")}
+        ${area("How do you get to school?", "")}
+        ${anything("")}
+        ${nav()}`,
+
+      dynamics: () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("together")}
+        <h2>How they are together</h2>
+        <p>Write what the family said.</p>
+        ${area("How do you feel about your life?", "Tired. The nights at the stall are long.")}
+        ${area("If there is one thing you need to better your life, what is that?", "Rent that is not late, and Sarah back in school.")}
+        ${area("Do you feel depressed?", "Some weeks, when the rent notice comes.")}
+        ${area("Is your spouse not present?", "He is away for work. The children ask for him.")}
+        ${area("Are the kids rebellious?", "Sarah is not rebellious. She works because the stall needs her.")}
+        ${anything("")}
+        ${nav()}`,
+
+      house: () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("house")}
+        <h2>The house and the meals</h2>
+        ${yesNo("Is this place permanent?", "no")}
+        ${yesNo("Are you renting?", "yes")}
+        ${field("How much is the rent?", "500")}
+        ${yesNo("Are you behind on payments?", "yes")}
+        ${yesNo("Does it have water?", "yes")}
+        ${yesNo("Does it have electricity?", "yes")}
+        ${yesNo("Is it too crowded?", "yes")}
+        ${yesNo("Is this place safe?", "yes")}
+        ${area("Any threats?", "The lane floods when the rain is heavy.")}
+        ${yesNo("Do you get 3 meals a day?", "no")}
+        ${area("Basket", "A week's food and some cash")}
+        ${anything("")}
+        ${nav()}`,
+
+      needs: () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("needs")}
+        <h2>What they need</h2>
+        ${area("What do you need most?", "Help with the rent, and a way for Sarah to return to school.")}
+        <label class="choice"><input type="radio" name="consent"> The family consents</label>
+        <label class="choice"><input type="radio" name="consent" checked> The family does not consent</label>
+        ${anything("")}
+        ${nav()}`,
+
+      boxes: () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("boxes")}
+        <h2>The first two boxes</h2>
+        <p>This is your judgment from the visit.</p>
+        ${check("Good family unit", false)}
+        ${area("Gap", "The father is away, and Sarah is out of school to keep the stall going.")}
+        ${check("Basic necessities", false)}
+        ${area("Gap", "Rent is behind. They do not eat three meals a day.")}
+        ${anything("")}
+        <div class="actions">
+          <button class="secondary" type="button">Back</button>
+        </div>
+        <button class="primary block" type="button">Mark qualified</button>
+        <button class="secondary block" type="button">Mark disqualified</button>`,
+
+      "boxes-gap": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("boxes")}
+        <h2>The first two boxes</h2>
+        <p>This is your judgment from the visit.</p>
+        ${check("Good family unit", false)}
+        <label class="field"><span class="label">Gap</span><textarea rows="3" aria-invalid="true"></textarea><p class="error">Gap is required</p></label>
+        ${check("Basic necessities", true)}
+        ${area("Gap", "")}
+        <p class="error">The family has not consented</p>
+        <div class="actions"><button class="secondary" type="button">Back</button></div>
+        <button class="primary block" type="button">Mark qualified</button>
+        <button class="secondary block" type="button">Mark disqualified</button>`,
+
+      "boxes-incomplete": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("boxes")}
+        <h2>The first two boxes</h2>
+        <p>This is your judgment from the visit.</p>
+        ${check("Good family unit", true)}
+        ${area("Gap", "")}
+        ${check("Basic necessities", true)}
+        ${area("Gap", "")}
+        <p class="error">The visit record is incomplete</p>
+        <div class="actions"><button class="secondary" type="button">Back</button></div>
+        <button class="primary block" type="button">Mark qualified</button>
+        <button class="secondary block" type="button">Mark disqualified</button>`,
+
+      marked: () => `
+        ${caseTop()}
+        <p>This family is qualified.</p>
+        <p class="aim">Aim for a visit within a week of the enrolment.</p>
+        <p><time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time></p>
+        ${stageList("who", true)}
+        <h2>Who is here</h2>
+        <p>The children are the people recorded here.</p>
+        <div class="person">
+          <p><span class="label">Full name</span> Aminah</p>
+          <p class="enrolment">Enrolment Aminah</p>
+          <p><span class="label">Birth date</span> 1992-04-03</p>
+          <p><span class="label">Gender</span> Female</p>
+          <p class="enrolment">Enrolment Female</p>
+          <p><span class="label">Phone</span> +60 12-345 6789</p>
+          <p class="enrolment">Enrolment +60 12-345 6789</p>
+          <p><span class="label">Identification</span></p>
+          <p>Identity was not verified</p>
+        </div>
+        <p><span class="label">Anything else they said</span></p>`,
+
+      "marked-disqualified": () => `
+        ${caseTop()}
+        <p>This family is disqualified.</p>
+        <p class="aim">Aim for a visit within a week of the enrolment.</p>
+        <p><time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time></p>
+        ${stageList("needs", true)}
+        <h2>What they need</h2>
+        <p><span class="label">What do you need most?</span> Help with the rent.</p>
+        <p>The family does not consent</p>`,
+
+      "progress-quiet": () => `
+        <p class="mark">Sokong</p>
+        <h1>This case is in. No one has looked. No visit is set.</h1>
+        <button class="secondary" type="button" id="sign-out">Sign out</button>`,
+
+      "progress-look": () => `
+        <p class="mark">Sokong</p>
+        <h1>This case is in.</h1>
+        <article class="look">
+          <p class="worker">Aman</p>
+          <time datetime="2026-11-18T02:00:00Z">18 November 2026 at 10:00</time>
+          <p>Called the enroler, no answer</p>
+        </article>
+        <p>No visit is set.</p>
+        <button class="secondary" type="button" id="sign-out">Sign out</button>`,
+
+      "progress-visit": () => `
+        <p class="mark">Sokong</p>
+        <h1>This case is in.</h1>
+        <p>A visit is set for <time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time>.</p>
+        <button class="secondary" type="button" id="sign-out">Sign out</button>`,
+
+      "progress-qualified": () => `
+        <p class="mark">Sokong</p>
+        <h1>This case is in.</h1>
+        <p>A visit is set for <time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time>.</p>
+        <p>This family is qualified.</p>
+        <button class="secondary" type="button" id="sign-out">Sign out</button>`,
+
+      cases: () => `
+        <p class="mark">Sokong</p>
+        <ul class="cases" id="cases">
+          <li><a id="case-aminah" href="#aminah">Block 4 Aminah<small>A visit is set for <time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time>.</small><small>This family is qualified.</small></a></li>
+          <li><a id="case-rahim" href="#rahim">Lane 2 Rahim<small>No visit is set.</small></a></li>
+        </ul>
+        <button class="secondary" type="button" id="sign-out">Sign out</button>`
+    };
+
+    const draw = bodies[name] || bodies["set-visit"];
+    document.getElementById("app").innerHTML = draw();
+  </script>
+</body>
+</html>

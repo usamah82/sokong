@@ -1,0 +1,266 @@
+# Design
+
+Review pictures for the verification visit. The spec is still a draft. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
+
+The interview sits on the existing worker case. Submitter progress and the enrolments list gain the visit line and the outcome line. This pass uses the same paper, ink, and green button as the enrolment pictures.
+
+## Visual language
+
+Sokong has no palette yet. This pass uses a warm paper sheet, near-black text, and one dark green button. Corners are 4px. There is no gradient, no shadow, and no illustration.
+
+| Token | Value |
+|---|---|
+| Paper | `#f3f0e8` |
+| Sheet | `#fffcf7` |
+| Ink | `#1c1915` |
+| Muted | `#5c564c` |
+| Line | `#d4cec3` |
+| Accent | `#1e3a2f` |
+
+Type is the system sans at 16px. The case title is 22px. Labels are 14px. Inputs and the stage buttons are at least 44px tall. Page padding is 16px, and the column is 390px wide.
+
+The stage list is a vertical list. A stage name wraps inside the column. "Current", "Saved", and "Not saved" are words, so the open stage is not marked by color alone.
+
+Patterns this screen rejects: a hero, a card grid, a horizontal stepper, purple, and placeholder copy in place of the spec's sentences.
+
+## Phone width
+
+Every picture is 390 CSS pixels wide. The page scrolls vertically. It does not scroll horizontally. Open `design/preview.html` and add `?screen=` with one of the names below.
+
+## Screens
+
+### Set the visit
+
+Job: choose the first visit time before any interview stage is available.
+
+Primary action: Set visit.
+
+The field is labeled "Visit time". A stored time keeps that label.
+
+States: no time yet; a value that is not a time.
+
+Copy, as in the spec:
+
+- "Aim for a visit within a week of the enrolment."
+- "Set the visit before recording it."
+- "Visit time is invalid"
+
+Pictures: [set-visit.png](design/set-visit.png), [visit-invalid.png](design/visit-invalid.png).
+
+### Visit time, then the interview
+
+Job: show the stored time, say whether it is later than a week, and keep the eight stages on screen.
+
+Primary action: Change visit, until the family is marked. After that, the time is text.
+
+The sample time `2026-11-24T01:00:00Z` is shown to a UTC+8 viewer as "24 November 2026 at 09:00". A later sample, "25 November 2026 at 09:00", also shows "This visit is later than a week after the enrolment."
+
+The heading is "Interview". The stages, in order, are "Who is here", "How the family formed", "Who else stays", "A day in their life", "How they are together", "The house and the meals", "What they need", and "The first two boxes". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved".
+
+Pictures of the late time and the on-time interview: [visit-late.png](design/visit-late.png), [who-is-here.png](design/who-is-here.png).
+
+### Who is here
+
+Job: confirm each person, add someone the visit found, and record the identity check.
+
+Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. An enrolment person stays and can be marked "Absent", which shows "Since when" and "Why". Birth date is shown as `YYYY-MM-DD`.
+
+The open person shows "Enrolment" above the name, the gender, and the phone. A bad phone stays on this stage.
+
+Copy:
+
+- "The children are the people recorded here."
+- "Full name"
+- "Birth date"
+- "Gender"
+- "Phone"
+- "Identification"
+- "Absent"
+- "Identity was verified"
+- "Identity was not verified"
+- "Enter a phone number, for example +60 12-345 6789."
+- "Anything else they said"
+
+Gender is Male, Female, or Unspecified. The sample head is Female.
+
+Pictures: [who-is-here.png](design/who-is-here.png), [who-absent.png](design/who-absent.png), [who-error.png](design/who-error.png).
+
+### How the family formed
+
+Job: write how the parents came together, and why a parent is absent.
+
+Primary action: Next. Back returns to Who is here.
+
+Copy:
+
+- "When did you two get together?"
+- "How did you two get together?"
+- "Where are you two from originally?"
+- "If either parent is absent, since when and why?"
+
+Picture: [formation.png](design/formation.png).
+
+### Who else stays
+
+Job: record anyone who is not already one of the people, and care for elderly parents.
+
+Primary action: Next.
+
+Copy:
+
+- "Children are recorded in Who is here."
+- "Who else stays with you, and why?"
+- "Do you have to take care of elderly parents?"
+
+Picture: [who-else.png](design/who-else.png).
+
+### A day in their life
+
+Job: ask one person at a time about work and school. Working and school are independent.
+
+Primary action: Next.
+
+Working and school are answered with "Yes" and "No". The enrolment fact sits above those answers, and above the job and the earnings. The sample head is working, earns 800, and is not in school.
+
+Copy:
+
+- "Are you working?"
+- "Are you in school?"
+- "What job?"
+- "How much do you earn?"
+- "Any previous jobs?"
+- "Any skills to highlight?"
+- "If you wish for a new job or income, what would that be?"
+- "How are you doing in school?"
+- "Where is your school?"
+- "How do you get to school?"
+
+Picture: [daily-life.png](design/daily-life.png).
+
+### How they are together
+
+Job: write what the family said about life at home. The screen does not score a person.
+
+Primary action: Next.
+
+Copy:
+
+- "Write what the family said."
+- "How do you feel about your life?"
+- "If there is one thing you need to better your life, what is that?"
+- "Do you feel depressed?"
+- "Is your spouse not present?"
+- "Are the kids rebellious?"
+
+Picture: [dynamics.png](design/dynamics.png).
+
+### The house and the meals
+
+Job: record the place, the rent, the utilities, safety, meals, and the basket.
+
+Primary action: Next.
+
+Yes and No are the answers. "Basket" is the last question before "Anything else they said".
+
+Copy:
+
+- "Is this place permanent?"
+- "Are you renting?"
+- "How much is the rent?"
+- "Are you behind on payments?"
+- "Does it have water?"
+- "Does it have electricity?"
+- "Is it too crowded?"
+- "Is this place safe?"
+- "Any threats?"
+- "Do you get 3 meals a day?"
+- "Basket"
+- "Yes"
+- "No"
+
+Picture: [house.png](design/house.png).
+
+### What they need
+
+Job: ask what would help most, and record consent.
+
+Primary action: Next.
+
+The sample shows "The family does not consent" selected, which is the state that blocks "Mark qualified" and still allows "Mark disqualified".
+
+Copy:
+
+- "What do you need most?"
+- "The family consents"
+- "The family does not consent"
+
+Picture: [needs.png](design/needs.png).
+
+### The first two boxes
+
+Job: record Good family unit and Basic necessities, each with a gap, then mark the family.
+
+Primary action: Mark qualified, or Mark disqualified. Back returns to What they need. There is no Next.
+
+An unchecked box needs a gap. A checked box can leave the gap empty. One picture shows "Gap is required" and "The family has not consented" together. Another shows "The visit record is incomplete" when a stage has not been saved. Dependable generation and accumulated wealth are absent.
+
+Copy:
+
+- "This is your judgment from the visit."
+- "Good family unit"
+- "Basic necessities"
+- "Gap"
+- "Gap is required"
+- "The family has not consented"
+- "The visit record is incomplete"
+- "Mark qualified"
+- "Mark disqualified"
+
+Pictures: [boxes.png](design/boxes.png), [boxes-gap.png](design/boxes-gap.png), [boxes-incomplete.png](design/boxes-incomplete.png).
+
+### After the mark
+
+Job: show the finished visit as text. The stage list stays. Set visit, Change visit, Back, Next, Add a person, and both mark actions are gone.
+
+Primary action: open a stage from the list. The stage is text.
+
+Copy:
+
+- "This family is qualified."
+- "This family is disqualified."
+
+Pictures: [marked.png](design/marked.png), [marked-disqualified.png](design/marked-disqualified.png).
+
+### Submitter progress
+
+Job: show the visit time, and later the outcome, without the interview.
+
+Primary action: Sign out.
+
+States: nobody has looked and no visit is set; a look exists and no visit is set; a visit is set; the family is qualified.
+
+Copy:
+
+- "This case is in. No one has looked. No visit is set."
+- "This case is in."
+- "No visit is set."
+- "A visit is set for 24 November 2026 at 09:00."
+- "This family is qualified."
+
+Pictures: [progress-quiet.png](design/progress-quiet.png), [progress-look.png](design/progress-look.png), [progress-visit.png](design/progress-visit.png), [progress-qualified.png](design/progress-qualified.png).
+
+### Enrolments list
+
+Job: let a person with many families, and a worker, see each visit and each outcome without opening the case.
+
+Primary action: open a case. Sign out is the other action.
+
+A row with no outcome has no outcome line. The same lines are used for the submitter and the worker.
+
+Copy:
+
+- "A visit is set for 24 November 2026 at 09:00."
+- "This family is qualified."
+- "No visit is set."
+
+Picture: [cases.png](design/cases.png).
