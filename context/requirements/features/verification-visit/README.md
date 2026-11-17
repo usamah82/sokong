@@ -10,7 +10,7 @@ Interview for the ideal first verification visit and its mark: F06 and F07. Usam
 - Spec: [spec.md](spec.md)
 - Plan: [plan.md](plan.md)
 - Tasks: [tasks.md](tasks.md)
-- Pull requests: [#40](https://github.com/usamah82/sokong/pull/40)
+- Pull requests: [#40](https://github.com/usamah82/sokong/pull/40), [#41](https://github.com/usamah82/sokong/pull/41)
 
 ## Status
 
