@@ -1,8 +1,8 @@
 # Feature: verification-visit
 
-Status: intent-confirmed
+Status: spec-draft
 
-Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17 and set this status to `intent-confirmed` the same day.
+Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17 and set this status to `intent-confirmed` the same day. The spec in [spec.md](spec.md) is a draft written 2026-11-17. It waits for the design screens, then for approval. No plan and no code.
 
 ## Links
 
