@@ -2,7 +2,7 @@
 
 Status: interviewing
 
-Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Nothing is confirmed yet.
+Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17. Status stays `interviewing` until that confirmation is recorded as `intent-confirmed`.
 
 ## Links
 
@@ -10,7 +10,7 @@ Interview for the ideal first verification visit and its mark: F06 and F07. Usam
 - Spec: [spec.md](spec.md)
 - Plan: [plan.md](plan.md)
 - Tasks: [tasks.md](tasks.md)
-- Pull requests:
+- Pull requests: [#40](https://github.com/usamah82/sokong/pull/40)
 
 ## Status
 
