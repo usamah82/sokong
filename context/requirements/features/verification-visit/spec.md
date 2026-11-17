@@ -1,6 +1,6 @@
 # Spec
 
-Status: draft. The human moves the feature to `spec-approved`.
+Status: spec-approved. Usamah approved this spec on 2026-11-17, after accepting the screenshots.
 
 Catalog rows F06 and F07 are this feature. The first two Mara boxes, and the gap for each, are recorded at the end of this visit. Dependable generation, accumulated wealth, earlier assessments, and the status word stay F08. [intent.md](intent.md) stays the confirmed intent. This file says what "done" means.
 

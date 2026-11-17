@@ -1,6 +1,6 @@
 # Design
 
-Review pictures for the verification visit. The spec is still a draft. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
+Review pictures for the verification visit. Usamah accepted these screenshots and approved [spec.md](spec.md) on 2026-11-17. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
 
 The interview sits on the existing worker case. Submitter progress and the enrolments list gain the visit line and the outcome line. This pass uses the same paper, ink, and green button as the enrolment pictures.
 
