@@ -2,7 +2,7 @@
 
 Status: spec-draft
 
-Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17 and set this status to `intent-confirmed` the same day. The spec in [spec.md](spec.md) is a draft written 2026-11-17. On 2026-11-17 Usamah confirmed the interview: eight stages, the stage list always visible, and the worker can jump between stages. The last stage records Good family unit and Basic necessities, each with its gap. The other two boxes stay F08. The review pictures are in [design.md](design.md). Status stays `spec-draft` until the screenshots are accepted and the spec is approved. No plan and no code.
+Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17 and set this status to `intent-confirmed` the same day. The spec in [spec.md](spec.md) is a draft written 2026-11-17. On 2026-11-17 Usamah confirmed the interview: eight stages, the stage list always visible, and the worker can jump between stages. The last stage records Good family unit and Basic necessities, each with its gap. The other two boxes stay F08. On 2026-11-17 Usamah accepted a revision of the questions: shorter controls, and a follow-up only after the answer that opens it. The stages stay the same eight. The review pictures are in [design.md](design.md). Status stays `spec-draft` until the screenshots are accepted and the spec is approved. No plan and no code.
 
 ## Links
 

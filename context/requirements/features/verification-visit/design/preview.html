@@ -257,6 +257,11 @@
       </fieldset>`;
     }
 
+    function choice(label, options, selected) {
+      const items = options.map((opt) => `<label class="choice"><input type="radio" name="${label}" ${opt === selected ? "checked" : ""}> ${opt}</label>`).join("");
+      return `<fieldset class="choice-set"><legend>${label}</legend>${items}</fieldset>`;
+    }
+
     function check(label, on) {
       return `<label class="check"><input type="checkbox" ${on ? "checked" : ""}> ${label}</label>`;
     }
@@ -298,34 +303,42 @@
       return `<div class="actions">${back}${next}</div>`;
     }
 
-    function people(openAbsent, phoneError, added) {
-      const phone = phoneError
+    function people(mode, added) {
+      const absent = mode === "absent";
+      const phone = mode === "error"
         ? field("Phone", "Mary at the shop", { invalid: true, type: "tel", error: "Enter a phone number, for example +60 12-345 6789.", enrolment: "+60 12-345 6789" })
-        : field("Phone", "+60 12-345 6789", { type: "tel", enrolment: "+60 12-345 6789" });
-      const absent = openAbsent ? `
+        : field("Phone", absent ? "" : "+60 12-345 6789", absent ? { type: "tel" } : { type: "tel", enrolment: "+60 12-345 6789" });
+      const name = absent ? "Rahman" : "Aminah";
+      const relationship = absent
+        ? choice("Relationship", ["Spouse", "Child", "Parent", "Other"], "Spouse")
+        : `<p><span class="label">Relationship</span> Head</p>`;
+      const identity = choice("Identity", ["Verified", "Not verified", "No papers"], absent ? "No papers" : "Not verified");
+      const away = absent ? `
         ${check("Absent", true)}
-        ${field("Since when", "Last year")}
-        ${area("Why", "The father left for work in another town.")}` : check("Absent", false);
+        ${field("Since when", "2025-11-01")}
+        ${area("Why", "He left for work in another town.")}` : check("Absent", false);
       return `
         <p>The children are the people recorded here.</p>
         <ul class="people">
-          <li><button class="person-btn open" type="button">Aminah</button></li>
+          <li><button class="person-btn${absent ? "" : " open"}" type="button">Aminah</button></li>
           <li><button class="person-btn" type="button">Sarah</button></li>
+          ${absent ? `<li><button class="person-btn open" type="button">Rahman</button></li>` : ""}
           ${added ? `<li><button class="person-btn" type="button">Farid</button><button class="secondary block" type="button">Remove</button></li>` : ""}
         </ul>
         <div class="person">
-          ${field("Full name", "Aminah", { enrolment: "Aminah" })}
-          ${field("Birth date", "1992-04-03")}
-          <label class="field"><span class="label">Gender</span><p class="enrolment">Enrolment Female</p>
-            <select><option>Male</option><option selected>Female</option><option>Unspecified</option></select>
+          ${field("Full name", name, absent ? {} : { enrolment: "Aminah" })}
+          ${field("Birth date", absent ? "1990-06-12" : "1992-04-03")}
+          <label class="field"><span class="label">Gender</span>${absent ? "" : `<p class="enrolment">Enrolment Female</p>`}
+            <select><option${absent ? " selected" : ""}>Male</option><option${absent ? "" : " selected"}>Female</option><option>Unspecified</option></select>
           </label>
           ${phone}
           ${field("Identification", "")}
-          ${absent}
+          ${relationship}
+          ${field("From where?", absent ? "The next state" : "This district")}
+          ${identity}
+          ${away}
         </div>
         <button class="secondary block" type="button">Add a person</button>
-        <label class="choice"><input type="radio" name="identity"> Identity was verified</label>
-        <label class="choice"><input type="radio" name="identity" checked> Identity was not verified</label>
         ${anything("")}
         ${nav("first")}`;
     }
@@ -350,38 +363,36 @@
         ${visitHeader("late")}
         ${stageList("who")}
         <h2>Who is here</h2>
-        ${people(false, false)}`,
+        ${people("head", false)}`,
 
       "who-is-here": () => `
         ${caseTop()}
         ${visitHeader("week")}
         ${stageList("who")}
         <h2>Who is here</h2>
-        ${people(false, false, true)}`,
+        ${people("head", true)}`,
 
       "who-absent": () => `
         ${caseTop()}
         ${visitHeader("week")}
         ${stageList("who")}
         <h2>Who is here</h2>
-        ${people(true, false)}`,
+        ${people("absent", false)}`,
 
       "who-error": () => `
         ${caseTop()}
         ${visitHeader("week")}
         ${stageList("who")}
         <h2>Who is here</h2>
-        ${people(false, true)}`,
+        ${people("error", false)}`,
 
       formation: () => `
         ${caseTop()}
         ${visitHeader("week")}
         ${stageList("formation")}
         <h2>How the family formed</h2>
-        ${area("When did you two get together?", "We married in 2008.")}
-        ${area("How did you two get together?", "We met through acquaintances at the market.")}
-        ${area("Where are you two from originally?", "Aminah is from this district. Her husband is from the next state.")}
-        ${area("If either parent is absent, since when and why?", "The father has been away since last year for work.")}
+        ${field("When did this family start?", "2008")}
+        ${area("How did it start?", "Aminah and Rahman married after meeting at the market.")}
         ${anything("")}
         ${nav()}`,
 
@@ -390,9 +401,12 @@
         ${visitHeader("week")}
         ${stageList("else")}
         <h2>Who else stays</h2>
+        <p>People who live here are recorded in Who is here.</p>
         <p>Children are recorded in Who is here.</p>
-        ${area("Who else stays with you, and why?", "Aminah's mother stays here. She cannot live alone.")}
-        ${area("Do you have to take care of elderly parents?", "Yes. Aminah cooks for her mother and helps her wash.")}
+        ${yesNo("Does anyone else stay who is not in that list?", "yes")}
+        ${area("Who, and why?", "A cousin sleeps here a few nights a month when he is between jobs.")}
+        ${yesNo("Do you have to take care of elderly parents?", "yes")}
+        ${area("Who, and what do you do for them?", "Aminah's mother lives nearby. Aminah cooks for her and helps her wash.")}
         ${anything("")}
         ${nav()}`,
 
@@ -408,13 +422,28 @@
         ${yesNo("Are you working?", "yes", "Yes")}
         ${yesNo("Are you in school?", "no", "No")}
         ${field("What job?", "Food stall", { enrolment: "Food stall" })}
-        ${field("How much do you earn?", "800", { enrolment: "800" })}
+        ${field("Ringgit per month", "800", { enrolment: "800" })}
         ${area("Any previous jobs?", "She packed goods at a shop before the stall.")}
-        ${area("Any skills to highlight?", "She cooks for a crowd and keeps the day's takings.")}
         ${area("If you wish for a new job or income, what would that be?", "A stall with a roof, closer to the flat.")}
-        ${area("How are you doing in school?", "")}
-        ${field("Where is your school?", "")}
-        ${area("How do you get to school?", "")}
+        ${area("Any skills to highlight?", "She cooks for a crowd and keeps the day's takings.")}
+        ${anything("")}
+        ${nav()}`,
+
+      "daily-school": () => `
+        ${caseTop()}
+        ${visitHeader("week")}
+        ${stageList("day")}
+        <h2>A day in their life</h2>
+        <ul class="people">
+          <li><button class="person-btn" type="button">Aminah</button></li>
+          <li><button class="person-btn open" type="button">Sarah</button></li>
+        </ul>
+        ${yesNo("Are you working?", "no", "No")}
+        ${yesNo("Are you in school?", "yes", "Yes")}
+        ${area("How is school going?", "She stopped going when the stall got busy.")}
+        ${field("Where is school?", "The school at the end of the lane")}
+        ${area("How do you get there?", "She walks. The bus fare is the hard part.")}
+        ${area("Any skills to highlight?", "She keeps the stall's list of what sold.")}
         ${anything("")}
         ${nav()}`,
 
@@ -424,11 +453,9 @@
         ${stageList("together")}
         <h2>How they are together</h2>
         <p>Write what the family said.</p>
-        ${area("How do you feel about your life?", "Tired. The nights at the stall are long.")}
-        ${area("If there is one thing you need to better your life, what is that?", "Rent that is not late, and Sarah back in school.")}
-        ${area("Do you feel depressed?", "Some weeks, when the rent notice comes.")}
-        ${area("Is your spouse not present?", "He is away for work. The children ask for him.")}
-        ${area("Are the kids rebellious?", "Sarah is not rebellious. She works because the stall needs her.")}
+        ${area("What does a hard week look like here?", "The nights at the stall are long, and the rent notice comes before the money does.")}
+        ${area("When someone here needs help, who steps in?", "Aminah cooks, sells, and gets Sarah to the stall. Rahman is away.")}
+        ${area("How are the children at home?", "Sarah works because the stall needs her. She is not in trouble at home.")}
         ${anything("")}
         ${nav()}`,
 
@@ -437,16 +464,15 @@
         ${visitHeader("week")}
         ${stageList("house")}
         <h2>The house and the meals</h2>
-        ${yesNo("Is this place permanent?", "no")}
-        ${yesNo("Are you renting?", "yes")}
-        ${field("How much is the rent?", "500")}
+        ${choice("This place", ["Own", "Rent", "Staying with someone", "Temporary"], "Rent")}
+        ${field("Rent per month", "500")}
         ${yesNo("Are you behind on payments?", "yes")}
         ${yesNo("Does it have water?", "yes")}
         ${yesNo("Does it have electricity?", "yes")}
-        ${yesNo("Is it too crowded?", "yes")}
-        ${yesNo("Is this place safe?", "yes")}
-        ${area("Any threats?", "The lane floods when the rain is heavy.")}
-        ${yesNo("Do you get 3 meals a day?", "no")}
+        ${field("How many rooms do people sleep in?", "1")}
+        ${yesNo("Is this place safe?", "no")}
+        ${area("What feels unsafe?", "The lane floods when the rain is heavy.")}
+        ${choice("How many meals a day?", ["3 a day", "2 a day", "1 a day", "Not every day"], "2 a day")}
         ${area("Basket", "A week's food and some cash")}
         ${anything("")}
         ${nav()}`,
@@ -456,6 +482,8 @@
         ${visitHeader("week")}
         ${stageList("needs")}
         <h2>What they need</h2>
+        <p class="enrolment">Enrolment Food</p>
+        <p class="enrolment">Enrolment School supplies</p>
         ${area("What do you need most?", "Help with the rent, and a way for Sarah to return to school.")}
         <label class="choice"><input type="radio" name="consent"> The family consents</label>
         <label class="choice"><input type="radio" name="consent" checked> The family does not consent</label>
@@ -469,6 +497,7 @@
         <h2>The first two boxes</h2>
         <p>This is your judgment from the visit.</p>
         ${check("Good family unit", false)}
+        <p>Integrity, action, and selflessness, for the family as a whole.</p>
         ${area("Gap", "The father is away, and Sarah is out of school to keep the stall going.")}
         ${check("Basic necessities", false)}
         ${area("Gap", "Rent is behind. They do not eat three meals a day.")}
@@ -486,6 +515,7 @@
         <h2>The first two boxes</h2>
         <p>This is your judgment from the visit.</p>
         ${check("Good family unit", false)}
+        <p>Integrity, action, and selflessness, for the family as a whole.</p>
         <label class="field"><span class="label">Gap</span><textarea rows="3" aria-invalid="true"></textarea><p class="error">Gap is required</p></label>
         ${check("Basic necessities", true)}
         ${area("Gap", "")}
@@ -501,6 +531,7 @@
         <h2>The first two boxes</h2>
         <p>This is your judgment from the visit.</p>
         ${check("Good family unit", true)}
+        <p>Integrity, action, and selflessness, for the family as a whole.</p>
         ${area("Gap", "")}
         ${check("Basic necessities", true)}
         ${area("Gap", "")}
@@ -526,7 +557,9 @@
           <p><span class="label">Phone</span> +60 12-345 6789</p>
           <p class="enrolment">Enrolment +60 12-345 6789</p>
           <p><span class="label">Identification</span></p>
-          <p>Identity was not verified</p>
+          <p><span class="label">Relationship</span> Head</p>
+          <p><span class="label">From where?</span> This district</p>
+          <p><span class="label">Identity</span> Not verified</p>
         </div>
         <p><span class="label">Anything else they said</span></p>`,
 

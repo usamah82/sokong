@@ -61,11 +61,11 @@ Pictures of the late time and the on-time interview: [visit-late.png](design/vis
 
 ### Who is here
 
-Job: confirm each person, add someone the visit found, and record the identity check.
+Job: confirm each person, add someone the visit found, and record each person's identity.
 
-Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. An enrolment person stays and can be marked "Absent", which shows "Since when" and "Why". Birth date is shown as `YYYY-MM-DD`.
+Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. The head shows "Head" and has no relationship choice. Every other person has "Relationship". "From where?" is hidden when the relationship is Child. "Absent" opens "Since when" and "Why". "Since when" is a date, `YYYY-MM-DD`.
 
-The open person shows "Enrolment" above the name, the gender, and the phone. A bad phone stays on this stage.
+The open person shows "Enrolment" above the name, the gender, and the phone. A bad phone stays on this stage. Identity is asked on that person.
 
 Copy:
 
@@ -75,42 +75,61 @@ Copy:
 - "Gender"
 - "Phone"
 - "Identification"
+- "From where?"
+- "Relationship"
+- "Head"
+- "Spouse"
+- "Child"
+- "Parent"
+- "Other"
+- "Identity"
+- "Verified"
+- "Not verified"
+- "No papers"
 - "Absent"
-- "Identity was verified"
-- "Identity was not verified"
+- "Since when"
+- "Why"
 - "Enter a phone number, for example +60 12-345 6789."
 - "Anything else they said"
 
-Gender is Male, Female, or Unspecified. The sample head is Female.
+Gender is Male, Female, or Unspecified. The sample head is Female. The absent picture opens Rahman, a spouse.
 
 Pictures: [who-is-here.png](design/who-is-here.png), [who-absent.png](design/who-absent.png), [who-error.png](design/who-error.png).
 
 ### How the family formed
 
-Job: write how the parents came together, and why a parent is absent.
+Job: write when this household started, and how.
 
 Primary action: Next. Back returns to Who is here.
 
+"When did this family start?" is a year. A value that is not a year from 1900 through the current year shows "Enter the year, for example 2008."
+
 Copy:
 
-- "When did you two get together?"
-- "How did you two get together?"
-- "Where are you two from originally?"
-- "If either parent is absent, since when and why?"
+- "When did this family start?"
+- "How did it start?"
+- "Enter the year, for example 2008."
 
 Picture: [formation.png](design/formation.png).
 
 ### Who else stays
 
-Job: record anyone who is not already one of the people, and care for elderly parents.
+Job: note guests who are not people on the list, and care for elderly parents.
 
 Primary action: Next.
 
+People who live here are added on Who is here. Yes opens the follow-up. No leaves it off the screen.
+
 Copy:
 
+- "People who live here are recorded in Who is here."
 - "Children are recorded in Who is here."
-- "Who else stays with you, and why?"
+- "Does anyone else stay who is not in that list?"
+- "Who, and why?"
 - "Do you have to take care of elderly parents?"
+- "Who, and what do you do for them?"
+- "Yes"
+- "No"
 
 Picture: [who-else.png](design/who-else.png).
 
@@ -120,22 +139,24 @@ Job: ask one person at a time about work and school. Working and school are inde
 
 Primary action: Next.
 
-Working and school are answered with "Yes" and "No". The enrolment fact sits above those answers, and above the job and the earnings. The sample head is working, earns 800, and is not in school.
+"Are you working?" and "Are you in school?" are always on the screen, answered with "Yes" and "No". Yes on working opens the job, "Ringgit per month", previous jobs, and the work they want. "Any skills to highlight?" stays either way. Yes on school opens the three school questions. The enrolment fact sits above working, school, the job, and the monthly amount.
+
+The working picture is Aminah, working, 800 ringgit a month, not in school. The school picture is Sarah, not working, in school.
 
 Copy:
 
 - "Are you working?"
 - "Are you in school?"
 - "What job?"
-- "How much do you earn?"
+- "Ringgit per month"
 - "Any previous jobs?"
 - "Any skills to highlight?"
 - "If you wish for a new job or income, what would that be?"
-- "How are you doing in school?"
-- "Where is your school?"
-- "How do you get to school?"
+- "How is school going?"
+- "Where is school?"
+- "How do you get there?"
 
-Picture: [daily-life.png](design/daily-life.png).
+Pictures: [daily-life.png](design/daily-life.png), [daily-school.png](design/daily-school.png).
 
 ### How they are together
 
@@ -143,14 +164,14 @@ Job: write what the family said about life at home. The screen does not score a 
 
 Primary action: Next.
 
+"How are the children at home?" is on this screen because Sarah's relationship is Child. It stays off when no person is a Child.
+
 Copy:
 
 - "Write what the family said."
-- "How do you feel about your life?"
-- "If there is one thing you need to better your life, what is that?"
-- "Do you feel depressed?"
-- "Is your spouse not present?"
-- "Are the kids rebellious?"
+- "What does a hard week look like here?"
+- "When someone here needs help, who steps in?"
+- "How are the children at home?"
 
 Picture: [dynamics.png](design/dynamics.png).
 
@@ -160,20 +181,29 @@ Job: record the place, the rent, the utilities, safety, meals, and the basket.
 
 Primary action: Next.
 
-Yes and No are the answers. "Basket" is the last question before "Anything else they said".
+"This place" is one choice. Rent opens "Rent per month" and "Are you behind on payments?" Water and electricity stay Yes and No. "How many rooms do people sleep in?" is a number. No on "Is this place safe?" opens "What feels unsafe?" "How many meals a day?" is one choice. "Basket" is the last question before "Anything else they said".
+
+The picture is Rent, behind on payments, one room, and not safe, so those follow-ups are visible.
 
 Copy:
 
-- "Is this place permanent?"
-- "Are you renting?"
-- "How much is the rent?"
+- "This place"
+- "Own"
+- "Rent"
+- "Staying with someone"
+- "Temporary"
+- "Rent per month"
 - "Are you behind on payments?"
 - "Does it have water?"
 - "Does it have electricity?"
-- "Is it too crowded?"
+- "How many rooms do people sleep in?"
 - "Is this place safe?"
-- "Any threats?"
-- "Do you get 3 meals a day?"
+- "What feels unsafe?"
+- "How many meals a day?"
+- "3 a day"
+- "2 a day"
+- "1 a day"
+- "Not every day"
 - "Basket"
 - "Yes"
 - "No"
@@ -186,10 +216,13 @@ Job: ask what would help most, and record consent.
 
 Primary action: Next.
 
-The sample shows "The family does not consent" selected, which is the state that blocks "Mark qualified" and still allows "Mark disqualified".
+The enrolment help sits above the question. The sample lists Food and School supplies. "The family does not consent" is selected, which blocks "Mark qualified" and still allows "Mark disqualified".
 
 Copy:
 
+- "Enrolment"
+- "Food"
+- "School supplies"
 - "What do you need most?"
 - "The family consents"
 - "The family does not consent"
@@ -207,6 +240,7 @@ An unchecked box needs a gap. A checked box can leave the gap empty. One picture
 Copy:
 
 - "This is your judgment from the visit."
+- "Integrity, action, and selflessness, for the family as a whole."
 - "Good family unit"
 - "Basic necessities"
 - "Gap"
