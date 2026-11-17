@@ -49,21 +49,21 @@ Pictures: [set-visit.png](design/set-visit.png), [visit-invalid.png](design/visi
 
 ### Visit time, then the interview
 
-Job: show the stored time, say whether it is later than a week, and keep the eight stages on screen.
+Job: show the stored time, say whether it is later than a week, and keep the seven stages on screen.
 
 Primary action: Change visit, until the family is marked. After that, the time is text.
 
 The sample time `2026-11-24T01:00:00Z` is shown to a UTC+8 viewer as "24 November 2026 at 09:00". A later sample, "25 November 2026 at 09:00", also shows "This visit is later than a week after the enrolment."
 
-The heading is "Interview". The stages, in order, are "Who is here", "How the family formed", "Who else stays", "A day in their life", "How they are together", "The house and the meals", "What they need", and "The first two boxes". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved".
+The heading is "Interview". The stages, in order, are "Who is here", "How the family formed", "A day in their life", "How they are together", "The house and the meals", "What they need", and "The first two boxes". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved".
 
 Pictures of the late time and the on-time interview: [visit-late.png](design/visit-late.png), [who-is-here.png](design/who-is-here.png).
 
 ### Who is here
 
-Job: confirm each person, add someone the visit found, and record each person's identity.
+Job: record everyone who lives here, guests who are not on that list, care for elderly parents, and each person's identity.
 
-Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. The head shows "Head" and has no relationship choice. Every other person has "Relationship". "From where?" is hidden when the relationship is Child. "Absent" opens "Since when" and "Why". "Since when" is a date, `YYYY-MM-DD`.
+Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. The head shows "Head" and has no relationship choice. Every other person has "Relationship". "From where?" is hidden when the relationship is Child. "Absent" opens "Since when" and "Why". "Since when" is a date, `YYYY-MM-DD`. After the people, Yes on a guest opens "Who, and why?" Yes on care for elderly parents opens "Who, and what do you do for them?"
 
 The open person shows "Enrolment" above the name, the gender, and the phone. A bad phone stays on this stage. Identity is asked on that person.
 
@@ -89,6 +89,12 @@ Copy:
 - "Absent"
 - "Since when"
 - "Why"
+- "Does anyone else stay who is not in that list?"
+- "Who, and why?"
+- "Do you have to take care of elderly parents?"
+- "Who, and what do you do for them?"
+- "Yes"
+- "No"
 - "Enter a phone number, for example +60 12-345 6789."
 - "Anything else they said"
 
@@ -111,27 +117,6 @@ Copy:
 - "Enter the year, for example 2008."
 
 Picture: [formation.png](design/formation.png).
-
-### Who else stays
-
-Job: note guests who are not people on the list, and care for elderly parents.
-
-Primary action: Next.
-
-People who live here are added on Who is here. Yes opens the follow-up. No leaves it off the screen.
-
-Copy:
-
-- "People who live here are recorded in Who is here."
-- "Children are recorded in Who is here."
-- "Does anyone else stay who is not in that list?"
-- "Who, and why?"
-- "Do you have to take care of elderly parents?"
-- "Who, and what do you do for them?"
-- "Yes"
-- "No"
-
-Picture: [who-else.png](design/who-else.png).
 
 ### A day in their life
 

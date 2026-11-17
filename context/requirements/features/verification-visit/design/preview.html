@@ -214,7 +214,6 @@
     const stages = [
       ["who", "Who is here"],
       ["formation", "How the family formed"],
-      ["else", "Who else stays"],
       ["day", "A day in their life"],
       ["together", "How they are together"],
       ["house", "The house and the meals"],
@@ -228,7 +227,6 @@
     const saved = {
       who: false,
       formation: true,
-      else: false,
       day: true,
       together: false,
       house: false,
@@ -339,6 +337,10 @@
           ${away}
         </div>
         <button class="secondary block" type="button">Add a person</button>
+        ${yesNo("Does anyone else stay who is not in that list?", "yes")}
+        ${area("Who, and why?", "A cousin sleeps here a few nights a month when he is between jobs.")}
+        ${yesNo("Do you have to take care of elderly parents?", "yes")}
+        ${area("Who, and what do you do for them?", "Aminah's mother lives nearby. Aminah cooks for her and helps her wash.")}
         ${anything("")}
         ${nav("first")}`;
     }
@@ -393,20 +395,6 @@
         <h2>How the family formed</h2>
         ${field("When did this family start?", "2008")}
         ${area("How did it start?", "Aminah and Rahman married after meeting at the market.")}
-        ${anything("")}
-        ${nav()}`,
-
-      "who-else": () => `
-        ${caseTop()}
-        ${visitHeader("week")}
-        ${stageList("else")}
-        <h2>Who else stays</h2>
-        <p>People who live here are recorded in Who is here.</p>
-        <p>Children are recorded in Who is here.</p>
-        ${yesNo("Does anyone else stay who is not in that list?", "yes")}
-        ${area("Who, and why?", "A cousin sleeps here a few nights a month when he is between jobs.")}
-        ${yesNo("Do you have to take care of elderly parents?", "yes")}
-        ${area("Who, and what do you do for them?", "Aminah's mother lives nearby. Aminah cooks for her and helps her wash.")}
         ${anything("")}
         ${nav()}`,
 
