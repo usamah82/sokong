@@ -1,8 +1,8 @@
 # Feature: verification-visit
 
-Status: interviewing
+Status: intent-confirmed
 
-Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17. Status stays `interviewing` until that confirmation is recorded as `intent-confirmed`.
+Interview for the ideal first verification visit and its mark: F06 and F07. Usamah named this feature on 2026-11-16 and, the same day, set duplicate enrolments aside as F38. Usamah confirmed the statement in [intent.md](intent.md) on 2026-11-17 and set this status to `intent-confirmed` the same day.
 
 ## Links
 
