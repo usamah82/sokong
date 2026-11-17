@@ -16,10 +16,7 @@ Sokong can store an enrolment today, and `visit_at` is always empty. No one can 
 
 The four records are the basket, the consent, the identity check, and the story. All four are stored before either mark. A visit later than a week after the enrolment is allowed. The screen says that a week is the aim. A disqualified family stays on record.
 
-The story is two fields, because the intent left the fields to this spec and left the ongoing path to F09:
-
-- `seen` is required. It is what the worker saw and heard that the enrolment form could not hold.
-- `verified_correction` is optional. It is the facts the worker has seen and verified that differ from the enrolment. When it is not empty, the worker screen shows it as the account that outranks the enrolment. The enrolment rows are not rewritten.
+The story is what the worker writes down from the family at the visit. The enrolment form is only the tip. The worker asks the family and records the answers in fields. A fact recorded there outranks the submitted enrolment. The enrolment rows stay as submitted. Later additions to that path stay F09. The field list is an open question, so this draft does not name the story keys, their labels, or which of them must be filled before a mark.
 
 The worker chooses the mark. The four Mara boxes are F08, so this feature does not derive qualified or disqualified from them. Qualified still requires the family's consent at the visit, because both enrolment sentences say that consent is confirmed then, and the on-behalf sentence says the family may not be enrolled without it. A refused consent can be marked disqualified once the four records are in. An identity that was not verified does not block either mark. A family can be on record with no papers.
 
@@ -105,7 +102,7 @@ class Enrolment < ApplicationRecord
 end
 ```
 
-`complete?` means basket, consent, identity method, identity verified, and `seen` are all present. `verified_correction` may be empty. The controller turns those symbols into the 422 messages in Success Criteria.
+`complete?` means basket, consent, identity method, identity verified, and the story are present. Which story fields count as present waits on the open question. The controller turns those symbols into the 422 messages in Success Criteria.
 
 ## Testing Strategy
 
@@ -117,8 +114,8 @@ Edge cases the integration tests cover:
 - A missing `visit_at`, a date with no time, or a value that is not a time returns 422 and leaves `visit_at` null. No mail is queued.
 - Setting the same instant again returns 200 and queues no mail.
 - The four records are rejected with "Set the visit before recording it" while `visit_at` is null, and nothing is saved.
-- A complete record saves. A second PUT replaces that same row and does not insert another. Blank `verified_correction` is stored as empty.
-- Basket, identity method, or `seen` blank or whitespace, a non-boolean consent or identity flag, or a string past its limit returns 422 and leaves the previous row unchanged.
+- A complete record saves. A second PUT replaces that same row and does not insert another.
+- Basket or identity method blank or whitespace, a non-boolean consent or identity flag, or a string past its limit returns 422 and leaves the previous row unchanged. The same rules apply to each story field once the open question names it.
 - Qualified before the record exists, or with any of the four missing, returns 422, sets no outcome, and queues no mail.
 - Consent refused, record complete: qualified returns 422 "The family has not consented" and sets no outcome. Disqualified returns 201 and the family is still returned by GET.
 - Identity not verified, consent given, record complete: qualified returns 201.
@@ -126,7 +123,7 @@ Edge cases the integration tests cover:
 - After the mark, a new visit time or a replacement record returns 422 "Verification is finished" and changes nothing.
 - An enrolment with an email queues one visit message on the first time, and a new message when the time changes. The first message's subject and body stay as first queued. The outcome message is queued once, on the mark.
 - An enrolment with an empty email queues nothing for the visit or the mark. The rows are still saved. A mail exception still leaves the row saved and the HTTP status successful.
-- The visit message and the outcome message contain the head name and the place name, and do not contain another member's name, either phone, the basket, the identity method, `seen`, or the correction.
+- The visit message and the outcome message contain the head name and the place name, and do not contain another member's name, either phone, the basket, the identity method, or the story.
 - A look and a note still queue no mail. The first worker detail read still stores one look.
 - The matching submitter sees `visit_at` and `outcome`, and the body has no verification object and none of the four fields. Another submitter, a worker of another locality, and an anonymous caller do not get the record.
 - `POST /enrolments` still returns `visit_at` null and `outcome` null.
@@ -141,7 +138,7 @@ Left for later features:
 - Duplicate enrolments and reconciliation (F38).
 - Changing a mark after it is set. The visit time and the four records are fixed at the same moment.
 - The four Mara boxes, the status words, and deriving the mark from them (F08).
-- The ongoing path: careers, school, births, assets, help already given, and decisions the family made (F09).
+- Later additions to the path (F09). The first story fields are the open question.
 - The next visit, the three-month rhythm, and an unscheduled later visit (F12).
 - Notifying the worker, or notifying a phone. Mail goes only to the enrolment email, and only for the visit time and the outcome.
 - Accounts for benefactors, facilitators, and planners.
@@ -153,7 +150,7 @@ Always:
 - Run `bin/ci` before a code change is called done.
 - Validate input at the controller. Keep the visit, record, and mark rules in the model or one plain object.
 - Keep user-facing strings in `web/i18n/locales/en.json`.
-- Keep basket, identity method, `seen`, `verified_correction`, enroler contact, family phone, email, and member name out of the request log.
+- Keep basket, identity method, the story fields, enroler contact, family phone, email, and member name out of the request log.
 - Return 404 when an account must not see a record, including when the id does not exist.
 - Leave the saved visit or mark in place when the mail queue raises. Log the error class only.
 - Leave `config/master.key` and `storage/` uncommitted.
@@ -197,20 +194,21 @@ Never:
   "consent_given": true,
   "identity_method": "No papers. The worker knows the mother from the block.",
   "identity_verified": false,
-  "seen": "The youngest child has a learning disability. Rent and utilities are behind.",
-  "verified_correction": "The middle child is out of school."
+  "story": {}
 }
 ```
 
-8. After trim, basket is 1–500 characters, identity method is 1–500, `seen` is 1–4000, and `verified_correction` is 0–2000. A missing correction or a blank correction is stored as empty. `consent_given` and `identity_verified` are JSON booleans. Any other type is invalid. A failed PUT does not change the stored row.
+`story` is an object. Its keys, labels, limits, and which keys must be filled are the open question. Until that question is answered, this draft does not define them.
+
+8. After trim, basket is 1–500 characters and identity method is 1–500. `consent_given` and `identity_verified` are JSON booleans. Any other type is invalid. A failed PUT does not change the stored row. Story-field limits wait on the open question.
 9. The 200 body is those fields plus `worker_name` and `recorded_at`. `worker_name` is the worker account's name at save time. `recorded_at` is the server time, ISO 8601 UTC. A later PUT overwrites this same row, including `worker_name` and `recorded_at`.
-10. A blank or missing basket, identity method, or `seen` is "required". A blank or missing `verified_correction` is stored as empty and is not an error. A string past its limit is "too long". A value that is not a string, and a consent or identity flag that is not a JSON boolean, is "invalid". The messages are "Basket is required", "Basket is too long", "Basket is invalid", "Consent is invalid", "Identity is required", "Identity is too long", "Identity is invalid", "Identity check is invalid", "Story is required", "Story is too long", "Story is invalid", "Verified correction is too long", and "Verified correction is invalid". The `details` keys are `basket`, `consent_given`, `identity_method`, `identity_verified`, `seen`, and `verified_correction`, and each value is `["is required"]`, `["is too long"]`, or `["is invalid"]`. The envelope is the enrolment `VALIDATION_ERROR` shape. `message` is the first failing field in that key order. `details` lists every failing key.
-11. On the worker case the labels are "Basket", "Consent", "The family consents", "The family does not consent", "Identity", "What was checked", "Identity was verified", "Identity was not verified", "Story", "What the form could not hold", and "Verified correction, optional". The save button reads "Save the visit record". When a correction is stored and not empty, the case shows it above the submitted family facts with the sentence "Verified. This outranks the enrolment." The submitted facts remain. When the correction is empty, that sentence is absent. The case also shows "Recorded by {worker_name}."
+10. A blank or missing basket or identity method is "required". A string past its limit is "too long". A value that is not a string, and a consent or identity flag that is not a JSON boolean, is "invalid". The messages are "Basket is required", "Basket is too long", "Basket is invalid", "Consent is invalid", "Identity is required", "Identity is too long", "Identity is invalid", and "Identity check is invalid". The `details` keys are `basket`, `consent_given`, `identity_method`, and `identity_verified`, and each value is `["is required"]`, `["is too long"]`, or `["is invalid"]`. The envelope is the enrolment `VALIDATION_ERROR` shape. `message` is the first failing field in that key order. `details` lists every failing key. Story-field messages wait on the open question.
+11. On the worker case the labels for the basket, the consent, and the identity check are "Basket", "Consent", "The family consents", "The family does not consent", "Identity", "What was checked", "Identity was verified", and "Identity was not verified". The save button reads "Save the visit record". The case shows "Recorded by {worker_name}." The story section asks the family the open question's fields, shows the submitted enrolment beside them, and shows a stored story fact as the account that outranks the enrolment. The enrolment rows stay visible. The story labels wait on the open question.
 
 ### Mark
 
 12. `POST /enrolments/:id/qualification` with `{ "outcome": "qualified" }` or `{ "outcome": "disqualified" }` is the mark. Any other outcome, or a missing outcome, is 422 "Outcome is invalid" or "Outcome is required".
-13. The mark is rejected with "Set the visit before recording it" when no visit is stored, and with "The visit record is incomplete" when any of basket, consent, identity method, identity verified, or `seen` is missing. `details` names each missing key as `["is required"]`. `verified_correction` is not required. No outcome is stored and no outcome mail is queued.
+13. The mark is rejected with "Set the visit before recording it" when no visit is stored, and with "The visit record is incomplete" when basket, consent, the identity check, or the story is missing. `details` names each missing basket, consent, or identity key as `["is required"]`. Which story keys that list includes waits on the open question. No outcome is stored and no outcome mail is queued.
 14. `qualified` is rejected with "The family has not consented" and `details.outcome` of `["needs consent"]` when `consent_given` is false. `disqualified` is allowed in that case. `identity_verified` false does not reject either outcome.
 15. The first mark returns 201:
 
@@ -230,7 +228,7 @@ Never:
 ### Who sees it
 
 19. Worker detail adds `visit_at`, `verification` (null until the PUT), `outcome` (null until the mark), `marked_at`, and `marker_name`. Worker list items add `visit_at` and `outcome` only. They do not add the four records.
-20. Submitter JSON keeps `progress.visit_at` and adds `progress.outcome`. Both are null on `POST /enrolments` and until the worker sets them. The submitter body does not include `verification`, basket, consent, identity, `seen`, `verified_correction`, `marked_at`, or `marker_name`.
+20. Submitter JSON keeps `progress.visit_at` and adds `progress.outcome`. Both are null on `POST /enrolments` and until the worker sets them. The submitter body does not include `verification`, basket, consent, identity, the story, `marked_at`, or `marker_name`.
 21. The submitter progress page keeps "This case is in. No one has looked. No visit is set." for no looks and no visit. A stored visit uses the headline "This case is in." and the line "A visit is set for {local time}." in the same local format as the worker case. "No visit is set." remains the line when looks exist and no visit is stored. Qualified adds "This family is qualified." Disqualified adds "This family is disqualified."
 22. Each row on the enrolments list shows the place, the head's name, the visit line ("A visit is set for {local time}." or "No visit is set."), and the outcome line when an outcome is stored. A row with no outcome has no outcome line. This holds for the submitter, who may have many enrolments, and for the worker.
 23. At 390 CSS pixels wide, the worker case, submitter progress, and the enrolments list do not require horizontal scrolling.
@@ -240,7 +238,7 @@ Never:
 24. When `email` is empty, the visit and the mark queue nothing. When `email` is present, the first stored visit time queues one message. A later PATCH that changes the instant queues another message and does not alter the earlier message's subject or body. A PATCH that stores the same instant queues nothing.
 25. The visit subject is "Sokong visit". The first body is "A visit is set for {head} at {place}. The visit time is {utc}." A changed time uses "The visit time for {head} at {place} is now {utc}." `{head}` is the member whose role is `head`. `{place}` is `place_name`. `{utc}` is the UTC time in the same English shape as the screen, with " UTC" after it. The month is the English name, including when the server locale is not English. `2026-11-24T01:00:00Z` is "24 November 2026 at 01:00 UTC".
 26. The mark queues one message. The subject is "Sokong verification". Qualified body: "{head} at {place} is qualified." Disqualified body: "{head} at {place} is disqualified."
-27. Neither message contains another member's name, the enroler phone, the family phone, the basket, the identity method, `seen`, or the correction. A look or a note queues no mail. If the queue raises, the visit or the mark stays saved and the response status stays 200 or 201.
+27. Neither message contains another member's name, the enroler phone, the family phone, the basket, the identity method, or the story. A look or a note queues no mail. If the queue raises, the visit or the mark stays saved and the response status stays 200 or 201.
 
 ### HTTP contract
 
@@ -253,7 +251,7 @@ JSON keys are snake_case. Times are ISO 8601 UTC. Ids are UUIDs. Paths are unver
   "error": {
     "code": "VALIDATION_ERROR",
     "message": "The visit record is incomplete",
-    "details": { "seen": ["is required"] }
+    "details": { "basket": ["is required"] }
   }
 }
 ```
@@ -264,4 +262,4 @@ A body larger than 128 KiB, or a chunked body, stays 413 `PAYLOAD_TOO_LARGE`.
 
 ## Open Questions
 
-None.
+The story fields. The worker extracts the story from the family at the visit, and the screen needs a field for each part of that story. The catalog names the path as careers, school, births, assets, help already given, and decisions the family made (F09). The guess is that this visit records those six once, each as text the worker writes from the conversation, and F09 later appends more of the same path. A topic the family does not speak to can be saved empty. The story is present when the worker has saved the six, including the empties. That guess is not confirmed. Do not design the story section, and do not start the plan, until it is.
