@@ -55,7 +55,7 @@ Primary action: Change visit, until the family is marked. After that, the time i
 
 The sample time `2026-11-24T01:00:00Z` is shown to a UTC+8 viewer as "24 November 2026 at 09:00". A later sample, "25 November 2026 at 09:00", also shows "This visit is later than a week after the enrolment."
 
-The heading is "Interview". The stages, in order, are "Who is here", "How the family formed", "A day in their life", "How they are together", "The house and the meals", "What they need", and "The first two boxes". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved".
+The heading is "Interview". The stages, in order, are "Who is here", "How the family formed", "A day in their life", "How they are together", "The house and the meals", "What they need", and "Initial assessment". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved".
 
 Pictures of the late time and the on-time interview: [visit-late.png](design/visit-late.png), [who-is-here.png](design/who-is-here.png).
 
@@ -214,7 +214,7 @@ Copy:
 
 Picture: [needs.png](design/needs.png).
 
-### The first two boxes
+### Initial assessment
 
 Job: record Good family unit and Basic necessities, each with a gap, then mark the family.
 
@@ -224,6 +224,7 @@ An unchecked box needs a gap. A checked box can leave the gap empty. One picture
 
 Copy:
 
+- "Initial assessment"
 - "This is your judgment from the visit."
 - "Integrity, action, and selflessness, for the family as a whole."
 - "Good family unit"
