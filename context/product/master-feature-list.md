@@ -8,7 +8,7 @@ The proposed first cluster, not an approval, is the record a phone enrolment nee
 
 F24 is deferred. The share counts every family in the locality, and Sokong only tracks families that need support, so the other features do not wait on it. F36 is the ownership question Q2 set aside. F37 is contesting a checkbox, which Q5 set aside. The first locale is English, and both clients are localizable (Q15, ADR-0006).
 
-On 2026-11-16 Usamah kept the verification interview on the ideal first visit. That interview is F06 and F07, in `requirements/features/verification-visit/`. He set it to `intent-confirmed` on 2026-11-17. Duplicate enrolments and their reconciliation are F38, and F38 waits for its own interview.
+On 2026-11-16 Usamah kept the verification interview on the ideal first visit. That interview is F06 and F07, in `requirements/features/verification-visit/`. He set it to `intent-confirmed` on 2026-11-17. Usamah approved the spec on 2026-11-17. On 2026-11-18 he asked for a revision: a pre-visit section, document numbers on each person, and the first two Mara boxes in a post-visit section. The same day he approved that revision and the plan. Status is `plan-approved`. Dependable generation and accumulated wealth stay F08. Duplicate enrolments and their reconciliation are F38, and F38 waits for its own interview.
 
 ## A. Place and people
 
