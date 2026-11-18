@@ -87,13 +87,29 @@ function yesNoLabel(value: string) {
   return ''
 }
 
+function placeLabel(value: string) {
+  if (value === 'own') return t('interview.own')
+  if (value === 'rent') return t('interview.rent')
+  if (value === 'staying_with_someone') return t('interview.staying')
+  if (value === 'temporary') return t('interview.temporary')
+  return ''
+}
+
+function mealsLabel(value: string) {
+  if (value === 'three') return t('interview.mealsThree')
+  if (value === 'two') return t('interview.mealsTwo')
+  if (value === 'one') return t('interview.mealsOne')
+  if (value === 'not_every_day') return t('interview.mealsNot')
+  return ''
+}
+
 defineExpose({ attempt, fail })
 </script>
 
 <template>
   <div>
     <template v-if="readonly">
-      <p><span class="label">{{ t('interview.place') }}</span> {{ place }}</p>
+      <p><span class="label">{{ t('interview.place') }}</span> {{ placeLabel(place) }}</p>
       <p v-if="place === 'rent'"><span class="label">{{ t('interview.rentPerMonth') }}</span> {{ rent }}</p>
       <p v-if="place === 'rent'"><span class="label">{{ t('interview.behind') }}</span> {{ yesNoLabel(behind) }}</p>
       <p><span class="label">{{ t('interview.water') }}</span> {{ yesNoLabel(water) }}</p>
@@ -101,7 +117,7 @@ defineExpose({ attempt, fail })
       <p><span class="label">{{ t('interview.rooms') }}</span> {{ rooms }}</p>
       <p><span class="label">{{ t('interview.safe') }}</span> {{ yesNoLabel(safe) }}</p>
       <p v-if="safe === 'no'">{{ unsafe }}</p>
-      <p><span class="label">{{ t('interview.meals') }}</span> {{ meals }}</p>
+      <p><span class="label">{{ t('interview.meals') }}</span> {{ mealsLabel(meals) }}</p>
       <p><span class="label">{{ t('interview.basket') }}</span> {{ basket }}</p>
       <p><span class="label">{{ t('interview.notes') }}</span> {{ notes }}</p>
     </template>

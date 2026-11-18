@@ -1302,6 +1302,8 @@ describe('worker cases', () => {
     expect(page.text()).toContain('Does it have electricity?')
     expect(page.text()).toContain('How many meals a day?')
     expect(page.text()).toContain('3 a day')
+    expect(page.text()).toContain('2 a day')
+    expect(page.text()).toContain('1 a day')
     expect(page.text()).toContain('Not every day')
     expect(page.text()).toContain('Basket')
     expect(page.find('#rent-per-month').exists()).toBe(false)
@@ -1388,13 +1390,108 @@ describe('worker cases', () => {
     await vi.waitFor(() => expect(page.find('#stage-house').exists()).toBe(true))
     await page.get('#stage-house').trigger('click')
     expect(page.find('#place').exists()).toBe(false)
+    expect(page.text()).toContain('This place Rent')
+    expect(page.text()).toContain('How many meals a day? 3 a day')
     expect(page.text()).toContain('Are you behind on payments? Yes')
+    expect(page.text()).toContain('Does it have water? Yes')
+    expect(page.text()).toContain('Does it have electricity? No')
     expect(page.text()).toContain('How many rooms do people sleep in? 2')
+    expect(page.text()).toContain('Is this place safe? No')
+    expect(page.text()).toContain('The roof leaks')
     expect(page.text()).toContain('400')
     expect(page.text()).toContain('The stairs')
     expect(page.text()).toContain('Rice')
     await page.get('#next-stage').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    vi.unstubAllGlobals()
+
+    const staying = visited()
+    staying.outcome = 'qualified'
+    staying.verification = {
+      house: {
+        place: 'staying_with_someone',
+        meals: 'not_every_day',
+        rent_per_month: null,
+        behind_on_payments: null,
+        has_water: null,
+        has_electricity: null,
+        sleeping_rooms: null,
+        safe: null,
+        unsafe_detail: '',
+        basket: '',
+        notes: ''
+      }
+    }
+    stubFetch(() => ({ status: 200, body: staying }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const again = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(again.find('#stage-house').exists()).toBe(true))
+    await again.get('#stage-house').trigger('click')
+    expect(again.text()).toContain('This place Staying with someone')
+    expect(again.text()).toContain('How many meals a day? Not every day')
+    vi.unstubAllGlobals()
+  })
+
+  it('stays on the house stage for a bad room count or a long basket', async () => {
+    const stored = visited()
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') return { status: 200, body: calls[calls.length - 1]?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-house').exists()).toBe(true))
+    await page.get('#stage-house').trigger('click')
+    await vi.waitFor(() => expect(page.find('#sleeping-rooms').exists()).toBe(true))
+
+    await page.get('#sleeping-rooms').setValue('100')
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('How many rooms do people sleep in? is invalid')
+    expect(page.get('#status-house').text()).toContain('Current')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#sleeping-rooms').setValue('12abc')
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('How many rooms do people sleep in? is invalid')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#sleeping-rooms').setValue('0')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toMatchObject({ sleeping_rooms: 0 })
+
+    await page.get('#back-stage').trigger('click')
+    await page.get('#sleeping-rooms').setValue('99')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3))
+    expect(calls.filter((call) => call.method === 'PUT')[2]!.json).toMatchObject({ sleeping_rooms: 99 })
+
+    await page.get('#back-stage').trigger('click')
+    await page.get('#basket').setValue('a'.repeat(501))
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('Basket is too long')
+    expect(page.get('#status-house').text()).toContain('Current')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3)
+
+    await page.get('#basket').setValue('a'.repeat(500))
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
+    expect(calls.filter((call) => call.method === 'PUT')[3]!.json).toMatchObject({
+      sleeping_rooms: 99,
+      basket: 'a'.repeat(500)
+    })
     vi.unstubAllGlobals()
   })
 })
