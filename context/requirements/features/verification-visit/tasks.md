@@ -201,14 +201,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `needs` stores what the family needs most, the consent choice, and the closing note. Consent may be null on save. A non-boolean consent is rejected.
 
 **Acceptance criteria:**
-- [ ] A blank stage returns 200. `consent_given` true and false are stored. Null is stored.
-- [ ] A string, a number, or an array for consent returns 422 "Consent is invalid" and leaves the previous needs column unchanged.
-- [ ] `need_most` and `notes` over 2000 characters return 422 and leave the previous column unchanged. The other stages stay as they were.
+- [x] A blank stage returns 200. `consent_given` true and false are stored. Null is stored.
+- [x] A string, a number, or an array for consent returns 422 "Consent is invalid" and leaves the previous needs column unchanged.
+- [x] `need_most` and `notes` over 2000 characters return 422 and leave the previous column unchanged. The other stages stay as they were.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: PUT consent false and confirm the stored value is the JSON boolean false.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: PUT consent false and confirm the stored value is the JSON boolean false.
 
 **Dependencies:** Task 3
 
