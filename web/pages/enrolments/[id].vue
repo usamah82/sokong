@@ -17,6 +17,13 @@ const looks = computed(() => {
 
 const noVisit = computed(() => enrolment.value?.progress.visit_at == null)
 
+function onMarked(mark: { outcome: string, marked_at: string, marker_name: string }) {
+  if (!worker.value) return
+  worker.value.outcome = mark.outcome
+  worker.value.marked_at = mark.marked_at
+  worker.value.marker_name = mark.marker_name
+}
+
 onMounted(async () => {
   if (!hasToken()) {
     await navigateTo('/sign-in')
@@ -46,7 +53,7 @@ onMounted(async () => {
   <main class="phone">
     <p class="mark">{{ t('progress.mark') }}</p>
     <h1 v-if="missing">{{ t('progress.missing') }}</h1>
-    <WorkerCase v-else-if="worker" :enrolment="worker" />
+    <WorkerCase v-else-if="worker" :enrolment="worker" @marked="onMarked" />
     <template v-else-if="enrolment">
       <h1 v-if="looks.length === 0 && noVisit">{{ t('progress.quiet') }}</h1>
       <template v-else>
