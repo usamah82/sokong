@@ -1467,6 +1467,10 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal "rent", saved["place"]
     assert_equal 500, saved["rent_per_month"]
     assert_equal true, saved["behind_on_payments"]
+    assert_equal true, saved["has_water"]
+    assert_equal false, saved["has_electricity"]
+    assert_equal 2, saved["sleeping_rooms"]
+    assert_equal "two", saved["meals"]
     assert_equal "The stairs", saved["unsafe_detail"]
     assert_equal "Rice", saved["basket"]
     assert_equal "Quiet", saved["notes"]
@@ -1505,6 +1509,137 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal 0, response.parsed_body["sleeping_rooms"]
     assert_equal 999_999_999, response.parsed_body["rent_per_month"]
     assert_equal "b" * 500, response.parsed_body["basket"]
+  end
+
+  test "a closed house follow-up stays empty even when the answer would be valid" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    base = {
+      place: "own", has_water: nil, has_electricity: nil, sleeping_rooms: nil,
+      safe: nil, meals: "", basket: "", notes: ""
+    }
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(rent_per_month: 500, behind_on_payments: true),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_nil response.parsed_body["rent_per_month"]
+    assert_nil response.parsed_body["behind_on_payments"]
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(
+        place: "staying_with_someone", safe: false, unsafe_detail: " The roof ", meals: "three",
+        rent_per_month: "nope", behind_on_payments: "yes"
+      ),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "staying_with_someone", response.parsed_body["place"]
+    assert_nil response.parsed_body["rent_per_month"]
+    assert_nil response.parsed_body["behind_on_payments"]
+    assert_equal "The roof", response.parsed_body["unsafe_detail"]
+    assert_equal "three", response.parsed_body["meals"]
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(
+        place: "temporary", safe: nil, unsafe_detail: "u" * 2001, meals: "not_every_day",
+        rent_per_month: "nope", behind_on_payments: "yes"
+      ),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_nil response.parsed_body["rent_per_month"]
+    assert_equal "", response.parsed_body["unsafe_detail"]
+    assert_equal "not_every_day", response.parsed_body["meals"]
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(safe: true, unsafe_detail: "The roof"),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["unsafe_detail"]
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(safe: nil, unsafe_detail: "The roof"),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["unsafe_detail"]
+
+    travel_to Time.utc(2026, 11, 18, 6, 0, 0) do
+      put "/enrolments/#{enrolment.id}/verification/house",
+        params: base.merge(
+          place: "rent", rent_per_month: 500, behind_on_payments: false, safe: true,
+          unsafe_detail: "u" * 2001, meals: "one", worker_name: "Hacker",
+          recorded_at: "1999-01-01T00:00:00Z", wealth: "hidden"
+        ),
+        headers: bearer(token), as: :json
+    end
+    assert_response :ok
+    assert_equal 500, response.parsed_body["rent_per_month"]
+    assert_equal false, response.parsed_body["behind_on_payments"]
+    assert_equal "", response.parsed_body["unsafe_detail"]
+    assert_equal "one", response.parsed_body["meals"]
+    assert_equal "Aman", response.parsed_body["worker_name"]
+    assert_equal "2026-11-18T06:00:00Z", response.parsed_body["recorded_at"]
+    assert_not response.parsed_body.key?("wealth")
+    stored = enrolment.verification.reload.house
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(place: "rent", behind_on_payments: "yes"),
+      headers: bearer(token), as: :json
+    assert_stage_error "Are you behind on payments? is invalid", "behind_on_payments" => [ "is invalid" ]
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(place: "rent", rent_per_month: nil, behind_on_payments: nil),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_nil response.parsed_body["rent_per_month"]
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(place: "rent", rent_per_month: 0, behind_on_payments: false, sleeping_rooms: 99),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal 0, response.parsed_body["rent_per_month"]
+    assert_equal 99, response.parsed_body["sleeping_rooms"]
+    stored = enrolment.verification.reload.house
+
+    [
+      [ "8", "Rent per month is invalid", "rent_per_month" ],
+      [ 1.0, "Rent per month is invalid", "rent_per_month" ],
+      [ 1_000_000_000, "Rent per month is invalid", "rent_per_month" ]
+    ].each do |amount, message, field|
+      put "/enrolments/#{enrolment.id}/verification/house",
+        params: base.merge(place: "rent", rent_per_month: amount, behind_on_payments: false),
+        headers: bearer(token), as: :json
+      assert_stage_error message, field => [ "is invalid" ]
+    end
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(safe: false, unsafe_detail: " #{'u' * 2000} ", notes: " #{'n' * 2000} "),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "u" * 2000, response.parsed_body["unsafe_detail"]
+    assert_equal "n" * 2000, response.parsed_body["notes"]
+    stored = enrolment.verification.reload.house
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(safe: false, unsafe_detail: "u" * 2001),
+      headers: bearer(token), as: :json
+    assert_stage_error "What feels unsafe? is too long", "unsafe_detail" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(safe: false, unsafe_detail: 12),
+      headers: bearer(token), as: :json
+    assert_stage_error "What feels unsafe? is invalid", "unsafe_detail" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(notes: "n" * 2001),
+      headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is too long", "notes" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(notes: 12),
+      headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is invalid", "notes" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: base.merge(place: "palace", meals: "five"),
+      headers: bearer(token), as: :json
+    assert_stage_error "This place is invalid",
+      "place" => [ "is invalid" ],
+      "meals" => [ "is invalid" ]
+    assert_equal stored, enrolment.verification.reload.house
   end
 
   private
