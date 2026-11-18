@@ -2,6 +2,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrolmentDetail from '../../pages/enrolments/[id].vue'
 import EnrolmentsPage from '../../pages/enrolments/index.vue'
+import { formatVisit } from '../../utils/visitTime'
 
 const quiet = 'This case is in. No one has looked. No visit is set.'
 const missing = 'This case is not available.'
@@ -151,6 +152,9 @@ describe('submitter progress', () => {
     expect(text.indexOf('Aminah')).toBeLessThan(text.indexOf('Called the enroler, no answer'))
     expect(text.indexOf('2026-11-12T09:00:00Z')).toBeLessThan(text.indexOf('2026-11-12T10:00:00Z'))
     expect(text).toContain('No visit is set.')
+    expect(text).not.toContain('A visit is set for')
+    expect(text).not.toContain('This family is qualified.')
+    expect(text).not.toContain('This family is disqualified.')
     expect(text).not.toContain('No one has looked')
     expect(page.get('#look-earlier').text()).not.toContain('Called the enroler, no answer')
     vi.unstubAllGlobals()
@@ -188,6 +192,105 @@ describe('submitter progress', () => {
       expect(navigated).toEqual([ '/sign-in' ])
     })
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the visit line and hides the interview', async () => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    stubFetch(200, {
+      ...newer,
+      bringing_basket: true,
+      assigned_workers: [ 'Aman' ],
+      verification: {
+        who_is_here: {
+          people: [ { identity: 'not_verified', documents: [ { number: 'DOC-88421' } ] } ]
+        },
+        needs: { consent_given: false },
+        house: { basket: 'Rice secret' },
+        boxes: {
+          good_family_unit: false,
+          good_family_unit_gap: 'The roof leaks'
+        }
+      },
+      marked_at: '2026-11-24T02:00:00Z',
+      marker_name: 'Marker Aman',
+      progress: {
+        case_in: true,
+        looks: [],
+        visit_at: '2026-11-24T01:00:00Z',
+        outcome: 'qualified'
+      }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-new' })
+    await vi.waitFor(() => expect(page.find('#visit-line').exists()).toBe(true))
+    expect(page.text()).toContain('This case is in.')
+    expect(page.text()).not.toContain(quiet)
+    expect(page.get('#visit-line').text()).toBe(`A visit is set for ${formatVisit('2026-11-24T01:00:00Z', zone)}.`)
+    expect(page.get('#outcome').text()).toBe('This family is qualified.')
+    expect(page.text()).not.toContain('No visit is set.')
+    expect(page.text()).not.toContain('Verification Interview')
+    expect(page.text()).not.toContain('Bringing a basket')
+    expect(page.text()).not.toContain('Assigned workers')
+    expect(page.text()).not.toContain('Rice secret')
+    expect(page.text()).not.toContain('The family consents')
+    expect(page.text()).not.toContain('The family does not consent')
+    expect(page.text()).not.toContain('Not verified')
+    expect(page.text()).not.toContain('DOC-88421')
+    expect(page.text()).not.toContain('Good family unit')
+    expect(page.text()).not.toContain('Basic necessities')
+    expect(page.text()).not.toContain('The roof leaks')
+    expect(page.text()).not.toContain('Marker Aman')
+    expect(page.text()).not.toContain('2026-11-24T02:00:00Z')
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a disqualified family and keeps no visit when only a look exists', async () => {
+    stubFetch(200, {
+      ...newer,
+      progress: {
+        case_in: true,
+        looks: [ { id: 'look-1', worker_name: 'Aminah', looked_at: '2026-11-12T09:00:00Z', note: '' } ],
+        visit_at: null,
+        outcome: 'disqualified'
+      }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-new' })
+    await vi.waitFor(() => expect(page.find('#outcome').exists()).toBe(true))
+    expect(page.text()).toContain('This case is in.')
+    expect(page.text()).toContain('No visit is set.')
+    expect(page.get('#outcome').text()).toBe('This family is disqualified.')
+    expect(page.find('#visit-line').exists()).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a visit with no mark and a disqualified visit', async () => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const visit = '2026-11-24T01:00:00Z'
+    stubFetch(200, {
+      ...newer,
+      progress: { case_in: true, looks: [], visit_at: visit, outcome: null }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const unmarked = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-new' })
+    await vi.waitFor(() => expect(unmarked.find('#visit-line').exists()).toBe(true))
+    expect(unmarked.text()).toContain('This case is in.')
+    expect(unmarked.get('#visit-line').text()).toBe(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(unmarked.find('#outcome').exists()).toBe(false)
+    expect(unmarked.text()).not.toContain('This family is qualified.')
+    expect(unmarked.text()).not.toContain('This family is disqualified.')
+    vi.unstubAllGlobals()
+
+    stubFetch(200, {
+      ...newer,
+      progress: { case_in: true, looks: [], visit_at: visit, outcome: 'disqualified' }
+    })
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-new' })
+    await vi.waitFor(() => expect(page.find('#outcome').exists()).toBe(true))
+    expect(page.get('#visit-line').text()).toBe(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(page.get('#outcome').text()).toBe('This family is disqualified.')
+    expect(page.text()).not.toContain('This family is qualified.')
     vi.unstubAllGlobals()
   })
 })

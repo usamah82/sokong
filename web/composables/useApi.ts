@@ -25,6 +25,7 @@ export type SubmitterEnrolment = {
     case_in: boolean
     looks: Look[]
     visit_at: string | null
+    outcome?: string | null
   }
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { SubmitterEnrolment, WorkerDetail } from '../../composables/useApi'
+import { formatVisit } from '../../utils/visitTime'
 
 const route = useRoute()
 const enrolment = ref<SubmitterEnrolment | null>(null)
@@ -16,6 +17,12 @@ const looks = computed(() => {
 })
 
 const noVisit = computed(() => enrolment.value?.progress.visit_at == null)
+const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const visitLabel = computed(() => {
+  const instant = enrolment.value?.progress.visit_at
+  return instant ? formatVisit(instant, zone) : ''
+})
+const outcome = computed(() => enrolment.value?.progress.outcome ?? null)
 
 function onMarked(mark: { outcome: string, marked_at: string, marker_name: string }) {
   if (!worker.value) return
@@ -64,6 +71,9 @@ onMounted(async () => {
           <p v-if="look.note">{{ look.note }}</p>
         </article>
         <p v-if="noVisit">{{ t('progress.noVisit') }}</p>
+        <p v-else id="visit-line">{{ t('progress.visitSet', { time: visitLabel }) }}</p>
+        <p v-if="outcome === 'qualified'" id="outcome">{{ t('worker.qualified') }}</p>
+        <p v-else-if="outcome === 'disqualified'" id="outcome">{{ t('worker.disqualified') }}</p>
       </template>
     </template>
   </main>
