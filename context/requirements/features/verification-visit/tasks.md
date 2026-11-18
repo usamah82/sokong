@@ -341,14 +341,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** After a visit is stored, the case shows the six stage names under "Verification Interview". Who is here is the working stage. Back is absent there. Next and the stage list leave the stage and save it when it is valid. A bad phone stays on the stage with the typed values. Enrolment people stay on the list and have no Remove. Add a person and Remove apply to a person the visit found. Add a document adds a type and a number, and Other opens "What document?". The other stages open by name and do not send a PUT until their own task. Post-visit is not in this list.
 
 **Acceptance criteria:**
-- [ ] The heading is "Verification Interview". The six names stay visible while a stage is open. The open stage shows "Current". A saved stage shows "Saved". An unsaved stage shows "Not saved". An open saved stage shows both "Current" and "Saved".
-- [ ] Enrolment name, gender, and the head's family phone sit above those fields, labeled "Enrolment". "From where?" is hidden for a child. Absent opens "Since when" and "Why". Yes on a guest or on care for elderly parents opens that follow-up. "The children are the people recorded here." is on the stage. A visit-added person with a blank name cannot leave the stage. "Add a document" adds Document and Number. Other shows "What document?". Zero documents can still leave the stage.
-- [ ] `readonly` renders the stored answers as text and hides Add a person, Add a document, and Remove. At 390 CSS pixels the stage list and the open person do not scroll horizontally.
+- [x] The heading is "Verification Interview". The six names stay visible while a stage is open. The open stage shows "Current". A saved stage shows "Saved". An unsaved stage shows "Not saved". An open saved stage shows both "Current" and "Saved".
+- [x] Enrolment name, gender, and the head's family phone sit above those fields, labeled "Enrolment". "From where?" is hidden for a child. Absent opens "Since when" and "Why". Yes on a guest or on care for elderly parents opens that follow-up. "The children are the people recorded here." is on the stage. A visit-added person with a blank name cannot leave the stage. "Add a document" adds Document and Number. Other shows "What document?". Zero documents can still leave the stage.
+- [x] `readonly` renders the stored answers as text and hides Add a person, Add a document, and Remove. At 390 CSS pixels the stage list and the open person do not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: in the browser at 390 CSS pixels, jump away from Who is here with a bad phone and stay there. Fix it, press Next, and see Who is here marked Saved.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: in the browser at 390 CSS pixels, jump away from Who is here with a bad phone and stay there. Fix it, press Next, and see Who is here marked Saved.
 
 **Dependencies:** Tasks 4 and 12
 
