@@ -414,62 +414,138 @@ class VerificationsTest < ActionDispatch::IntegrationTest
   end
 
   test "a linked worker saves Who is here and a second save replaces that column" do
-    travel_to Time.utc(2026, 11, 18, 3, 0, 0) do
-      enrolment = submit_family
-      token = worker_token(name: "Aman", locality: enrolment.locality)
-      set_visit(enrolment, token)
-      head = enrolment.members.find { |member| member.role == "head" }
-      child = enrolment.members.find { |member| member.role == "member" }
-      added = added_person
-      body = {
-        people: [
-          person_for(head, documents: [ { kind: "passport", number: " P1 ", other_label: "nope" } ], origin: "Kedah"),
-          person_for(child, relationship: "child", origin: "should be cleared", documents: []),
-          added
-        ],
-        others_stay: false,
-        others_stay_detail: "cousin",
-        care_for_parents: true,
-        care_for_parents_detail: " Mother ",
-        notes: "They spoke quietly"
-      }
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    head = enrolment.members.find { |member| member.role == "head" }
+    child = enrolment.members.find { |member| member.role == "member" }
+    added = added_person.merge(absent_since: "not-a-date", absent_reason: "Away")
+    body = {
+      people: [
+        person_for(
+          head,
+          name: " Siti Aminah ",
+          phone: "+60 12-345 6789",
+          birth_date: "2024-02-29",
+          gender: "female",
+          identity: "verified",
+          origin: "Kedah",
+          relationship: "spouse",
+          documents: [
+            { kind: "passport", number: " P1 ", other_label: "nope" },
+            { kind: "national_id", number: "900101", other_label: "ignore" },
+            { kind: "other", number: "1", other_label: " Village letter " }
+          ]
+        ),
+        person_for(child, relationship: "child", origin: "x" * 201, documents: []),
+        added
+      ],
+      others_stay: false,
+      others_stay_detail: "y" * 2001,
+      care_for_parents: true,
+      care_for_parents_detail: " Mother ",
+      notes: "They spoke quietly",
+      worker_name: "Hacker",
+      recorded_at: "1999-01-01T00:00:00Z",
+      wealth: "hidden"
+    }
+    body[:people][0][:secret] = "hidden"
+    before = {
+      members: enrolment.members.map { |member| [ member.id, member.name, member.role ] },
+      place: enrolment.place_name,
+      consent: enrolment.consent_text,
+      contact: enrolment.enroler_contact,
+      phone: enrolment.family_phone
+    }
 
+    travel_to Time.utc(2026, 11, 18, 3, 0, 0) do
       assert_no_enqueued_emails do
         put "/enrolments/#{enrolment.id}/verification/who_is_here",
           params: body, headers: bearer(token), as: :json
       end
-
-      assert_response :ok
-      saved = response.parsed_body
-      assert_equal "Aman", saved["worker_name"]
-      assert_equal "2026-11-18T03:00:00Z", saved["recorded_at"]
-      assert_equal "P1", saved["people"][0]["documents"][0]["number"]
-      assert_equal "", saved["people"][0]["documents"][0]["other_label"]
-      assert_equal "", saved["people"][1]["origin"]
-      assert_equal "", saved["others_stay_detail"]
-      assert_equal "Mother", saved["care_for_parents_detail"]
-      verification = enrolment.reload.verification
-      assert_nil verification.formation
-      assert_nil verification.daily_life
-      assert_nil verification.dynamics
-      assert_nil verification.house
-      assert_nil verification.needs
-      assert_nil verification.boxes
-
-      body[:notes] = "Second visit note"
-      body[:people][2][:absent] = true
-      body[:people][2][:absent_since] = "2024-01-02"
-      body[:people][2][:absent_reason] = "Work"
-      put "/enrolments/#{enrolment.id}/verification/who_is_here",
-        params: body, headers: bearer(token), as: :json
-      assert_response :ok
-      replaced = response.parsed_body
-      assert_equal "Second visit note", replaced["notes"]
-      assert_equal "2024-01-02", replaced["people"][2]["absent_since"]
-      assert_equal "Work", replaced["people"][2]["absent_reason"]
-      assert_equal 1, Verification.count
-      assert_nil enrolment.verification.reload.formation
     end
+
+    assert_response :ok
+    saved = response.parsed_body
+    assert_equal "Aman", saved["worker_name"]
+    assert_equal "2026-11-18T03:00:00Z", saved["recorded_at"]
+    assert_nil saved["wealth"]
+    head_saved = saved["people"][0]
+    assert_equal "Siti Aminah", head_saved["name"]
+    assert_equal "+60123456789", head_saved["phone"]
+    assert_equal "2024-02-29", head_saved["birth_date"]
+    assert_equal "female", head_saved["gender"]
+    assert_equal true, head_saved["head"]
+    assert_equal "", head_saved["relationship"]
+    assert_equal "verified", head_saved["identity"]
+    assert_equal head.id, head_saved["family_member_id"]
+    assert_equal "Kedah", head_saved["origin"]
+    assert_nil head_saved["secret"]
+    assert_equal "passport", head_saved["documents"][0]["kind"]
+    assert_equal "P1", head_saved["documents"][0]["number"]
+    assert_equal "", head_saved["documents"][0]["other_label"]
+    assert_equal "national_id", head_saved["documents"][1]["kind"]
+    assert_equal "", head_saved["documents"][1]["other_label"]
+    assert_equal "other", head_saved["documents"][2]["kind"]
+    assert_equal "Village letter", head_saved["documents"][2]["other_label"]
+    child_saved = saved["people"][1]
+    assert_equal false, child_saved["head"]
+    assert_equal "child", child_saved["relationship"]
+    assert_equal child.id, child_saved["family_member_id"]
+    assert_equal "", child_saved["origin"]
+    assert_equal [], child_saved["documents"]
+    added_saved = saved["people"][2]
+    assert_equal false, added_saved["head"]
+    assert_nil added_saved["family_member_id"]
+    assert_equal "other", added_saved["relationship"]
+    assert_equal "no_papers", added_saved["identity"]
+    assert_equal "Johor", added_saved["origin"]
+    assert_equal "", added_saved["absent_since"]
+    assert_equal "", added_saved["absent_reason"]
+    assert_equal "", saved["others_stay_detail"]
+    assert_equal "Mother", saved["care_for_parents_detail"]
+    stored = enrolment.reload.verification
+    assert_equal saved, stored.who_is_here
+    assert_nil stored.formation
+    assert_nil stored.daily_life
+    assert_nil stored.dynamics
+    assert_nil stored.house
+    assert_nil stored.needs
+    assert_nil stored.boxes
+    kept = enrolment.reload
+    assert_equal before[:members], kept.members.map { |member| [ member.id, member.name, member.role ] }
+    assert_equal before[:place], kept.place_name
+    assert_equal before[:consent], kept.consent_text
+    assert_equal before[:contact], kept.enroler_contact
+    assert_equal before[:phone], kept.family_phone
+
+    body[:notes] = "Second visit note"
+    body[:people][2][:absent] = true
+    body[:people][2][:absent_since] = "2024-01-02"
+    body[:people][2][:absent_reason] = "Work"
+    lina = worker_token(name: "Lina", locality: enrolment.locality)
+    travel_to Time.utc(2026, 11, 18, 4, 0, 0) do
+      assert_no_enqueued_emails do
+        put "/enrolments/#{enrolment.id}/verification/who_is_here",
+          params: body, headers: bearer(lina), as: :json
+      end
+    end
+    assert_response :ok
+    replaced = response.parsed_body
+    assert_equal "Lina", replaced["worker_name"]
+    assert_equal "2026-11-18T04:00:00Z", replaced["recorded_at"]
+    assert_equal "Second visit note", replaced["notes"]
+    assert_equal "2024-01-02", replaced["people"][2]["absent_since"]
+    assert_equal "Work", replaced["people"][2]["absent_reason"]
+    assert_equal 1, Verification.count
+    reloaded = enrolment.verification.reload
+    assert_equal replaced, reloaded.who_is_here
+    assert_nil reloaded.formation
+    assert_nil reloaded.daily_life
+    assert_nil reloaded.dynamics
+    assert_nil reloaded.house
+    assert_nil reloaded.needs
+    assert_nil reloaded.boxes
   end
 
   test "Who is here rejects a missing visit, a missing person, and a bad answer" do
@@ -487,6 +563,9 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     }
 
     assert_no_difference "Verification.count" do
+      put "/enrolments/#{enrolment.id}/verification/wealth",
+        params: body, headers: bearer(token), as: :json
+      assert_not_found
       put "/enrolments/#{enrolment.id}/verification/who_is_here",
         params: body, headers: bearer(token), as: :json
     end
@@ -528,7 +607,7 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     unknown[:people][0][:family_member_id] = SecureRandom.uuid
     put "/enrolments/#{enrolment.id}/verification/who_is_here",
       params: unknown, headers: bearer(token), as: :json
-    assert_stage_error "Person is invalid", "family_member_id" => [ "is invalid" ]
+    assert_stage_error "Person is invalid", "family_member_id" => [ "is invalid", "is required" ]
 
     duplicate = body.deep_dup
     duplicate[:people][1][:person_id] = duplicate[:people][0][:person_id]
@@ -559,14 +638,247 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     put "/enrolments/#{enrolment.id}/verification/wealth",
       params: body, headers: bearer(token), as: :json
     assert_not_found
+    assert_equal stored, enrolment.verification.reload.who_is_here
 
     put "/enrolments/#{enrolment.id}/verification/who_is_here", params: body, as: :json
     assert_sign_in_required
+    assert_equal stored, enrolment.verification.reload.who_is_here
 
     submitter = confirmed_token(email: "siti@example.com")
     put "/enrolments/#{enrolment.id}/verification/who_is_here",
       params: body, headers: bearer(submitter), as: :json
     assert_not_found
+    assert_equal stored, enrolment.verification.reload.who_is_here
+  end
+
+  test "Who is here stays hidden from another locality, an unlinked worker, and an unknown id" do
+    enrolment = submit_family
+    other = create_locality(name: "Other Block", created_at: Time.current)
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    body = who_is_here_body(enrolment)
+
+    [ worker_token(name: "Farid", locality: other), worker_token(name: "Noor") ].each do |refused|
+      assert_no_difference "Verification.count" do
+        put "/enrolments/#{enrolment.id}/verification/who_is_here",
+          params: body, headers: bearer(refused), as: :json
+      end
+      assert_not_found
+    end
+
+    assert_no_difference "Verification.count" do
+      put "/enrolments/#{SecureRandom.uuid}/verification/who_is_here",
+        params: body, headers: bearer(token), as: :json
+    end
+    assert_not_found
+    assert_nil enrolment.reload.verification
+  end
+
+  test "Who is here collects every field error and rejects a person who cannot be stored" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    head = enrolment.members.find { |member| member.role == "head" }
+    body = who_is_here_body(enrolment)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: body, headers: bearer(token), as: :json
+    assert_response :ok
+    stored = enrolment.verification.reload.who_is_here
+
+    both = body.deep_dup
+    both[:people][0][:birth_date] = "2026-02-31"
+    both[:people][0][:phone] = "Mary"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: both, headers: bearer(token), as: :json
+    assert_stage_error "Birth date is invalid",
+      "birth_date" => [ "is invalid" ],
+      "phone" => [ "is invalid" ]
+
+    omitted = body.deep_dup
+    omitted[:people] = [ person_for(head, phone: "Mary") ]
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: omitted, headers: bearer(token), as: :json
+    assert_stage_error "Person is required",
+      "family_member_id" => [ "is required" ],
+      "phone" => [ "is invalid" ]
+
+    origin = body.deep_dup
+    origin[:people][1][:origin] = "z" * 201
+    origin[:people][1][:relationship] = "cousin"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: origin, headers: bearer(token), as: :json
+    assert_stage_error "From where? is too long",
+      "origin" => [ "is too long" ],
+      "relationship" => [ "is invalid" ]
+
+    blank_name = body.deep_dup
+    blank_name[:people] << added_person.merge(name: "  ")
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: blank_name, headers: bearer(token), as: :json
+    assert_stage_error "Full name is required", "name" => [ "is required" ]
+
+    repeated = body.deep_dup
+    repeated[:people] << person_for(head)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: repeated, headers: bearer(token), as: :json
+    assert_stage_error "Person is invalid", "family_member_id" => [ "is invalid" ]
+
+    child_as_head = body.deep_dup
+    child_as_head[:people][1][:head] = true
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: child_as_head, headers: bearer(token), as: :json
+    assert_stage_error "Relationship is invalid", "relationship" => [ "is invalid" ]
+
+    head_not_head = body.deep_dup
+    head_not_head[:people][0][:head] = false
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: head_not_head, headers: bearer(token), as: :json
+    assert_stage_error "Relationship is invalid", "relationship" => [ "is invalid" ]
+
+    added_as_head = body.deep_dup
+    added_as_head[:people] << added_person.merge(head: true)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: added_as_head, headers: bearer(token), as: :json
+    assert_stage_error "Relationship is invalid", "relationship" => [ "is invalid" ]
+
+    cousin = body.deep_dup
+    cousin[:people][1][:relationship] = "cousin"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: cousin, headers: bearer(token), as: :json
+    assert_stage_error "Relationship is invalid", "relationship" => [ "is invalid" ]
+
+    bad_gender = body.deep_dup
+    bad_gender[:people][0][:gender] = "other"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: bad_gender, headers: bearer(token), as: :json
+    assert_stage_error "Gender is invalid", "gender" => [ "is invalid" ]
+
+    long_notes = body.deep_dup
+    long_notes[:notes] = "n" * 2001
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: long_notes, headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is too long", "notes" => [ "is too long" ]
+
+    long_origin = body.deep_dup
+    long_origin[:people][1][:origin] = "o" * 201
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: long_origin, headers: bearer(token), as: :json
+    assert_stage_error "From where? is too long", "origin" => [ "is too long" ]
+
+    long_why = body.deep_dup
+    long_why[:people][1][:absent] = true
+    long_why[:people][1][:absent_reason] = "w" * 2001
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: long_why, headers: bearer(token), as: :json
+    assert_stage_error "Why is too long", "absent_reason" => [ "is too long" ]
+
+    long_number = body.deep_dup
+    long_number[:people][0][:documents] = [ { kind: "passport", number: "1" * 101, other_label: "" } ]
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: long_number, headers: bearer(token), as: :json
+    assert_stage_error "Document number is too long", "number" => [ "is too long" ]
+
+    long_label = body.deep_dup
+    long_label[:people][0][:documents] = [ { kind: "other", number: "1", other_label: "d" * 101 } ]
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: long_label, headers: bearer(token), as: :json
+    assert_stage_error "What document? is too long", "other_label" => [ "is too long" ]
+
+    long_stay = body.deep_dup
+    long_stay[:others_stay] = true
+    long_stay[:others_stay_detail] = "s" * 2001
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: long_stay, headers: bearer(token), as: :json
+    assert_stage_error "Who, and why? is too long", "others_stay_detail" => [ "is too long" ]
+
+    missing_people = body.except(:people)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: missing_people, headers: bearer(token), as: :json
+    assert_stage_error "Person is required", "family_member_id" => [ "is required" ]
+
+    string_people = body.merge(people: "nope")
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: string_people, headers: bearer(token), as: :json
+    assert_stage_error "Person is required", "family_member_id" => [ "is required" ]
+
+    string_person = body.deep_dup
+    string_person[:people] << "nope"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: string_person, headers: bearer(token), as: :json
+    assert_stage_error "Person is invalid", "person_id" => [ "is invalid" ]
+
+    bad_id = body.deep_dup
+    bad_id[:people][0][:person_id] = "nope"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: bad_id, headers: bearer(token), as: :json
+    assert_stage_error "Person is invalid", "person_id" => [ "is invalid" ]
+
+    number_name = body.deep_dup
+    number_name[:people][0][:name] = 12
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: number_name, headers: bearer(token), as: :json
+    assert_stage_error "Full name is invalid", "name" => [ "is invalid" ]
+
+    number_phone = body.deep_dup
+    number_phone[:people][0][:phone] = 12
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: number_phone, headers: bearer(token), as: :json
+    assert_stage_error "Enter a phone number, for example +60 12-345 6789.", "phone" => [ "is invalid" ]
+
+    string_documents = body.deep_dup
+    string_documents[:people][0][:documents] = "passport"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: string_documents, headers: bearer(token), as: :json
+    assert_stage_error "Document is invalid", "kind" => [ "is invalid" ]
+
+    string_document = body.deep_dup
+    string_document[:people][0][:documents] = [ "passport" ]
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: string_document, headers: bearer(token), as: :json
+    assert_stage_error "Document is invalid", "kind" => [ "is invalid" ]
+
+    assert_equal stored, enrolment.verification.reload.who_is_here
+  end
+
+  test "Who is here stores a blank relationship, a null answer, and a string at its limit" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    body = who_is_here_body(enrolment)
+    body[:people][1][:relationship] = ""
+    body[:people][1][:absent] = nil
+    body[:people][1][:absent_since] = "not-a-date"
+    body[:people][1][:absent_reason] = "w" * 2001
+    body[:others_stay] = nil
+    body[:care_for_parents] = nil
+    body[:people][0][:name] = "n" * 200
+    body[:people][0][:origin] = "o" * 200
+    body[:notes] = "e" * 2000
+    away = added_person.merge(absent: true, absent_since: "", absent_reason: "w" * 2000)
+    body[:people] << away
+    body[:people][0][:documents] = [ { kind: "other", number: "1" * 100, other_label: "d" * 100 } ]
+
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: body, headers: bearer(token), as: :json
+
+    assert_response :ok
+    saved = enrolment.verification.reload.who_is_here
+    assert_equal "", saved["people"][0]["relationship"]
+    assert_equal "n" * 200, saved["people"][0]["name"]
+    assert_equal "o" * 200, saved["people"][0]["origin"]
+    assert_equal "1" * 100, saved["people"][0]["documents"][0]["number"]
+    assert_equal "d" * 100, saved["people"][0]["documents"][0]["other_label"]
+    assert_equal "", saved["people"][1]["relationship"]
+    assert_nil saved["people"][1]["absent"]
+    assert_equal "", saved["people"][1]["absent_since"]
+    assert_equal "", saved["people"][1]["absent_reason"]
+    assert_equal true, saved["people"][2]["absent"]
+    assert_equal "", saved["people"][2]["absent_since"]
+    assert_equal "w" * 2000, saved["people"][2]["absent_reason"]
+    assert_nil saved["others_stay"]
+    assert_equal "", saved["others_stay_detail"]
+    assert_nil saved["care_for_parents"]
+    assert_equal "e" * 2000, saved["notes"]
   end
 
   private
@@ -679,6 +991,19 @@ class VerificationsTest < ActionDispatch::IntegrationTest
         as: :json
       assert_response :ok
       clear_enqueued_jobs
+    end
+
+    def who_is_here_body(enrolment)
+      head = enrolment.members.find { |member| member.role == "head" }
+      child = enrolment.members.find { |member| member.role == "member" }
+      {
+        people: [ person_for(head), person_for(child, relationship: "spouse", origin: "Kedah") ],
+        others_stay: nil,
+        others_stay_detail: "",
+        care_for_parents: nil,
+        care_for_parents_detail: "",
+        notes: ""
+      }
     end
 
     def person_for(member, **overrides)
