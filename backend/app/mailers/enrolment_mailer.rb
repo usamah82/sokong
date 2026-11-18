@@ -21,4 +21,14 @@ class EnrolmentMailer < ApplicationMailer
     @sentence = "The visit time for #{head} at #{place} is now #{visit_time}."
     mail to: email, subject: "Sokong visit"
   end
+
+  def outcome_qualified(email, head, place)
+    @sentence = "#{head} at #{place} is qualified."
+    mail to: email, subject: "Sokong verification"
+  end
+
+  def outcome_disqualified(email, head, place)
+    @sentence = "#{head} at #{place} is disqualified."
+    mail to: email, subject: "Sokong verification"
+  end
 end
