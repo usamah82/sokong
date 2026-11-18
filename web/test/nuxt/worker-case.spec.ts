@@ -413,10 +413,12 @@ describe('worker cases', () => {
     stubFetch(() => ({ status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }))
     sessionStorage.setItem('sokong.token', 'secret-token')
     sessionStorage.setItem('sokong.role', 'worker')
+    sessionStorage.setItem('sokong.name', 'Aman')
     await mountSuspended(EnrolmentsPage)
     await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
     expect(sessionStorage.getItem('sokong.role')).toBeNull()
+    expect(sessionStorage.getItem('sokong.name')).toBeNull()
     vi.unstubAllGlobals()
   })
 
@@ -454,6 +456,7 @@ describe('worker cases', () => {
     await page.get('form.pre-visit').trigger('submit')
     expect(calls.filter((call) => call.method === 'PATCH')).toHaveLength(0)
     expect(page.get<HTMLInputElement>('#assigned-worker-0').element.value).toBe('Aman')
+    expect(page.get('#assigned-worker-1').attributes('aria-invalid')).toBe('true')
     vi.unstubAllGlobals()
   })
 
@@ -481,6 +484,7 @@ describe('worker cases', () => {
     await page.get('#assigned-worker-1').setValue('Farid')
     await page.get('form.pre-visit').trigger('submit')
     await vi.waitFor(() => expect(page.text()).toContain('Change visit'))
+    expect(page.text()).not.toContain('Set the visit before recording it.')
     const patch = calls.find((call) => call.method === 'PATCH')
     expect(new URL(patch!.url).pathname).toBe('/enrolments/case-1/visit')
     expect(patch!.json).toMatchObject({
@@ -514,6 +518,7 @@ describe('worker cases', () => {
     sessionStorage.setItem('sokong.token', 'secret-token')
     const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
     await vi.waitFor(() => expect(page.text()).toContain('Change visit'))
+    expect(page.text()).not.toContain('Set the visit before recording it.')
     expect(page.text()).not.toContain('This visit is later than a week after the enrolment.')
     expect(page.get('#visit-clock').attributes('datetime')).toBe('2026-11-24T01:00:00Z')
     await page.get('#bringing-basket').setValue(true)

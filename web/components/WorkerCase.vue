@@ -77,6 +77,10 @@ function addWorker() {
   assignedWorkers.value = [ ...assignedWorkers.value, '' ]
 }
 
+function nameMissing(value: string) {
+  return visitError.value === t('worker.workerRequired') && value.trim() === ''
+}
+
 async function saveVisit() {
   if (savingVisit.value) return
   visitError.value = ''
@@ -160,7 +164,7 @@ async function saveVisit() {
     <section class="pre-visit">
       <h2>{{ t('worker.preVisit') }}</h2>
       <p>{{ t('worker.aim') }}</p>
-      <p>{{ t('worker.setBefore') }}</p>
+      <p v-if="!visitAt">{{ t('worker.setBefore') }}</p>
       <p v-if="late">{{ t('worker.late') }}</p>
       <time v-if="visitAt" id="visit-clock" :datetime="visitAt">{{ visitLabel }}</time>
       <form class="pre-visit" novalidate @submit.prevent="saveVisit">
@@ -173,8 +177,8 @@ async function saveVisit() {
         </label>
         <fieldset>
           <legend class="label">{{ t('worker.assignedWorkers') }}</legend>
-          <label v-for="(_worker, index) in assignedWorkers" :key="index" class="field">
-            <input :id="`assigned-worker-${index}`" v-model="assignedWorkers[index]" type="text">
+          <label v-for="(worker, index) in assignedWorkers" :key="index" class="field">{{ t('wizard.family.name') }}
+            <input :id="`assigned-worker-${index}`" v-model="assignedWorkers[index]" type="text" :aria-invalid="nameMissing(worker)">
           </label>
           <button id="add-worker" type="button" @click="addWorker">{{ t('worker.addWorker') }}</button>
         </fieldset>
