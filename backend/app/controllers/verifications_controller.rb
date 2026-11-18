@@ -1,20 +1,28 @@
 class VerificationsController < ApplicationController
   wrap_parameters false
 
+  CLEANERS = {
+    "who_is_here" => WhoIsHereStage,
+    "formation" => FormationStage,
+    "dynamics" => DynamicsStage
+  }.freeze
+
   def update
     require_account
     return if performed?
 
     enrolment = linked_enrolment
     return render_not_found unless enrolment
-    return render_not_found unless params[:stage] == "who_is_here"
+
+    cleaner = CLEANERS[params[:stage]]
+    return render_not_found unless cleaner
 
     if enrolment.visit_at.nil?
       render json: { error: VerificationMessages.envelope(:visit_not_set) }, status: :unprocessable_content
       return
     end
 
-    result = WhoIsHereStage.clean(stage_input, enrolment:)
+    result = cleaner.clean(params.to_unsafe_h.slice(*cleaner::KEYS), enrolment:)
     if result[:error]
       render json: { error: result[:error] }, status: :unprocessable_content
       return
@@ -22,17 +30,21 @@ class VerificationsController < ApplicationController
 
     verification = enrolment.verification || enrolment.build_verification
     recorded_at = Time.current.utc.change(usec: 0).iso8601
-    verification.update!(who_is_here: result.merge("worker_name" => current_account.name, "recorded_at" => recorded_at))
-    render json: verification.who_is_here
+    stored = result.merge("worker_name" => current_account.name, "recorded_at" => recorded_at)
+    case params[:stage]
+    when "who_is_here"
+      verification.update!(who_is_here: stored)
+      render json: verification.who_is_here
+    when "formation"
+      verification.update!(formation: stored)
+      render json: verification.formation
+    when "dynamics"
+      verification.update!(dynamics: stored)
+      render json: verification.dynamics
+    end
   end
 
   private
-    def stage_input
-      params.to_unsafe_h.slice(
-        "people", "others_stay", "others_stay_detail",
-        "care_for_parents", "care_for_parents_detail", "notes"
-      )
-    end
 
     def linked_enrolment
       return unless current_account.role == "worker"

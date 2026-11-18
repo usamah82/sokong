@@ -943,6 +943,88 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal "e" * 2000, saved["notes"]
   end
 
+  test "formation and dynamics save on their own" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    blank = { started_year: nil, how_it_started: "", notes: "" }
+
+    assert_no_difference "Verification.count" do
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: blank, headers: bearer(token), as: :json
+    end
+    assert_stage_error "Set the visit before recording it", {}
+
+    set_visit(enrolment, token)
+    travel_to Time.utc(2026, 6, 1, 0, 0, 0) do
+      assert_no_enqueued_emails do
+        put "/enrolments/#{enrolment.id}/verification/formation",
+          params: blank, headers: bearer(token), as: :json
+      end
+      assert_response :ok
+      assert_nil response.parsed_body["started_year"]
+      assert_equal "Aman", response.parsed_body["worker_name"]
+      assert_equal "2026-06-01T00:00:00Z", response.parsed_body["recorded_at"]
+
+      filled = { started_year: 2026, how_it_started: " They married ", notes: "Quiet", worker_name: "Hacker" }
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: filled, headers: bearer(token), as: :json
+      assert_response :ok
+      assert_equal 2026, response.parsed_body["started_year"]
+      assert_equal "They married", response.parsed_body["how_it_started"]
+      assert_equal "Aman", response.parsed_body["worker_name"]
+
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: 1900, how_it_started: "", notes: "" },
+        headers: bearer(token), as: :json
+      assert_response :ok
+      assert_equal 1900, response.parsed_body["started_year"]
+      stored = enrolment.verification.reload.formation
+
+      [
+        [ { started_year: "2008", how_it_started: "", notes: "" }, "Enter the year, for example 2008." ],
+        [ { started_year: 1899, how_it_started: "", notes: "" }, "Enter the year, for example 2008." ],
+        [ { started_year: 2027, how_it_started: "", notes: "" }, "Enter the year, for example 2008." ],
+        [ { started_year: 2008.0, how_it_started: "", notes: "" }, "Enter the year, for example 2008." ]
+      ].each do |params, message|
+        put "/enrolments/#{enrolment.id}/verification/formation",
+          params: params, headers: bearer(token), as: :json
+        assert_stage_error message, "started_year" => [ "is invalid" ]
+      end
+      assert_equal stored, enrolment.verification.reload.formation
+    end
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: "They play", notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["children_at_home"]
+    dynamics = enrolment.verification.reload.dynamics
+
+    who = who_is_here_body(enrolment)
+    who[:people][1][:relationship] = "child"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: who, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal dynamics, enrolment.verification.reload.dynamics
+    assert_equal 1900, enrolment.verification.formation["started_year"]
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: " Long ", who_steps_in: "Aunt", children_at_home: " They play ", notes: "n" * 2000 },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "They play", response.parsed_body["children_at_home"]
+    assert_equal "Long", response.parsed_body["hard_week"]
+    kept = enrolment.verification.reload.dynamics
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: "c" * 2001, notes: "" },
+      headers: bearer(token), as: :json
+    assert_stage_error "How are the children at home? is too long", "children_at_home" => [ "is too long" ]
+    assert_equal kept, enrolment.verification.reload.dynamics
+    assert_equal 1900, enrolment.verification.formation["started_year"]
+    assert_nil enrolment.verification.house
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
