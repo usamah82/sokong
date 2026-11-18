@@ -169,6 +169,7 @@
     "quiet": "This case is in. No one has looked. No visit is set.",
     "in": "This case is in.",
     "noVisit": "No visit is set.",
+    "visitSet": "A visit is set for {time}.",
     "missing": "This case is not available.",
     "signOut": "Sign out"
   },
