@@ -367,14 +367,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** How the family formed and How they are together become real stages. A bad year stays on formation. The children question is on dynamics only when Who is here has a child. Leaving either stage saves it. Back and Next move one stage.
 
 **Acceptance criteria:**
-- [ ] Formation shows "When did this family start?" and "How did it start?". A year outside 1900 through the current year shows "Enter the year, for example 2008." and does not open another stage.
-- [ ] Dynamics shows the hard-week and who-steps-in questions, and "Write what the family said." "How are the children at home?" is shown only when a person is a Child. The screen says nothing that scores a person.
-- [ ] Both stages save on leave, show Saved, and render as text when `readonly` is set. What they need still has no Next. Post-visit is not a stage in the list.
+- [x] Formation shows "When did this family start?" and "How did it start?". A year outside 1900 through the current year shows "Enter the year, for example 2008." and does not open another stage.
+- [x] Dynamics shows the hard-week and who-steps-in questions, and "Write what the family said." "How are the children at home?" is shown only when a person is a Child. The screen says nothing that scores a person.
+- [x] Both stages save on leave, show Saved, and render as text when `readonly` is set. What they need still has no Next. Post-visit is not a stage in the list.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: enter a bad year and confirm the stage does not change. Add a child on Who is here and confirm the children question appears on dynamics.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: enter a bad year and confirm the stage does not change. Add a child on Who is here and confirm the children question appears on dynamics.
 
 **Dependencies:** Tasks 5 and 13
 
