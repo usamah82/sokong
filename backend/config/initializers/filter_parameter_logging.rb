@@ -6,5 +6,10 @@
 Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
   :enroler_contact, :family_phone, :how_to_find, :other_help,
-  :latitude, :longitude, :name, :description, :job, :monthly_amount
+  :latitude, :longitude, :name, :description, :job, :monthly_amount,
+  :phone, :number, :other_label, :assigned_workers, :origin, :notes,
+  :birth_date, :absent_since, :absent_reason, :others_stay_detail, :care_for_parents_detail,
+  :how_it_started, :previous_jobs, :wished_work, :skills, :school_going, :school_where, :school_travel,
+  :hard_week, :who_steps_in, :children_at_home, :unsafe_detail, :need_most,
+  /\Abasket\z/
 ]

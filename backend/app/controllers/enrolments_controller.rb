@@ -48,7 +48,7 @@ class EnrolmentsController < ApplicationController
 
   private
     def visible_enrolments
-      relation = Enrolment.includes(:locality, :members, :looks).order(submitted_at: :desc, created_at: :desc)
+      relation = Enrolment.includes(:locality, :members, :looks, :verification).order(submitted_at: :desc, created_at: :desc)
       case current_account.role
       when "submitter"
         relation.where("lower(email) = ?", current_account.email_normalized)
@@ -102,8 +102,24 @@ class EnrolmentsController < ApplicationController
         members: enrolment.members.map { |member| member_json(member) },
         looks: enrolment.looks.map { |look| look_json(look) },
         bringing_basket: enrolment.bringing_basket,
-        assigned_workers: enrolment.assigned_workers
+        assigned_workers: enrolment.assigned_workers,
+        verification: verification_json(enrolment)
       )
+    end
+
+    def verification_json(enrolment)
+      record = enrolment.verification
+      return unless record
+
+      {
+        who_is_here: record.who_is_here,
+        formation: record.formation,
+        daily_life: record.daily_life,
+        dynamics: record.dynamics,
+        house: record.house,
+        needs: record.needs,
+        boxes: record.boxes
+      }
     end
 
     def look_json(look)
