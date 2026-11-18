@@ -1,8 +1,8 @@
 # Design
 
-Review pictures for the verification visit. Usamah accepted these screenshots and approved [spec.md](spec.md) on 2026-11-17. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
+Review pictures for the verification visit. Usamah accepted the first screenshots and approved the spec on 2026-11-17. On 2026-11-18 he asked for a pre-visit section, document numbers, and the initial assessment in a post-visit section. These pictures match that revision. Sample names and the place "Block 4" are there so the layout can be judged. They are not default form values.
 
-The interview sits on the existing worker case. Submitter progress and the enrolments list gain the visit line and the outcome line. This pass uses the same paper, ink, and green button as the enrolment pictures.
+The worker case has Pre-visit, Verification Interview, and Post-visit. Submitter progress and the enrolments list gain the visit line and the outcome line. This pass uses the same paper, ink, and green button as the enrolment pictures.
 
 ## Visual language
 
@@ -29,13 +29,13 @@ Every picture is 390 CSS pixels wide. The page scrolls vertically. It does not s
 
 ## Screens
 
-### Set the visit
+### Pre-visit
 
-Job: choose the first visit time before any interview stage is available.
+Job: set the visit time, record whether a basket is coming, and name the assigned workers, before the interview is available.
 
 Primary action: Set visit.
 
-The field is labeled "Visit time". A stored time keeps that label.
+The section heading is "Pre-visit". The time field is labeled "Visit time". A stored time keeps that label. "Bringing a basket" is a checkbox. "Assigned workers" starts with the signed-in worker's name. "Add a worker" adds another name.
 
 States: no time yet; a value that is not a time.
 
@@ -44,28 +44,31 @@ Copy, as in the spec:
 - "Aim for a visit within a week of the enrolment."
 - "Set the visit before recording it."
 - "Visit time is invalid"
+- "Bringing a basket"
+- "Assigned workers"
+- "Add a worker"
 
 Pictures: [set-visit.png](design/set-visit.png), [visit-invalid.png](design/visit-invalid.png).
 
 ### Visit time, then the interview
 
-Job: show the stored time, say whether it is later than a week, and keep the seven stages on screen.
+Job: show the stored pre-visit answers, say whether the visit is later than a week, and keep the six stages on screen.
 
-Primary action: Change visit, until the family is marked. After that, the time is text.
+Primary action: Change visit, until the family is marked. After that, the pre-visit answers are text.
 
 The sample time `2026-11-24T01:00:00Z` is shown to a UTC+8 viewer as "24 November 2026 at 09:00". A later sample, "25 November 2026 at 09:00", also shows "This visit is later than a week after the enrolment."
 
-The heading is "Interview". The stages, in order, are "Who is here", "How the family formed", "A day in their life", "How they are together", "The house and the meals", "What they need", and "Initial assessment". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved".
+The heading is "Verification Interview". The stages, in order, are "Who is here", "How the family formed", "A day in their life", "How they are together", "The house and the meals", and "What they need". The open stage shows "Current". A saved stage shows "Saved". The others show "Not saved". Post-visit sits below the interview and is not a stage in the list.
 
 Pictures of the late time and the on-time interview: [visit-late.png](design/visit-late.png), [who-is-here.png](design/who-is-here.png).
 
 ### Who is here
 
-Job: record everyone who lives here, guests who are not on that list, care for elderly parents, and each person's identity.
+Job: record everyone who lives here, guests who are not on that list, care for elderly parents, each person's identity, and any document numbers.
 
-Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. The head shows "Head" and has no relationship choice. Every other person has "Relationship". "From where?" is hidden when the relationship is Child. "Absent" opens "Since when" and "Why". "Since when" is a date, `YYYY-MM-DD`. After the people, Yes on a guest opens "Who, and why?" Yes on care for elderly parents opens "Who, and what do you do for them?"
+Primary action: Next. There is no Back. "Add a person" inserts a person who needs a name. An added person has "Remove". Farid is that person in the picture. The head shows "Head" and has no relationship choice. Every other person has "Relationship". "From where?" is hidden when the relationship is Child. "Absent" opens "Since when" and "Why". "Since when" is a date, `YYYY-MM-DD`. "Add a document" adds a document type and a number. Other opens "What document?". A document row has "Remove". Zero documents is allowed. After the people, Yes on a guest opens "Who, and why?" Yes on care for elderly parents opens "Who, and what do you do for them?"
 
-The open person shows "Enrolment" above the name, the gender, and the phone. A bad phone stays on this stage. Identity is asked on that person.
+The open person shows "Enrolment" above the name, the gender, and the phone. A bad phone stays on this stage. Identity is the choice Verified, Not verified, or No papers. The document numbers sit under that choice.
 
 Copy:
 
@@ -74,7 +77,16 @@ Copy:
 - "Birth date"
 - "Gender"
 - "Phone"
-- "Identification"
+- "Documents"
+- "Document"
+- "National ID"
+- "Social security number"
+- "Passport"
+- "Birth certificate"
+- "Other"
+- "What document?"
+- "Number"
+- "Add a document"
 - "From where?"
 - "Relationship"
 - "Head"
@@ -199,7 +211,7 @@ Picture: [house.png](design/house.png).
 
 Job: ask what would help most, and record consent.
 
-Primary action: Next.
+Primary action: none. This is the last interview stage. Back returns to The house and the meals. Post-visit is the next section on the page.
 
 The enrolment help sits above the question. The sample lists Food and School supplies. "The family does not consent" is selected, which blocks "Mark qualified" and still allows "Mark disqualified".
 
@@ -214,16 +226,17 @@ Copy:
 
 Picture: [needs.png](design/needs.png).
 
-### Initial assessment
+### Post-visit
 
 Job: record Good family unit and Basic necessities, each with a gap, then mark the family.
 
-Primary action: Mark qualified, or Mark disqualified. Back returns to What they need. There is no Next.
+Primary action: Mark qualified, or Mark disqualified.
 
-An unchecked box needs a gap. A checked box can leave the gap empty. One picture shows "Gap is required" and "The family has not consented" together. Another shows "The visit record is incomplete" when a stage has not been saved. Dependable generation and accumulated wealth are absent.
+The section heading is "Post-visit". It shows "Saved" or "Not saved". "Initial assessment" names the judgment. An unchecked box needs a gap. A checked box can leave the gap empty. One picture shows "Gap is required" and "The family has not consented" together. Another shows "The visit record is incomplete" when a stage has not been saved. Dependable generation and accumulated wealth are absent. The section is not in the stage list.
 
 Copy:
 
+- "Post-visit"
 - "Initial assessment"
 - "This is your judgment from the visit."
 - "Integrity, action, and selflessness, for the family as a whole."
@@ -235,12 +248,14 @@ Copy:
 - "The visit record is incomplete"
 - "Mark qualified"
 - "Mark disqualified"
+- "Saved"
+- "Not saved"
 
 Pictures: [boxes.png](design/boxes.png), [boxes-gap.png](design/boxes-gap.png), [boxes-incomplete.png](design/boxes-incomplete.png).
 
 ### After the mark
 
-Job: show the finished visit as text. The stage list stays. Set visit, Change visit, Back, Next, Add a person, and both mark actions are gone.
+Job: show the finished visit as text. The stage list stays. Set visit, Change visit, Add a worker, Back, Next, Add a person, Add a document, and both mark actions are gone. Pre-visit and Post-visit are text.
 
 Primary action: open a stage from the list. The stage is text.
 

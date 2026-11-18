@@ -56,6 +56,14 @@
       font-weight: 650;
     }
 
+    h2 small {
+      display: inline;
+      margin-left: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
     p { margin: 0 0 12px; }
 
     .aim, .late, .note {
@@ -217,8 +225,7 @@
       ["day", "A day in their life"],
       ["together", "How they are together"],
       ["house", "The house and the meals"],
-      ["needs", "What they need"],
-      ["boxes", "Initial assessment"]
+      ["needs", "What they need"]
     ];
 
     const params = new URLSearchParams(location.search);
@@ -230,8 +237,7 @@
       day: true,
       together: false,
       house: false,
-      needs: true,
-      boxes: false
+      needs: true
     };
 
     function field(label, value, extra) {
@@ -268,14 +274,32 @@
       return area("Anything else they said", value);
     }
 
+    function documents() {
+      return `<fieldset class="choice-set"><legend>Documents</legend>
+        <label class="field"><span class="label">Document</span>
+          <select><option>National ID</option><option>Social security number</option><option>Passport</option><option>Birth certificate</option><option>Other</option></select>
+        </label>
+        ${field("Number", "900101-14-5567")}
+        <button class="secondary block" type="button">Remove</button>
+        <button class="secondary block" type="button">Add a document</button>
+      </fieldset>`;
+    }
+
     function stageList(current, done) {
       const items = stages.map(([id, label]) => {
-        const state = id === current ? "Current" : "";
+        const state = current && id === current ? "Current" : "";
         const kept = done || saved[id] ? "Saved" : "Not saved";
         const text = [state, kept].filter(Boolean).join(" · ");
         return `<li><button type="button" class="stage${id === current ? " current" : ""}">${label}<small>${text}</small></button></li>`;
       }).join("");
-      return `<h2>Interview</h2><ol class="stages">${items}</ol>`;
+      return `<h2>Verification Interview</h2><ol class="stages">${items}</ol>`;
+    }
+
+    function assignedWorkers() {
+      return `<fieldset class="choice-set"><legend>Assigned workers</legend>
+        ${field("Name", "Aman")}
+        <button class="secondary block" type="button">Add a worker</button>
+      </fieldset>`;
     }
 
     function visitHeader(mode) {
@@ -283,11 +307,14 @@
       const time = late ? "25 November 2026 at 09:00" : "24 November 2026 at 09:00";
       const iso = late ? "2026-11-25T01:00:00Z" : "2026-11-24T01:00:00Z";
       return `
+        <h2>Pre-visit</h2>
         <p class="aim">Aim for a visit within a week of the enrolment.</p>
         ${late ? '<p class="late">This visit is later than a week after the enrolment.</p>' : ""}
         <label class="field"><span class="label">Visit time</span>
           <time datetime="${iso}">${time}</time>
         </label>
+        ${check("Bringing a basket", true)}
+        ${assignedWorkers()}
         <button class="primary block" type="button">Change visit</button>`;
     }
 
@@ -330,10 +357,10 @@
             <select><option${absent ? " selected" : ""}>Male</option><option${absent ? "" : " selected"}>Female</option><option>Unspecified</option></select>
           </label>
           ${phone}
-          ${field("Identification", "")}
           ${relationship}
           ${field("From where?", absent ? "The next state" : "This district")}
           ${identity}
+          ${documents()}
           ${away}
         </div>
         <button class="secondary block" type="button">Add a person</button>
@@ -348,16 +375,28 @@
     const bodies = {
       "set-visit": () => `
         ${caseTop()}
+        <h2>Pre-visit</h2>
         <p class="aim">Aim for a visit within a week of the enrolment.</p>
         <p>Set the visit before recording it.</p>
         <label class="field"><span class="label">Visit time</span><input type="text"></label>
+        ${check("Bringing a basket", false)}
+        <fieldset class="choice-set"><legend>Assigned workers</legend>
+          ${field("Name", "Aman")}
+          <button class="secondary block" type="button">Add a worker</button>
+        </fieldset>
         <button class="primary block" type="button">Set visit</button>`,
 
       "visit-invalid": () => `
         ${caseTop()}
+        <h2>Pre-visit</h2>
         <p class="aim">Aim for a visit within a week of the enrolment.</p>
         <p>Set the visit before recording it.</p>
         <label class="field"><span class="label">Visit time</span><input type="text" value="Tuesday" aria-invalid="true"><p class="error">Visit time is invalid</p></label>
+        ${check("Bringing a basket", false)}
+        <fieldset class="choice-set"><legend>Assigned workers</legend>
+          ${field("Name", "Aman")}
+          <button class="secondary block" type="button">Add a worker</button>
+        </fieldset>
         <button class="primary block" type="button">Set visit</button>`,
 
       "visit-late": () => `
@@ -476,31 +515,29 @@
         <label class="choice"><input type="radio" name="consent"> The family consents</label>
         <label class="choice"><input type="radio" name="consent" checked> The family does not consent</label>
         ${anything("")}
-        ${nav()}`,
+        ${nav("last")}`,
 
       boxes: () => `
         ${caseTop()}
         ${visitHeader("week")}
-        ${stageList("boxes")}
-        <h2>Initial assessment</h2>
+        ${stageList(null)}
+        <h2>Post-visit <small>Not saved</small></h2>
+        <p class="label">Initial assessment</p>
         <p>This is your judgment from the visit.</p>
         ${check("Good family unit", false)}
         <p>Integrity, action, and selflessness, for the family as a whole.</p>
         ${area("Gap", "The father is away, and Sarah is out of school to keep the stall going.")}
         ${check("Basic necessities", false)}
         ${area("Gap", "Rent is behind. They do not eat three meals a day.")}
-        ${anything("")}
-        <div class="actions">
-          <button class="secondary" type="button">Back</button>
-        </div>
         <button class="primary block" type="button">Mark qualified</button>
         <button class="secondary block" type="button">Mark disqualified</button>`,
 
       "boxes-gap": () => `
         ${caseTop()}
         ${visitHeader("week")}
-        ${stageList("boxes")}
-        <h2>Initial assessment</h2>
+        ${stageList(null)}
+        <h2>Post-visit <small>Not saved</small></h2>
+        <p class="label">Initial assessment</p>
         <p>This is your judgment from the visit.</p>
         ${check("Good family unit", false)}
         <p>Integrity, action, and selflessness, for the family as a whole.</p>
@@ -508,15 +545,15 @@
         ${check("Basic necessities", true)}
         ${area("Gap", "")}
         <p class="error">The family has not consented</p>
-        <div class="actions"><button class="secondary" type="button">Back</button></div>
         <button class="primary block" type="button">Mark qualified</button>
         <button class="secondary block" type="button">Mark disqualified</button>`,
 
       "boxes-incomplete": () => `
         ${caseTop()}
         ${visitHeader("week")}
-        ${stageList("boxes")}
-        <h2>Initial assessment</h2>
+        ${stageList(null)}
+        <h2>Post-visit <small>Saved</small></h2>
+        <p class="label">Initial assessment</p>
         <p>This is your judgment from the visit.</p>
         ${check("Good family unit", true)}
         <p>Integrity, action, and selflessness, for the family as a whole.</p>
@@ -524,15 +561,17 @@
         ${check("Basic necessities", true)}
         ${area("Gap", "")}
         <p class="error">The visit record is incomplete</p>
-        <div class="actions"><button class="secondary" type="button">Back</button></div>
         <button class="primary block" type="button">Mark qualified</button>
         <button class="secondary block" type="button">Mark disqualified</button>`,
 
       marked: () => `
         ${caseTop()}
         <p>This family is qualified.</p>
+        <h2>Pre-visit</h2>
         <p class="aim">Aim for a visit within a week of the enrolment.</p>
-        <p><time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time></p>
+        <p><span class="label">Visit time</span> <time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time></p>
+        <p><span class="label">Bringing a basket</span> Yes</p>
+        <p><span class="label">Assigned workers</span> Aman</p>
         ${stageList("who", true)}
         <h2>Who is here</h2>
         <p>The children are the people recorded here.</p>
@@ -544,18 +583,22 @@
           <p class="enrolment">Enrolment Female</p>
           <p><span class="label">Phone</span> +60 12-345 6789</p>
           <p class="enrolment">Enrolment +60 12-345 6789</p>
-          <p><span class="label">Identification</span></p>
           <p><span class="label">Relationship</span> Head</p>
           <p><span class="label">From where?</span> This district</p>
           <p><span class="label">Identity</span> Not verified</p>
+          <p><span class="label">Document</span> National ID</p>
+          <p><span class="label">Number</span> 900101-14-5567</p>
         </div>
         <p><span class="label">Anything else they said</span></p>`,
 
       "marked-disqualified": () => `
         ${caseTop()}
         <p>This family is disqualified.</p>
+        <h2>Pre-visit</h2>
         <p class="aim">Aim for a visit within a week of the enrolment.</p>
-        <p><time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time></p>
+        <p><span class="label">Visit time</span> <time datetime="2026-11-24T01:00:00Z">24 November 2026 at 09:00</time></p>
+        <p><span class="label">Bringing a basket</span> Yes</p>
+        <p><span class="label">Assigned workers</span> Aman</p>
         ${stageList("needs", true)}
         <h2>What they need</h2>
         <p><span class="label">What do you need most?</span> Help with the rent.</p>

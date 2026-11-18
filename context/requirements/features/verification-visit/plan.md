@@ -2,7 +2,7 @@
 
 ## Overview
 
-A linked community worker sets the first visit, interviews the family in seven stages, and marks the family qualified or disqualified. The person who enrolled sees the visit time and, later, the outcome. When the enrolment has an email, that address receives the visit message and the outcome message. Each message names the head and the place.
+A linked community worker sets the first visit in Pre-visit, interviews the family in six stages under Verification Interview, records the initial assessment in Post-visit, and marks the family qualified or disqualified. The person who enrolled sees the visit time and, later, the outcome. When the enrolment has an email, that address receives the visit message and the outcome message. Each message names the head and the place. The visit is still a date and a time, because the mail names a clock time. The field stays labeled "Visit time" and moves into Pre-visit.
 
 The approved contract is [spec.md](spec.md). The pictures are [design.md](design.md). Checkboxes live in [tasks.md](tasks.md). This file is the index and the decisions. There are 21 tasks.
 
@@ -13,22 +13,22 @@ A visit can be stored before its mail exists, and a mark can be stored before th
 ## Architecture Decisions
 
 - **Ids stay UUID strings.** `verifications.id` uses the same `ApplicationRecord` assignment as every other table. The foreign key `enrolment_id` is a 36-character string with a unique index. One enrolment has one verification row.
-- **The visit time is the existing `visit_at` column.** `Enrolment#schedule_visit` parses the body. A stored outcome makes every later call return `:finished` before the new value is parsed, so a bad body still changes nothing. A value that parses is accepted in the past and more than seven days after `submitted_at`. Seven days is `7 * 24` hours, compared as instants. The same instant, truncated to a whole second, returns `:unchanged` and does not write. Any other parseable instant is stored in UTC with microseconds cleared. The response is that value with a `Z`.
+- **Pre-visit is three fields on `enrolments`.** `visit_at` already exists. `bringing_basket` is a boolean, null until the first successful PATCH. `assigned_workers` is a JSON array of names. `Enrolment#schedule_visit` parses the body. A stored outcome makes every later call return `:finished` before the new value is parsed, so a bad body still changes nothing. A visit value that parses is accepted in the past and more than seven days after `submitted_at`. Seven days is `7 * 24` hours, compared as instants. The instant is stored in UTC with microseconds cleared. The response returns `visit_at` with a `Z`, `bringing_basket`, and `assigned_workers`. When the instant, truncated to a whole second, the checkbox, and the name list are all unchanged, the call returns 200 and does not write. The same instant with a different checkbox or a different name list returns 200, stores those fields, and queues no mail. Mail is queued only when the instant changes.
 - **A visit value is a string with a date, a time, and a zone.** The zone is `Z` or `±hh:mm`. `Time.iso8601` must accept it. A date with no time, a time with no zone, and an impossible date return `:visit_invalid`. `2026-11-24T09:00:00+08:00` is stored as `2026-11-24T01:00:00Z`.
 - **The outcome is three columns on `enrolments`.** `outcome` is null until the mark, then `qualified` or `disqualified`. `marked_at` is the server time. `marker_name` is the worker account's name at that moment, copied onto the row. There is no second write.
-- **The interview is one `verifications` row.** Seven JSON columns: `who_is_here`, `formation`, `daily_life`, `dynamics`, `house`, `needs`, `boxes`. Null means that stage has not been saved. A saved stage is a JSON object, including a stage whose answers are blank. Saving a stage replaces that column and leaves the other columns as they were.
+- **The interview and the assessment are one `verifications` row.** Six interview JSON columns, then the post-visit column: `who_is_here`, `formation`, `daily_life`, `dynamics`, `house`, `needs`, `boxes`. `boxes` is Post-visit, not an interview stage. Null means that part has not been saved. A saved part is a JSON object, including a part whose answers are blank. Saving a part replaces that column and leaves the other columns as they were. Pre-visit stays on the enrolment row.
 - **Each stage has a plain object.** `WhoIsHereStage`, `FormationStage`, `DailyLifeStage`, `DynamicsStage`, `HouseStage`, `NeedsStage`, and `BoxesStage` live in `backend/app/models/`. Each accepts the params, returns an error envelope, or returns the cleaned hash. `Verification#save_stage` picks the object, stores the hash, and sets `worker_name` and `recorded_at` on that hash. Client-sent copies of those two keys are ignored. Unknown keys are dropped.
 - **Strings are stripped at the ends and otherwise kept.** Limits apply after that strip. Phone uses the enrolment rule: remove spaces, hyphens, dots, and parentheses, then require `\A\+?[0-9]{8,15}\z`, and store the remainder. Numbers are JSON integers. `1.0` and `"8"` are invalid. Booleans are JSON `true`, `false`, or `null`. A follow-up the answer does not open is stored empty on a successful save: `""` for text, `null` for a number or a boolean.
-- **The stage response is the stored object.** `PUT` returns that object, including `worker_name` and `recorded_at`, with no wrapper. `recorded_at` is UTC ISO 8601. Worker detail includes `verification: null` until the first stage is saved. After that, `verification` has all seven keys, and an unsaved stage is null. The submitter body has no `verification` key. Worker list items gain `visit_at` and `outcome` and do not gain the interview.
-- **Kept people are fixed at mark time.** A kept person is every enrolment member, head first and then `position`, plus every visit-added person in the saved `who_is_here.people` array. An enrolment member missing from that array has no identity choice. A blank people array can still be saved. The mark then fails for each enrolment member. Visit-added people are not the head. The head is the enrolment member whose role is `head`.
+- **The stage response is the stored object.** `PUT` returns that object, including `worker_name` and `recorded_at`, with no wrapper. `recorded_at` is UTC ISO 8601. Worker detail includes `visit_at`, `bringing_basket`, and `assigned_workers`, and `verification: null` until the first part is saved. After that, `verification` has the six interview keys and `boxes`, and an unsaved part is null. The submitter body has no `verification`, `bringing_basket`, or `assigned_workers` key. Worker list items gain `visit_at` and `outcome` and do not gain the interview, the checkbox, or the assigned names.
+- **The saved people list is `who_is_here.people`.** The identity check is the worker's choice on that list: `verified`, `not_verified`, or `no_papers`. It says whether the worker could confirm who the person is. Document numbers are a separate optional list on the same person. Enrolment people always stay on the list. A PUT that omits an enrolment member returns 422 "Person is required" and `details.family_member_id` of `["is required"]`, and does not save. The mark checks identity only for the people on the saved list. An unsaved Who is here is "The visit record is incomplete", not a missing identity check. Visit-added people are not the head. The head is the enrolment member whose role is `head`. `not_verified` and `no_papers` still allow either mark. A missing document number does not reject the mark.
 - **`person_id` is a client UUID.** Every person object on Who is here and A day in their life carries one. An enrolment member also carries `family_member_id`. A visit-added person has `family_member_id: null`. The web generates `person_id` once and reuses it. Daily life does not have to list the same people for the stage to save. The mark does not require a daily-life row per person.
 - **The mark order follows the success criteria.** `Enrolment#mark` returns a symbol, or nil after it saves. The order is: outcome missing, outcome outside the two values, visit missing, outcome already stored, then the first interview gap, then qualified with consent false. A second mark is "The mark is already set" even when consent is false. `VerificationMessages` maps each symbol to the envelope. Controllers render that envelope and do not contain the rule.
-- **An unsaved stage and a bad field use different messages.** The first unsaved stage, in the seven-stage order, is message "The visit record is incomplete" and `details` of that stage key with `["is required"]`. A saved interview with a bad or missing mark field uses the field sentence below, and `message` is that sentence. Qualified with consent false is "The family has not consented" and `details.outcome` of `["needs consent"]`.
+- **An unsaved part and a bad field use different messages.** The first unsaved part, in the order of the six interview stages and then `boxes`, is message "The visit record is incomplete" and `details` of that part's key with `["is required"]`. A saved record with a bad or missing mark field uses the field sentence below, and `message` is that sentence. Missing consent at mark time is "Consent is required". Qualified with consent false is "The family has not consented" and `details.outcome` of `["needs consent"]`.
 - **Mail text is fixed when it is queued.** `EnrolmentMailer` gains `visit_arranged(email, body)` and `verification_result(email, body)`. The subject is fixed in the method. The body is an argument, so a later visit change does not rewrite a message already queued. The mailer keeps `EnrolmentInvitationDeliveryJob`, which already sets `log_arguments = false`. The job log must not contain the head, the place, or the email. The rendered visit and outcome bodies do contain the head and the place. The month names are a frozen English list in the mailer, so the server locale cannot change "November". Enqueue runs after the save, and a raised enqueue is rescued. The log line is the error class only. The saved row and the HTTP status stay.
 - **The same linked-worker lookup as a note.** Anonymous is 401 with "Sign in is required". A submitter, a worker of another locality, an unlinked worker, and an unknown id are 404 with "Not found" and no `details`. An unknown stage name is 404 after the enrolment is found. These routes do not use the list's 403.
 - **The web reuses the paper styles.** Copy is read with `t()` from `web/i18n/locales/en.json`. The visit field is `datetime-local`. The page converts that local value to UTC ISO 8601. Empty or unparseable input shows "Visit time is invalid" and does not send. `formatVisit` lives in `web/utils/visitTime.ts`. It formats with `en-GB` and `hourCycle: "h23"` as `24 November 2026 at 09:00`. The page uses the browser zone. The test calls it with `Asia/Kuala_Lumpur` so the UTC+8 sentence is fixed in CI. The `<time datetime>` is the API value.
-- **Inside a stage, switching person does not save.** Who is here and A day in their life save the whole stage when Back, Next, or the stage list leaves it. A stage whose component is not built yet can be opened and does not send a PUT. From the first interview task, all seven names are on the list.
-- **Read-only is a prop from the start.** Each stage component accepts `readonly`. The mark task sets it when `outcome` is present, and hides Set visit, Change visit, Back, Next, Add a person, and both mark actions. The stage list still opens each stage as text. The existing member list, help, looks, and note form stay.
+- **Inside a stage, switching person does not save.** Who is here and A day in their life save the whole stage when Back, Next, or the stage list leaves it. A stage whose component is not built yet can be opened and does not send a PUT. From the first interview screen, the list has the six names under "Verification Interview". Post-visit sits below that list and saves through `PUT .../verification/boxes`.
+- **Read-only is a prop from the start.** Each stage component accepts `readonly`. The mark task sets it when `outcome` is present, and hides Set visit, Change visit, Add a worker, Back, Next, Add a person, Add a document, and both mark actions. The stage list and Post-visit still open as text. Pre-visit is text too. The existing member list, help, looks, and note form stay.
 
 ## Stage contract
 
@@ -58,7 +58,7 @@ Each person:
 | `birth_date` | `""` or a real `YYYY-MM-DD`. "Birth date is invalid". |
 | `gender` | `""`, `male`, `female`, or `unspecified`. |
 | `phone` | `""` or the normalised phone. The message is "Enter a phone number, for example +60 12-345 6789." |
-| `identification` | 0–200. |
+| `documents` | An array. Zero documents is valid. Each item is `{ "kind", "number", "other_label" }`. |
 | `origin` | 0–200. Stored as `""` when `relationship` is `child`. |
 | `relationship` | `""` for the head. Otherwise `""`, `spouse`, `child`, `parent`, or `other`. |
 | `identity` | `""`, `verified`, `not_verified`, or `no_papers`. |
@@ -67,6 +67,8 @@ Each person:
 | `absent_reason` | `""` unless `absent` is `true`. 0–2000. |
 
 `others_stay_detail` is stored as `""` unless `others_stay` is `true`. `care_for_parents_detail` is stored as `""` unless `care_for_parents` is `true`. `notes` is 0–2000. `details.person_id` is `["is invalid"]` for a bad person reference. `details.name` and `details.phone` follow the enrolment shape.
+
+A document `kind` is `national_id`, `social_security`, `passport`, `birth_certificate`, or `other`. `number` is 1–100 after trim, and a document row without it is "Document number is required". `other` requires `other_label` at 1–100, and the message is "What document? is required". Any other kind stores `other_label` as `""`. A missing kind, a kind outside those five, or a document that is not an object is "Document is invalid". The labels are Document, National ID, Social security number, Passport, Birth certificate, Other, What document?, Number, Add a document, and Remove. Document numbers are stored for a later government application. This feature does not submit them.
 
 ### How the family formed — `formation`
 
@@ -88,7 +90,7 @@ Each person:
 
 `need_most` and `notes` are 0–2000. `consent_given` is `true`, `false`, or `null`. A non-boolean is "Consent is invalid".
 
-### Initial assessment — `boxes`
+### Post-visit — `boxes`
 
 `good_family_unit` and `basic_necessities` are booleans or null. Both gap strings are stored as sent, 0–2000. `notes` is 0–2000. The gaps are not follow-ups.
 
@@ -97,8 +99,8 @@ Each person:
 1. Basket blank: "Basket is required", `details.basket` `["is required"]`.
 2. Basket longer than 500: "Basket is too long".
 3. Consent null: "Consent is required", `details.consent_given` `["is required"]`.
-4. The first kept person with no identity: "Identity check is required", `details.identity` `["is required"]`. A value outside the three is "Identity check is invalid".
-5. The first kept person other than the head with no relationship: "Relationship is required", `details.relationship` `["is required"]`. A bad value is "Relationship is invalid".
+4. The first person on the saved Who is here list with no identity: "Identity check is required", `details.identity` `["is required"]`. A value outside the three is "Identity check is invalid". A person with no document number is not a failure.
+5. The first person on that list other than the head with no relationship: "Relationship is required", `details.relationship` `["is required"]`. A bad value is "Relationship is invalid".
 6. `good_family_unit` null: "Good family unit is required".
 7. `basic_necessities` null: "Basic necessities is required".
 8. An unchecked box with a blank gap, Good family unit first: "Gap is required", `details.gap` `["is required"]`. A checked box may have a blank gap.
@@ -119,7 +121,7 @@ Each person:
 | `:consent_refused` | The family has not consented | `outcome: ["needs consent"]` |
 | `:incomplete` | The visit record is incomplete | the first unsaved stage key |
 
-Field messages use `details` of `["is required"]`, `["is invalid"]`, or `["is too long"]`. Labels for the generic ones are the spec's field labels: Full name, Birth date, Gender, Identification, From where?, This place, How many meals a day?, How many rooms do people sleep in?, Rent per month, Ringgit per month, What do you need most?, Anything else they said.
+Field messages use `details` of `["is required"]`, `["is invalid"]`, or `["is too long"]`. Labels for the generic ones are the spec's field labels: Full name, Birth date, Gender, From where?, This place, How many meals a day?, How many rooms do people sleep in?, Rent per month, Ringgit per month, What do you need most?, Anything else they said, Document, Document number, What document?, Assigned worker, Bringing a basket.
 
 ## Technical map
 
@@ -133,6 +135,8 @@ erDiagram
   enrolments {
     string id PK
     datetime visit_at
+    boolean bringing_basket
+    json assigned_workers
     string outcome
     datetime marked_at
     string marker_name
@@ -154,7 +158,7 @@ erDiagram
 
 | Method and path | Who | What it writes |
 |---|---|---|
-| `PATCH /enrolments/:id/visit` | linked worker | `enrolments.visit_at`, then maybe one queued visit message |
+| `PATCH /enrolments/:id/visit` | linked worker | `visit_at`, `bringing_basket`, `assigned_workers`, then maybe one queued visit message |
 | `PUT /enrolments/:id/verification/:stage` | linked worker | that stage's JSON column |
 | `POST /enrolments/:id/qualification` | linked worker | `outcome`, `marked_at`, `marker_name`, then one queued outcome message |
 | `GET /enrolments` | bearer | nothing. Worker items add `visit_at` and `outcome`. Submitter progress adds `outcome`. |
@@ -179,8 +183,9 @@ The phone pages stay `/enrolments` and `/enrolments/:id`. The interview is added
 flowchart TD
   worker[Linked worker]
   visit["PATCH visit"]
-  same{Same instant?}
-  saveVisit[Store visit_at]
+  same{Same instant and same pre-visit fields?}
+  fieldsOnly[Store the checkbox and the names]
+  saveVisit[Store the visit time]
   mailVisit[Enqueue the visit body]
   stage["PUT one stage"]
   saveStage[Replace that JSON column]
@@ -192,7 +197,9 @@ flowchart TD
   worker --> visit
   visit --> same
   same -->|yes| worker
-  same -->|no| saveVisit
+  same -->|checkbox or names differ| fieldsOnly
+  fieldsOnly --> worker
+  same -->|instant differs| saveVisit
   saveVisit --> mailVisit
   worker --> stage
   stage --> saveStage
@@ -208,14 +215,14 @@ A blank email skips both enqueue steps. The row is still saved. A look and a not
 
 The task list target is [tasks.md](tasks.md). Implement the next unchecked task there. A `Checkpoint` heading is checked after the tasks above it. It does not get a pull request.
 
-### Phase 1: Visit time
+### Phase 1: Pre-visit
 
 - Task 1: Set the visit over HTTP
 - Task 2: Queue the visit message
 
-### Checkpoint: Visit time
+### Checkpoint: Pre-visit
 
-- A linked worker can store a past time and a time more than seven days after the enrolment. The same instant queues no second message. An email queues one visit message, and a later change queues another without rewriting the first.
+- A linked worker can store a past time and a time more than seven days after the enrolment, with the basket checkbox and at least one assigned name. The same instant, including a checkbox or name change, queues no message. An email queues one visit message when the instant changes, and a later time change queues another without rewriting the first.
 
 ### Phase 2: Interview
 
@@ -232,11 +239,11 @@ The task list target is [tasks.md](tasks.md). Implement the next unchecked task 
 
 - Task 7: Save the house and the meals
 - Task 8: Save what they need
-- Task 9: Save the initial assessment
+- Task 9: Save the post-visit assessment
 
-### Checkpoint: Every stage saves
+### Checkpoint: Every part saves
 
-- All seven stage names return 200. A bad value leaves the previous column in place. A missing visit still rejects the stage.
+- The six interview names and `boxes` return 200. A bad value leaves the previous column in place. A missing visit still rejects the part. A Who is here body that drops an enrolment member returns 422.
 
 ### Phase 4: Mark
 
@@ -249,24 +256,24 @@ The task list target is [tasks.md](tasks.md). Implement the next unchecked task 
 
 ### Phase 5: Worker case
 
-- Task 12: Set the visit on the worker case
+- Task 12: Pre-visit on the worker case
 - Task 13: Stage list and Who is here
 - Task 14: Formation and how they are together
 - Task 15: A day in their life
 
 ### Checkpoint: The case opens
 
-- At 390 CSS pixels the visit control and Who is here fit the column. A bad phone stays on Who is here. The other stage names are visible.
+- At 390 CSS pixels Pre-visit and Who is here fit the column. A bad phone stays on Who is here. The six stage names are visible under Verification Interview.
 
 ### Phase 6: The rest of the interview
 
 - Task 16: The house and the meals
 - Task 17: What they need
-- Task 18: Initial assessment and the mark
+- Task 18: Post-visit and the mark
 
 ### Checkpoint: The worker can mark
 
-- Rent, consent, the two boxes, and both mark actions work on the phone. A gap and a refused consent are shown on Initial assessment.
+- Rent, consent, the two boxes, and both mark actions work on the phone. A gap and a refused consent are shown on Post-visit. What they need has no Next.
 
 ### Phase 7: After the mark, and the other readers
 
@@ -293,16 +300,16 @@ Task 1
        ├─ Task 6 Daily life
        ├─ Task 7 House
        ├─ Task 8 Needs
-       └─ Task 9 Boxes
+       └─ Task 9 Post-visit boxes
             └─ Task 10 Mark
                  └─ Task 11 Outcome mail
 Task 4 + Task 12
-  └─ Task 13 Stage list and Who is here
+  └─ Task 13 Six-stage list and Who is here
        ├─ Task 14 Formation and dynamics screens
        ├─ Task 15 Daily life screen
        ├─ Task 16 House screen
        ├─ Task 17 Needs screen
-       └─ Task 18 Boxes and the mark buttons
+       └─ Task 18 Post-visit and the mark buttons
             └─ Task 19 Read-only case
 Task 2 + Task 11 + Task 12
   └─ Task 20 Submitter progress
@@ -319,21 +326,19 @@ Do not split this feature across concurrent sessions. The stage objects share `V
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| A blank Who is here skips the identity check | High | The mark treats every enrolment member as kept, even when `people` omits them. Task 10 tests a blank people array. |
+| A PUT drops an enrolment member and the mark never sees them | High | Who is here returns "Person is required" and does not save when an enrolment member is missing. Task 3 tests that omission. Task 10 checks identity only for the people on the saved list. |
 | A later visit change rewrites the first queued message | High | The body string is an argument to `deliver_later`. Task 2 performs the first job, then changes the time, and asserts the first body. |
 | The server locale renames the month in the mail | Medium | The mailer owns an English month list. The test sets a non-English `I18n.locale` around the enqueue. |
 | The job log records the head and the place | Medium | The existing delivery job keeps `log_arguments = false`. Task 2 asserts the Active Job log omits the head, the place, and the email. |
 | SQLite parallel tests lock on the new writes | Medium | Keep `parallelize` in the test helper. If one new file flakes on a lock, make that file run serially. Leave the helper's parallel setting in place. |
 | `WorkerCase.vue` becomes the whole interview | Medium | The stage list and each stage are their own components. The case page decides whether the interview is shown. |
 | A `datetime-local` input widens the 390px column | Medium | Task 12 gives date, time, and number inputs the same full-width rule as text inputs, and the task checks the page at 390 CSS pixels. |
-| Exact JSON helpers in `enrolments_test.rb` fail when a key is added | Medium | The task that adds `visit_at`, `verification`, or `outcome` updates those helpers in the same change. |
-| Mark messages disagree with the sample envelope | Medium | Unsaved stages use "The visit record is incomplete". Field failures use the named field sentence, because the pictures show "Gap is required" and "The visit record is incomplete" as different states. Correct this before plan approval if the sample envelope should win. |
+| Exact JSON helpers in `enrolments_test.rb` fail when a key is added | Medium | The task that adds `bringing_basket`, `assigned_workers`, `verification`, or `outcome` updates those helpers in the same change. |
+| Document numbers or assigned names reach the request log or the submitter | Medium | The filter redacts `assigned_workers`, document `number`, and `other_label`. Worker list items and submitter JSON omit those fields. Neither email includes them. |
 
 ## Open Questions
 
-None. The spec's open questions are closed. The decisions above are the implementation choices. Correct any of them before plan approval.
-
-The choices most worth a look are: a missing enrolment member fails the mark as a missing identity check; a second mark is "already set" before the consent check; a missing consent uses "Consent is required"; and a field failure uses the field sentence rather than "The visit record is incomplete".
+None. The 2026-11-18 review settled the four plan choices. The identity check is the Verified, Not verified, or No papers choice on each person in the saved Who is here list. Omitting an enrolment member fails that save with "Person is required". Document numbers are optional and are stored for a later government application. Missing consent at mark time is "Consent is required". An unsaved part is "The visit record is incomplete". A bad field uses that field's sentence. The visit stays a date and a time, labeled "Visit time", because the mail names a clock time. The pre-visit checkbox records whether a basket is being brought. The house-stage "Basket" is the basket that was taken, and that text is still required at the mark. A second mark is "The mark is already set" before the consent check. Correct any of these before plan approval.
 
 ## Rollback
 
