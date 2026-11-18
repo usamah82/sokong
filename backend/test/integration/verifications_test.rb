@@ -293,7 +293,7 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_enqueued_emails 1 do
       patch "/enrolments/#{enrolment.id}/visit",
         params: {
-          visit_at: "2026-11-24T01:00:00Z",
+          visit_at: "2026-11-24T09:00:00+08:00",
           bringing_basket: true,
           assigned_workers: [ "Farid" ]
         },
@@ -307,15 +307,6 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       "Kampung Baru",
       "24 November 2026 at 01:00 UTC"
     ]
-    perform_enqueued_jobs
-    first = ActionMailer::Base.deliveries.sole
-    assert_equal [ "siti@example.com" ], first.to
-    assert_equal "Sokong visit", first.subject
-    assert_equal(
-      "A visit is set for Siti Aminah at Kampung Baru. The visit time is 24 November 2026 at 01:00 UTC.",
-      mail_text(first)
-    )
-    assert_visit_mail_is_only_the_sentence(first)
 
     assert_enqueued_emails 1 do
       patch "/enrolments/#{enrolment.id}/visit",
@@ -334,14 +325,23 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       "25 November 2026 at 01:00 UTC"
     ]
     perform_enqueued_jobs
-    assert_equal mail_text(first), mail_text(ActionMailer::Base.deliveries.first)
+    assert_equal 2, ActionMailer::Base.deliveries.size
+    first = ActionMailer::Base.deliveries.first
     changed = ActionMailer::Base.deliveries.last
+    assert_equal [ "siti@example.com" ], first.to
+    assert_equal "Sokong visit", first.subject
+    assert_equal(
+      "A visit is set for Siti Aminah at Kampung Baru. The visit time is 24 November 2026 at 01:00 UTC.",
+      mail_text(first)
+    )
+    assert_visit_mail_is_only_the_sentence(first)
     assert_equal [ "siti@example.com" ], changed.to
     assert_equal "Sokong visit", changed.subject
     assert_equal(
       "The visit time for Siti Aminah at Kampung Baru is now 25 November 2026 at 01:00 UTC.",
       mail_text(changed)
     )
+    assert_includes job_log.string, "Enqueued EnrolmentInvitationDeliveryJob"
     assert_not_includes job_log.string, "Siti Aminah"
     assert_not_includes job_log.string, "Kampung Baru"
     assert_not_includes job_log.string, "siti@example.com"
