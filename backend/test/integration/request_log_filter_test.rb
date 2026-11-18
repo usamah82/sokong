@@ -64,7 +64,10 @@ class RequestLogFilterTest < ActiveSupport::TestCase
       "care_for_parents_detail" => "Mother",
       "basket" => "rice",
       "how_it_started" => "married",
-      "need_most" => "food"
+      "need_most" => "food",
+      "hard_week" => "quiet",
+      "who_steps_in" => "aunt",
+      "children_at_home" => "two children"
     )
 
     assert_equal "who_is_here", filtered["stage"]
@@ -76,6 +79,9 @@ class RequestLogFilterTest < ActiveSupport::TestCase
     assert_equal "[FILTERED]", filtered["basket"]
     assert_equal "[FILTERED]", filtered["how_it_started"]
     assert_equal "[FILTERED]", filtered["need_most"]
+    assert_equal "[FILTERED]", filtered["hard_week"]
+    assert_equal "[FILTERED]", filtered["who_steps_in"]
+    assert_equal "[FILTERED]", filtered["children_at_home"]
     person = filtered["people"].sole
     assert_equal "[FILTERED]", person["name"]
     assert_equal "[FILTERED]", person["phone"]

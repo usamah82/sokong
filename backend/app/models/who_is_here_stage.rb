@@ -1,4 +1,5 @@
 class WhoIsHereStage
+  KEYS = %w[people others_stay others_stay_detail care_for_parents care_for_parents_detail notes].freeze
   DOCUMENT_KINDS = %w[national_id social_security passport birth_certificate other].freeze
   GENDERS = %w[male female unspecified].freeze
   RELATIONSHIPS = %w[spouse child parent other].freeze

@@ -943,6 +943,225 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal "e" * 2000, saved["notes"]
   end
 
+  test "formation and dynamics save on their own" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    blank = { started_year: nil, how_it_started: "", notes: "" }
+
+    assert_no_difference "Verification.count" do
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: blank, headers: bearer(token), as: :json
+    end
+    assert_stage_error "Set the visit before recording it", {}
+
+    set_visit(enrolment, token)
+    travel_to Time.utc(2026, 6, 1, 0, 0, 0) do
+      assert_no_enqueued_emails do
+        put "/enrolments/#{enrolment.id}/verification/formation",
+          params: blank, headers: bearer(token), as: :json
+      end
+      assert_response :ok
+      assert_nil response.parsed_body["started_year"]
+      assert_equal "", response.parsed_body["how_it_started"]
+      assert_equal "", response.parsed_body["notes"]
+      assert_equal "Aman", response.parsed_body["worker_name"]
+      assert_equal "2026-06-01T00:00:00Z", response.parsed_body["recorded_at"]
+
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: nil, wealth: "hidden" },
+        headers: bearer(token), as: :json
+      assert_response :ok
+      assert_equal "", response.parsed_body["how_it_started"]
+      assert_equal "", response.parsed_body["notes"]
+      assert_not response.parsed_body.key?("wealth")
+
+      filled = { started_year: 2026, how_it_started: " They married ", notes: "Quiet", worker_name: "Hacker", wealth: "hidden" }
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: filled, headers: bearer(token), as: :json
+      assert_response :ok
+      assert_equal 2026, response.parsed_body["started_year"]
+      assert_equal "They married", response.parsed_body["how_it_started"]
+      assert_equal "Quiet", response.parsed_body["notes"]
+      assert_equal "Aman", response.parsed_body["worker_name"]
+      assert_not response.parsed_body.key?("wealth")
+
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: 1900, how_it_started: "", notes: "" },
+        headers: bearer(token), as: :json
+      assert_response :ok
+      assert_equal 1900, response.parsed_body["started_year"]
+      stored = enrolment.verification.reload.formation
+
+      [
+        [ { started_year: "2008", how_it_started: "", notes: "" }, "Enter the year, for example 2008." ],
+        [ { started_year: 1899, how_it_started: "", notes: "" }, "Enter the year, for example 2008." ],
+        [ { started_year: 2027, how_it_started: "", notes: "" }, "Enter the year, for example 2008." ],
+        [ { started_year: 2008.0, how_it_started: "", notes: "" }, "Enter the year, for example 2008." ]
+      ].each do |params, message|
+        put "/enrolments/#{enrolment.id}/verification/formation",
+          params: params, headers: bearer(token), as: :json
+        assert_stage_error message, "started_year" => [ "is invalid" ]
+      end
+      assert_equal stored, enrolment.verification.reload.formation
+
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: 1900, how_it_started: "h" * 2001, notes: "" },
+        headers: bearer(token), as: :json
+      assert_stage_error "How did it start? is too long", "how_it_started" => [ "is too long" ]
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: 1900, how_it_started: 12, notes: "" },
+        headers: bearer(token), as: :json
+      assert_stage_error "How did it start? is invalid", "how_it_started" => [ "is invalid" ]
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: "2008", how_it_started: "", notes: "n" * 2001 },
+        headers: bearer(token), as: :json
+      assert_stage_error "Enter the year, for example 2008.",
+        "started_year" => [ "is invalid" ],
+        "notes" => [ "is too long" ]
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: 1900, how_it_started: "", notes: "n" * 2001 },
+        headers: bearer(token), as: :json
+      assert_stage_error "Anything else they said is too long", "notes" => [ "is too long" ]
+      [ "", " 2008 " ].each do |year|
+        put "/enrolments/#{enrolment.id}/verification/formation",
+          params: { started_year: year, how_it_started: "", notes: "" },
+          headers: bearer(token), as: :json
+        assert_stage_error "Enter the year, for example 2008.", "started_year" => [ "is invalid" ]
+      end
+      assert_equal stored, enrolment.verification.reload.formation
+
+      trimmed = " #{'a' * 2000} "
+      put "/enrolments/#{enrolment.id}/verification/formation",
+        params: { started_year: 1900, how_it_started: trimmed, notes: "" },
+        headers: bearer(token), as: :json
+      assert_response :ok
+      assert_equal "a" * 2000, response.parsed_body["how_it_started"]
+    end
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: "They play", notes: "", wealth: "hidden" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["hard_week"]
+    assert_equal "", response.parsed_body["who_steps_in"]
+    assert_equal "", response.parsed_body["children_at_home"]
+    assert_equal "", response.parsed_body["notes"]
+    assert_not response.parsed_body.key?("wealth")
+    dynamics = enrolment.verification.reload.dynamics
+    formation = enrolment.verification.formation
+
+    spouse = who_is_here_body(enrolment)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: spouse, headers: bearer(token), as: :json
+    assert_response :ok
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: "They play", notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["children_at_home"]
+
+    who = who_is_here_body(enrolment)
+    who[:people][1][:relationship] = "child"
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: who, headers: bearer(token), as: :json
+    assert_response :ok
+    who_saved = enrolment.verification.reload.who_is_here
+    assert_equal formation, enrolment.verification.formation
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { children_at_home: "They play", wealth: "hidden" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["hard_week"]
+    assert_equal "", response.parsed_body["who_steps_in"]
+    assert_equal "", response.parsed_body["notes"]
+    assert_equal "They play", response.parsed_body["children_at_home"]
+    assert_not response.parsed_body.key?("wealth")
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: " Long ", who_steps_in: "Aunt", children_at_home: " They play ", notes: "n" * 2000 },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "They play", response.parsed_body["children_at_home"]
+    assert_equal "Long", response.parsed_body["hard_week"]
+    assert_equal "Aunt", response.parsed_body["who_steps_in"]
+    assert_equal "n" * 2000, response.parsed_body["notes"]
+    assert_equal who_saved, enrolment.verification.reload.who_is_here
+    assert_equal formation, enrolment.verification.formation
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: " #{'b' * 2000} ", who_steps_in: "", children_at_home: "", notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "b" * 2000, response.parsed_body["hard_week"]
+    kept = enrolment.verification.reload.dynamics
+
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: "c" * 2001, notes: "" },
+      headers: bearer(token), as: :json
+    assert_stage_error "How are the children at home? is too long", "children_at_home" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: 12, who_steps_in: "", children_at_home: "", notes: "" },
+      headers: bearer(token), as: :json
+    assert_stage_error "What does a hard week look like here? is invalid", "hard_week" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "h" * 2001, who_steps_in: "", children_at_home: "", notes: "n" * 2001 },
+      headers: bearer(token), as: :json
+    assert_stage_error "What does a hard week look like here? is too long",
+      "hard_week" => [ "is too long" ],
+      "notes" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "s" * 2001, children_at_home: "", notes: "" },
+      headers: bearer(token), as: :json
+    assert_stage_error "When someone here needs help, who steps in? is too long", "who_steps_in" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: "", notes: "n" * 2001 },
+      headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is too long", "notes" => [ "is too long" ]
+    assert_equal kept, enrolment.verification.reload.dynamics
+    assert_equal who_saved, enrolment.verification.who_is_here
+    assert_equal formation, enrolment.verification.formation
+
+    added = who_is_here_body(enrolment)
+    added[:people] << added_person.merge(relationship: "child")
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: added, headers: bearer(token), as: :json
+    assert_response :ok
+    put "/enrolments/#{enrolment.id}/verification/dynamics",
+      params: { hard_week: "", who_steps_in: "", children_at_home: " The added child ", notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "The added child", response.parsed_body["children_at_home"]
+    dynamics = enrolment.verification.reload.dynamics
+    who_saved = enrolment.verification.who_is_here
+
+    put "/enrolments/#{enrolment.id}/verification/formation",
+      params: { started_year: 2008, how_it_started: "Later", notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal 2008, response.parsed_body["started_year"]
+    assert_equal who_saved, enrolment.verification.reload.who_is_here
+    assert_equal dynamics, enrolment.verification.dynamics
+
+    put "/enrolments/#{enrolment.id}/verification/formation",
+      params: { started_year: 2008, how_it_started: "h" * 2001, notes: "" },
+      headers: bearer(token), as: :json
+    assert_stage_error "How did it start? is too long", "how_it_started" => [ "is too long" ]
+    assert_equal who_saved, enrolment.verification.reload.who_is_here
+    assert_equal dynamics, enrolment.verification.dynamics
+    assert_equal 2008, enrolment.verification.formation["started_year"]
+
+    get "/enrolments/#{enrolment.id}", headers: bearer(token)
+    assert_response :ok
+    detail = response.parsed_body.fetch("verification")
+    assert_equal enrolment.verification.formation, detail["formation"]
+    assert_equal enrolment.verification.dynamics, detail["dynamics"]
+    assert_nil detail["daily_life"]
+    assert_nil detail["house"]
+    assert_nil detail["needs"]
+    assert_nil detail["boxes"]
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
