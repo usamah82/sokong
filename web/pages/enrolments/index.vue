@@ -79,11 +79,10 @@ async function endSession() {
     <ul v-else-if="loaded" id="cases" class="cases">
       <li v-for="enrolment in enrolments" :key="enrolment.id">
         <NuxtLink :id="`case-${enrolment.id}`" :to="`/enrolments/${enrolment.id}`">
-          <span>{{ enrolment.place_name }}</span>
-          <span>{{ headName(enrolment) }}</span>
-          <span>{{ visitLine(enrolment) }}</span>
-          <span v-if="outcomeOf(enrolment) === 'qualified'">{{ t('worker.qualified') }}</span>
-          <span v-else-if="outcomeOf(enrolment) === 'disqualified'">{{ t('worker.disqualified') }}</span>
+          <span>{{ enrolment.place_name }} {{ headName(enrolment) }}</span>
+          <span class="case-line">{{ visitLine(enrolment) }}</span>
+          <span v-if="outcomeOf(enrolment) === 'qualified'" class="case-line">{{ t('worker.qualified') }}</span>
+          <span v-else-if="outcomeOf(enrolment) === 'disqualified'" class="case-line">{{ t('worker.disqualified') }}</span>
         </NuxtLink>
       </li>
     </ul>

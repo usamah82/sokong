@@ -154,6 +154,10 @@ button.block {
   list-style: none;
 }
 
+.cases .case-line {
+  display: block;
+}
+
 .cases a {
   display: block;
   padding: 12px 0;
