@@ -79,6 +79,37 @@ describe('submitter progress', () => {
     vi.unstubAllGlobals()
   })
 
+  it('shows each visit and each outcome for a submitter', async () => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const visit = '2026-11-24T01:00:00Z'
+    const first = {
+      ...newer,
+      progress: { case_in: true, looks: [], visit_at: visit, outcome: 'qualified' as const }
+    }
+    const second = {
+      ...older,
+      progress: { case_in: true, looks: [], visit_at: null, outcome: null }
+    }
+    stubFetch(200, [ first, second ])
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentsPage)
+    await vi.waitFor(() => expect(page.find('#case-case-new').exists()).toBe(true))
+    const row = page.get('#case-case-new')
+    expect(row.text()).toContain('Block 4')
+    expect(row.text()).toContain('Rahim')
+    expect(row.text()).toContain(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(row.text()).toContain('This family is qualified.')
+    expect(row.attributes('href')).toBe('/enrolments/case-new')
+    const other = page.get('#case-case-old')
+    expect(other.text()).toContain('Block 2')
+    expect(other.text()).toContain('Mina')
+    expect(other.text()).toContain('No visit is set.')
+    expect(other.text()).not.toContain('This family is qualified.')
+    expect(other.text()).not.toContain('This family is disqualified.')
+    expect(page.find('#sign-out').exists()).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
   it('does not tell a submitter that there are no enrolments yet', async () => {
     stubFetch(200, [])
     sessionStorage.setItem('sokong.token', 'secret-token')

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import type { SubmitterEnrolment, WorkerSummary } from '../../composables/useApi'
+import { formatVisit } from '../../utils/visitTime'
 
 const enrolments = ref<Array<SubmitterEnrolment | WorkerSummary>>([])
 const unlinked = ref(false)
@@ -9,6 +10,28 @@ const submitting = ref(false)
 const { hasToken, clearToken, signOut, role } = useAuth()
 const { listEnrolments } = useApi()
 const { t } = useI18n()
+const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+function headName(enrolment: SubmitterEnrolment | WorkerSummary) {
+  if ('head_name' in enrolment) return enrolment.head_name
+  return enrolment.members.find((member) => member.role === 'head')?.name ?? ''
+}
+
+function visitAt(enrolment: SubmitterEnrolment | WorkerSummary) {
+  if ('progress' in enrolment) return enrolment.progress.visit_at
+  return enrolment.visit_at ?? null
+}
+
+function outcomeOf(enrolment: SubmitterEnrolment | WorkerSummary) {
+  const outcome = 'progress' in enrolment ? enrolment.progress.outcome : enrolment.outcome
+  return outcome === 'qualified' || outcome === 'disqualified' ? outcome : null
+}
+
+function visitLine(enrolment: SubmitterEnrolment | WorkerSummary) {
+  const instant = visitAt(enrolment)
+  if (!instant) return t('progress.noVisit')
+  return t('progress.visitSet', { time: formatVisit(instant, zone) })
+}
 
 onMounted(async () => {
   if (!hasToken()) {
@@ -56,7 +79,11 @@ async function endSession() {
     <ul v-else-if="loaded" id="cases" class="cases">
       <li v-for="enrolment in enrolments" :key="enrolment.id">
         <NuxtLink :id="`case-${enrolment.id}`" :to="`/enrolments/${enrolment.id}`">
-          {{ enrolment.place_name }}<template v-if="'head_name' in enrolment"> {{ enrolment.head_name }}</template>
+          <span>{{ enrolment.place_name }}</span>
+          <span>{{ headName(enrolment) }}</span>
+          <span>{{ visitLine(enrolment) }}</span>
+          <span v-if="outcomeOf(enrolment) === 'qualified'">{{ t('worker.qualified') }}</span>
+          <span v-else-if="outcomeOf(enrolment) === 'disqualified'">{{ t('worker.disqualified') }}</span>
         </NuxtLink>
       </li>
     </ul>

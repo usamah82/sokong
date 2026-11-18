@@ -281,11 +281,38 @@ describe('worker cases', () => {
       expect(page.get('#case-case-1').text()).toContain('Rahim')
     })
     expect(page.get('#case-case-1').text()).toContain('Block 4')
+    expect(page.get('#case-case-1').text()).toContain('No visit is set.')
     expect(page.get('#case-case-1').attributes('href')).toBe('/enrolments/case-1')
     expect(calls).toHaveLength(1)
     expect(calls[0]!.method).toBe('GET')
     expect(new URL(calls[0]!.url).pathname).toBe('/enrolments')
     expect(page.text()).not.toContain(empty)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows each visit and each outcome for a worker', async () => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const visit = '2026-11-24T01:00:00Z'
+    const marked = { ...summary, visit_at: visit, outcome: 'disqualified' }
+    const open = { ...summary, id: 'case-2', place_name: 'Block 2', head_name: 'Mina', visit_at: null, outcome: null }
+    stubFetch(() => ({ status: 200, body: [ marked, open ] }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    const page = await mountSuspended(EnrolmentsPage)
+    await vi.waitFor(() => expect(page.find('#case-case-2').exists()).toBe(true))
+    const row = page.get('#case-case-1')
+    expect(row.text()).toContain('Block 4')
+    expect(row.text()).toContain('Rahim')
+    expect(row.text()).toContain(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(row.text()).toContain('This family is disqualified.')
+    expect(row.attributes('href')).toBe('/enrolments/case-1')
+    const other = page.get('#case-case-2')
+    expect(other.text()).toContain('Block 2')
+    expect(other.text()).toContain('Mina')
+    expect(other.text()).toContain('No visit is set.')
+    expect(other.text()).not.toContain('This family is qualified.')
+    expect(other.text()).not.toContain('This family is disqualified.')
+    expect(page.find('#sign-out').exists()).toBe(true)
     vi.unstubAllGlobals()
   })
 
