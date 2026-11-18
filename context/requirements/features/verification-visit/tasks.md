@@ -70,14 +70,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Create the verification row and `PUT /enrolments/:id/verification/who_is_here`. The stage saves only after `visit_at` is stored. Every enrolment member must be in `people`. A visit-added person needs a name. Each person may carry a `documents` array, and zero documents is valid. A second PUT replaces Who is here and leaves the other columns null. Follow-ups the answer does not open are stored empty. The response is the saved stage plus `worker_name` and `recorded_at`.
 
 **Acceptance criteria:**
-- [ ] A linked worker receives 200 when every enrolment member is present, including a person with no documents and a person with one document. `worker_name` is the account name at save time. `recorded_at` is the server time in UTC. Saving again replaces the column. The other columns stay null.
-- [ ] Omitting an enrolment member returns 422 "Person is required" and `details.family_member_id` of `["is required"]`, and the previous column stays. A missing visit returns 422 "Set the visit before recording it" and creates no verification row. A bad phone uses "Enter a phone number, for example +60 12-345 6789." A bad date, a bad identity, a bad document, a non-boolean, a duplicate person, an unknown `family_member_id`, or a string past its limit returns 422 and leaves the previous column unchanged.
-- [ ] A document kind is `national_id`, `social_security`, `passport`, `birth_certificate`, or `other`. A row needs a number of 1–100 characters. `other` needs "What document?" at 1–100, and any other kind stores that label empty. The messages are "Document is invalid", "Document number is required", and "What document? is required". An absent person keeps "Since when" and "Why". A person who is not absent stores those empty. A child stores "From where?" empty. A stage name outside the seven part keys, such as `wealth`, is 404. Anonymous is 401. An account that must not see the enrolment is 404.
+- [x] A linked worker receives 200 when every enrolment member is present, including a person with no documents and a person with one document. `worker_name` is the account name at save time. `recorded_at` is the server time in UTC. Saving again replaces the column. The other columns stay null.
+- [x] Omitting an enrolment member returns 422 "Person is required" and `details.family_member_id` of `["is required"]`, and the previous column stays. A missing visit returns 422 "Set the visit before recording it" and creates no verification row. A bad phone uses "Enter a phone number, for example +60 12-345 6789." A bad date, a bad identity, a bad document, a non-boolean, a duplicate person, an unknown `family_member_id`, or a string past its limit returns 422 and leaves the previous column unchanged.
+- [x] A document kind is `national_id`, `social_security`, `passport`, `birth_certificate`, or `other`. A row needs a number of 1–100 characters. `other` needs "What document?" at 1–100, and any other kind stores that label empty. The messages are "Document is invalid", "Document number is required", and "What document? is required". An absent person keeps "Since when" and "Why". A person who is not absent stores those empty. A child stores "From where?" empty. A stage name outside the seven part keys, such as `wealth`, is 404. Anonymous is 401. An account that must not see the enrolment is 404.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: set a visit, PUT a blank `who_is_here`, and PUT it again with one person. Confirm the second body is the one stored.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: set a visit, PUT a blank `who_is_here`, and PUT it again with one person. Confirm the second body is the one stored.
 
 **Dependencies:** Task 1
 
