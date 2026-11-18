@@ -82,11 +82,23 @@ function detail(looks: Array<{ id: string, worker_name: string, looked_at: strin
     looks,
     visit_at: null as string | null,
     bringing_basket: null as boolean | null,
-    assigned_workers: null as string[] | null
+    assigned_workers: null as string[] | null,
+    verification: null as Record<string, unknown> | null,
+    outcome: null as string | null
   }
 }
 
 const emptyLook = { id: 'look-empty', worker_name: 'Aminah', looked_at: '2026-11-12T09:00:00Z', note: '' }
+
+function visited() {
+  const stored = detail([ emptyLook ])
+  stored.visit_at = '2026-11-24T01:00:00Z'
+  stored.bringing_basket = false
+  stored.assigned_workers = [ 'Aman' ]
+  return stored
+}
+
+const phoneError = 'Enter a phone number, for example +60 12-345 6789.'
 
 describe('worker cases', () => {
   beforeEach(() => {
@@ -496,7 +508,7 @@ describe('worker cases', () => {
     expect(shown.attributes('datetime')).toBe('2026-11-24T01:00:00Z')
     expect(shown.text()).toBe(formatVisit('2026-11-24T01:00:00Z', Intl.DateTimeFormat().resolvedOptions().timeZone))
     expect(page.text()).toContain('This visit is later than a week after the enrolment.')
-    expect(page.text()).not.toContain('Verification Interview')
+    expect(page.text()).toContain('Verification Interview')
     vi.unstubAllGlobals()
   })
 
@@ -531,6 +543,293 @@ describe('worker cases', () => {
       assigned_workers: [ 'Aman' ]
     })
     expect(page.text()).not.toContain('visit message')
+    vi.unstubAllGlobals()
+  })
+
+  it('lists the six stages after a visit and keeps Who is here current', async () => {
+    const stored = detail([ emptyLook ])
+    stored.visit_at = '2026-11-24T01:00:00Z'
+    stored.assigned_workers = [ 'Aman' ]
+    stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.text()).toContain('Verification Interview'))
+    for (const name of [
+      'Who is here',
+      'How the family formed',
+      'A day in their life',
+      'How they are together',
+      'The house and the meals',
+      'What they need'
+    ]) {
+      expect(page.text()).toContain(name)
+    }
+    expect(page.get('#status-who_is_here').text()).toContain('Current')
+    expect(page.get('#status-who_is_here').text()).toContain('Not saved')
+    expect(page.get('#status-formation').text()).toBe('Not saved')
+    expect(page.find('#back-stage').exists()).toBe(false)
+    expect(page.find('#next-stage').exists()).toBe(true)
+    expect(page.find('#stage-boxes').exists()).toBe(false)
+    expect(page.text()).not.toContain('Post-visit')
+    expect(page.text()).toContain('The children are the people recorded here.')
+    expect(page.get('#enrolment-facts').text()).toContain('Enrolment')
+    expect(page.get('#enrolment-facts').text()).toContain('Rahim')
+    expect(page.get('#enrolment-facts').text()).toContain('Male')
+    expect(page.get('#enrolment-facts').text()).toContain('+60129876543')
+    expect(page.find('#person-relationship').exists()).toBe(false)
+    expect(page.find('#person-origin').exists()).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
+  it('stays on a bad phone, a blank added name, and an incomplete document', async () => {
+    const calls = stubFetch(() => ({ status: 200, body: visited() }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#person-phone').exists()).toBe(true))
+    await page.get('#person-name').setValue('Rahim')
+    await page.get('#person-phone').setValue('12')
+    await page.get('#stage-dynamics').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    expect(page.text()).toContain(phoneError)
+    expect(page.get<HTMLInputElement>('#person-phone').element.value).toBe('12')
+    expect(page.get('#status-who_is_here').text()).toContain('Current')
+
+    await page.get('#person-phone').setValue('+60 12-345 6789')
+    await page.get('#add-person').trigger('click')
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    expect(page.text()).toContain('Full name is required')
+    expect(page.get('#person-name').attributes('aria-invalid')).toBe('true')
+    expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('')
+
+    await page.get('#remove-person').trigger('click')
+    await page.get('#add-document').trigger('click')
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    expect(page.text()).toContain('Document is invalid')
+    await page.get('#document-kind-0').setValue('passport')
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('Document number is required')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    await page.get('#document-kind-0').setValue('other')
+    await page.get('#document-number-0').setValue('ABC')
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('What document? is required')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    vi.unstubAllGlobals()
+  })
+
+  it('saves Who is here on Next and leaves the other stages unsaved', async () => {
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') {
+        return {
+          status: 200,
+          body: {
+            people: [ {
+              person_id: 'person-1',
+              family_member_id: 'member-1',
+              head: true,
+              name: 'Rahim',
+              birth_date: '',
+              gender: '',
+              phone: '',
+              documents: [],
+              origin: 'Kelantan',
+              relationship: '',
+              identity: '',
+              absent: false,
+              absent_since: '',
+              absent_reason: ''
+            } ],
+            others_stay: null,
+            others_stay_detail: '',
+            care_for_parents: null,
+            care_for_parents_detail: '',
+            notes: '',
+            worker_name: 'Aman',
+            recorded_at: '2026-11-24T02:00:00Z'
+          }
+        }
+      }
+      return { status: 200, body: visited() }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#person-name').exists()).toBe(true))
+    await page.get('#person-name').setValue('Rahim')
+    await page.get('#person-origin').setValue('Kelantan')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1))
+    const put = calls.find((call) => call.method === 'PUT')
+    expect(new URL(put!.url).pathname).toBe('/enrolments/case-1/verification/who_is_here')
+    expect(put!.authorization).toBe('Bearer secret-token')
+    expect(put!.json).toMatchObject({
+      others_stay: null,
+      others_stay_detail: '',
+      care_for_parents: null,
+      care_for_parents_detail: '',
+      notes: ''
+    })
+    expect(put!.json!.people).toMatchObject([ {
+      family_member_id: 'member-1',
+      head: true,
+      name: 'Rahim',
+      origin: 'Kelantan',
+      relationship: '',
+      documents: [],
+      absent: false,
+      absent_since: '',
+      absent_reason: ''
+    } ])
+    expect(page.get('#status-who_is_here').text()).toBe('Saved')
+    expect(page.get('#status-formation').text()).toContain('Current')
+    expect(page.get('#status-formation').text()).toContain('Not saved')
+    expect(page.find('#person-name').exists()).toBe(false)
+
+    await page.get('#stage-daily_life').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(page.get('#status-daily_life').text()).toContain('Current')
+    await page.get('#stage-needs').trigger('click')
+    expect(page.find('#next-stage').exists()).toBe(false)
+    expect(page.find('#back-stage').exists()).toBe(true)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#back-stage').trigger('click')
+    await page.get('#stage-who_is_here').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(page.get('#status-who_is_here').text()).toContain('Current')
+    expect(page.get('#status-who_is_here').text()).toContain('Saved')
+    expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('Rahim')
+    expect(page.get<HTMLInputElement>('#person-origin').element.value).toBe('Kelantan')
+    vi.unstubAllGlobals()
+  })
+
+  it('opens follow-ups for a child, an absence, a guest, and a document', async () => {
+    const stored = visited()
+    stored.members.push({
+      id: 'member-2',
+      role: 'spouse',
+      name: 'Siti',
+      age: 38,
+      gender: 'female',
+      description: '',
+      in_education: false,
+      working: false,
+      job: '',
+      monthly_amount: null
+    })
+    stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#person-tab-1').exists()).toBe(true))
+    await page.get('#person-tab-1').trigger('click')
+    expect(page.find('#remove-person').exists()).toBe(false)
+    expect(page.get('#enrolment-facts').text()).toContain('Siti')
+    expect(page.get('#enrolment-facts').text()).toContain('Female')
+    expect(page.get('#enrolment-facts').text()).not.toContain('+60129876543')
+
+    await page.get('#person-relationship').setValue('child')
+    expect(page.find('#person-origin').exists()).toBe(false)
+    await page.get('#person-relationship').setValue('spouse')
+    expect(page.find('#person-origin').exists()).toBe(true)
+    await page.get('#person-absent').setValue(true)
+    expect(page.find('#absent-since').exists()).toBe(true)
+    expect(page.find('#absent-reason').exists()).toBe(true)
+    await page.get('#others-stay').setValue('yes')
+    expect(page.find('#others-detail').exists()).toBe(true)
+    await page.get('#care-for-parents').setValue('yes')
+    expect(page.find('#care-detail').exists()).toBe(true)
+    await page.get('#add-document').trigger('click')
+    expect(page.find('#document-kind-0').exists()).toBe(true)
+    expect(page.find('#document-number-0').exists()).toBe(true)
+    await page.get('#document-kind-0').setValue('other')
+    expect(page.find('#document-other-0').exists()).toBe(true)
+
+    await page.get('#add-person').trigger('click')
+    expect(page.find('#remove-person').exists()).toBe(true)
+    expect(page.find('#enrolment-facts').exists()).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('renders a saved Who is here as text and does not save again', async () => {
+    const stored = visited()
+    stored.outcome = 'qualified'
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: 'person-1',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          birth_date: '1986-01-02',
+          gender: 'male',
+          phone: '+60123456789',
+          documents: [ { kind: 'other', number: 'ABC', other_label: 'Card' } ],
+          origin: 'Kelantan',
+          relationship: '',
+          identity: 'verified',
+          absent: true,
+          absent_since: '2020-01-01',
+          absent_reason: 'Work'
+        } ],
+        others_stay: true,
+        others_stay_detail: 'A cousin',
+        care_for_parents: false,
+        care_for_parents_detail: '',
+        notes: 'They asked for rice'
+      }
+    }
+    const calls = stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.get('#status-who_is_here').text()).toContain('Saved'))
+    expect(page.find('#add-person').exists()).toBe(false)
+    expect(page.find('#add-document').exists()).toBe(false)
+    expect(page.find('#remove-person').exists()).toBe(false)
+    expect(page.find('#person-name').exists()).toBe(false)
+    expect(page.text()).toContain('Verified')
+    expect(page.text()).toContain('Card')
+    expect(page.text()).toContain('A cousin')
+    expect(page.text()).toContain('They asked for rice')
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    expect(page.get('#status-formation').text()).toContain('Current')
+    vi.unstubAllGlobals()
+  })
+
+  it('stays on the stage when the save is rejected and signs out on 401', async () => {
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Person is required' } } }
+      }
+      return { status: 200, body: visited() }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.name', 'Aman')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#person-name').exists()).toBe(true))
+    await page.get('#person-name').setValue('Rahim')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Person is required'))
+    expect(page.get('#status-who_is_here').text()).toContain('Current')
+    expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('Rahim')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    vi.unstubAllGlobals()
+
+    stubFetch((method) => {
+      if (method === 'PUT') return { status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }
+      return { status: 200, body: visited() }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    sessionStorage.setItem('sokong.name', 'Aman')
+    const again = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(again.find('#person-name').exists()).toBe(true))
+    await again.get('#person-name').setValue('Rahim')
+    await again.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    expect(sessionStorage.getItem('sokong.name')).toBeNull()
     vi.unstubAllGlobals()
   })
 })
