@@ -201,7 +201,17 @@ describe('submitter progress', () => {
       ...newer,
       bringing_basket: true,
       assigned_workers: [ 'Aman' ],
-      verification: { house: { basket: 'Rice secret' } },
+      verification: {
+        who_is_here: {
+          people: [ { identity: 'not_verified', documents: [ { number: 'DOC-88421' } ] } ]
+        },
+        needs: { consent_given: false },
+        house: { basket: 'Rice secret' },
+        boxes: {
+          good_family_unit: false,
+          good_family_unit_gap: 'The roof leaks'
+        }
+      },
       marked_at: '2026-11-24T02:00:00Z',
       marker_name: 'Marker Aman',
       progress: {
@@ -223,6 +233,13 @@ describe('submitter progress', () => {
     expect(page.text()).not.toContain('Bringing a basket')
     expect(page.text()).not.toContain('Assigned workers')
     expect(page.text()).not.toContain('Rice secret')
+    expect(page.text()).not.toContain('The family consents')
+    expect(page.text()).not.toContain('The family does not consent')
+    expect(page.text()).not.toContain('Not verified')
+    expect(page.text()).not.toContain('DOC-88421')
+    expect(page.text()).not.toContain('Good family unit')
+    expect(page.text()).not.toContain('Basic necessities')
+    expect(page.text()).not.toContain('The roof leaks')
     expect(page.text()).not.toContain('Marker Aman')
     expect(page.text()).not.toContain('2026-11-24T02:00:00Z')
     vi.unstubAllGlobals()
