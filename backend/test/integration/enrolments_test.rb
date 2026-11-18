@@ -1025,7 +1025,8 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
         "head_name" => enrolment.members.find { |member| member.role == "head" }.name,
         "enroler_contact" => enrolment.enroler_contact,
         "on_behalf" => enrolment.on_behalf,
-        "locality" => { "id" => enrolment.locality.id, "name" => enrolment.locality.name }
+        "locality" => { "id" => enrolment.locality.id, "name" => enrolment.locality.name },
+        "visit_at" => enrolment.visit_at&.utc&.iso8601
       }
     end
 
@@ -1061,7 +1062,8 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
             "note" => look.note
           }
         },
-        "visit_at" => nil
+        "bringing_basket" => enrolment.bringing_basket,
+        "assigned_workers" => enrolment.assigned_workers
       )
     end
 
@@ -1101,7 +1103,7 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
             "monthly_amount" => member.monthly_amount
           }
         },
-        "progress" => { "case_in" => true, "looks" => [], "visit_at" => nil }
+        "progress" => { "case_in" => true, "looks" => [], "visit_at" => enrolment.visit_at&.utc&.iso8601 }
       }
     end
 end

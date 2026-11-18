@@ -84,7 +84,8 @@ class EnrolmentsController < ApplicationController
         head_name: enrolment.members.find { |member| member.role == "head" }&.name,
         enroler_contact: enrolment.enroler_contact,
         on_behalf: enrolment.on_behalf,
-        locality: { id: enrolment.locality.id, name: enrolment.locality.name }
+        locality: { id: enrolment.locality.id, name: enrolment.locality.name },
+        visit_at: enrolment.visit_at&.utc&.iso8601
       }
     end
 
@@ -100,7 +101,8 @@ class EnrolmentsController < ApplicationController
         longitude: enrolment.longitude&.to_f,
         members: enrolment.members.map { |member| member_json(member) },
         looks: enrolment.looks.map { |look| look_json(look) },
-        visit_at: nil
+        bringing_basket: enrolment.bringing_basket,
+        assigned_workers: enrolment.assigned_workers
       )
     end
 
@@ -142,7 +144,7 @@ class EnrolmentsController < ApplicationController
         progress: {
           case_in: true,
           looks: enrolment.looks.map { |look| look_json(look) },
-          visit_at: nil
+          visit_at: enrolment.visit_at&.utc&.iso8601
         }
       }
     end

@@ -7,6 +7,9 @@ Rails.application.routes.draw do
 
   resources :enrolments, only: [ :index, :show, :create ] do
     resources :looks, only: :create
+    member do
+      patch :visit, to: "visits#update"
+    end
   end
   resources :accounts, only: :create
   resources :account_verifications, only: :create
