@@ -150,8 +150,10 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       [ { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "A" * 201 ] }, "Assigned worker is invalid", "assigned_workers" ],
       [ { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: eleven_names }, "Assigned worker is invalid", "assigned_workers" ]
     ].each do |params, message, key|
-      assert_no_changes -> { enrolment.reload.attributes.slice("visit_at", "bringing_basket", "assigned_workers", "updated_at") } do
-        patch "/enrolments/#{enrolment.id}/visit", params: params, headers: bearer(token), as: :json
+      assert_no_enqueued_emails do
+        assert_no_changes -> { enrolment.reload.attributes.slice("visit_at", "bringing_basket", "assigned_workers", "updated_at") } do
+          patch "/enrolments/#{enrolment.id}/visit", params: params, headers: bearer(token), as: :json
+        end
       end
       assert_visit_invalid message, key
     end
@@ -171,26 +173,36 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     other = create_locality(name: "Other Block", created_at: Time.current)
     body = { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "Aman" ] }
 
-    assert_no_difference "Enrolment.count" do
-      patch "/enrolments/#{enrolment.id}/visit", params: body, as: :json
+    assert_no_enqueued_emails do
+      assert_no_difference "Enrolment.count" do
+        patch "/enrolments/#{enrolment.id}/visit", params: body, as: :json
+      end
     end
     assert_sign_in_required
     assert_nil enrolment.reload.visit_at
 
     submitter = confirmed_token(email: "siti@example.com")
-    patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(submitter), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(submitter), as: :json
+    end
     assert_not_found
 
     stranger = worker_token(name: "Farid", locality: other)
-    patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(stranger), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(stranger), as: :json
+    end
     assert_not_found
 
     unlinked = worker_token(name: "Noor")
-    patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(unlinked), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(unlinked), as: :json
+    end
     assert_not_found
 
     linked = worker_token(name: "Aman", locality: enrolment.locality)
-    patch "/enrolments/#{SecureRandom.uuid}/visit", params: body, headers: bearer(linked), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{SecureRandom.uuid}/visit", params: body, headers: bearer(linked), as: :json
+    end
     assert_not_found
     assert_nil enrolment.reload.visit_at
   end
@@ -249,9 +261,11 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
     token = worker_token(name: "Aman", locality: enrolment.locality)
 
-    patch "/enrolments/#{enrolment.id}/visit",
-      params: "x" * (128 * 1024 + 1),
-      headers: bearer(token).merge("CONTENT_TYPE" => "application/json")
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit",
+        params: "x" * (128 * 1024 + 1),
+        headers: bearer(token).merge("CONTENT_TYPE" => "application/json")
+    end
 
     assert_response :content_too_large
     error = response.parsed_body.fetch("error")
@@ -287,8 +301,15 @@ class VerificationsTest < ActionDispatch::IntegrationTest
         as: :json
     end
     assert_response :ok
+    assert_enqueued_email_with EnrolmentMailer, :visit_set, args: [
+      "siti@example.com",
+      "Siti Aminah",
+      "Kampung Baru",
+      "24 November 2026 at 01:00 UTC"
+    ]
     perform_enqueued_jobs
     first = ActionMailer::Base.deliveries.sole
+    assert_equal [ "siti@example.com" ], first.to
     assert_equal "Sokong visit", first.subject
     assert_equal(
       "A visit is set for Siti Aminah at Kampung Baru. The visit time is 24 November 2026 at 01:00 UTC.",
@@ -306,9 +327,16 @@ class VerificationsTest < ActionDispatch::IntegrationTest
         headers: bearer(token),
         as: :json
     end
+    assert_enqueued_email_with EnrolmentMailer, :visit_changed, args: [
+      "siti@example.com",
+      "Siti Aminah",
+      "Kampung Baru",
+      "25 November 2026 at 01:00 UTC"
+    ]
     perform_enqueued_jobs
     assert_equal mail_text(first), mail_text(ActionMailer::Base.deliveries.first)
     changed = ActionMailer::Base.deliveries.last
+    assert_equal [ "siti@example.com" ], changed.to
     assert_equal "Sokong visit", changed.subject
     assert_equal(
       "The visit time for Siti Aminah at Kampung Baru is now 25 November 2026 at 01:00 UTC.",
