@@ -1563,6 +1563,17 @@ describe('worker cases', () => {
       need_most: 'Rice',
       consent_given: true
     })
+
+    await page.get('#stage-needs').trigger('click')
+    await vi.waitFor(() => expect(page.find('#consent-no').exists()).toBe(true))
+    await page.get('#consent-no').setValue(true)
+    await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(6))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[5]!.url).pathname).toBe('/enrolments/case-1/verification/needs')
+    expect(calls.filter((call) => call.method === 'PUT')[5]!.json).toMatchObject({
+      need_most: 'Rice',
+      consent_given: false
+    })
     vi.unstubAllGlobals()
   })
 
