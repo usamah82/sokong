@@ -178,14 +178,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `house` stores the place, utilities, safety, meals, and the basket. Rent follow-ups are stored only when the place is rent. The unsafe follow-up is stored only when safe is false. A blank basket is valid on PUT.
 
 **Acceptance criteria:**
-- [ ] `place` accepts the four values and blank. Rent stores the amount and the behind flag. Any other place stores those empty. `safe: false` stores `unsafe_detail`. Any other safety value stores it empty.
-- [ ] `sleeping_rooms` is null or an integer from 0 through 99. `rent_per_month` is null or an integer from 0 through 999999999. `meals` is blank or one of the four values. `basket` is blank or 1–500 characters.
-- [ ] A bad place, a bad meals value, a non-integer, a non-boolean, or a basket past 500 characters returns 422 and leaves the previous house column unchanged.
+- [x] `place` accepts the four values and blank. Rent stores the amount and the behind flag. Any other place stores those empty. `safe: false` stores `unsafe_detail`. Any other safety value stores it empty.
+- [x] `sleeping_rooms` is null or an integer from 0 through 99. `rent_per_month` is null or an integer from 0 through 999999999. `meals` is blank or one of the four values. `basket` is blank or 1–500 characters.
+- [x] A bad place, a bad meals value, a non-integer, a non-boolean, or a basket past 500 characters returns 422 and leaves the previous house column unchanged.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: PUT a rented, unsafe house and confirm the follow-ups are stored. PUT `own` afterward and confirm the rent fields are empty.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: PUT a rented, unsafe house and confirm the follow-ups are stored. PUT `own` afterward and confirm the rent fields are empty.
 
 **Dependencies:** Task 3
 
