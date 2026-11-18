@@ -224,14 +224,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `PUT /enrolments/:id/verification/boxes` stores Post-visit: Good family unit and Basic necessities, each as a boolean or null, plus both gap strings. A blank gap is valid on PUT whether the box is checked or not. `boxes` is not an interview stage. The mark rules wait for Task 10.
 
 **Acceptance criteria:**
-- [ ] A blank stage returns 200. Each box accepts true, false, and null. Both gaps and `notes` accept up to 2000 characters.
-- [ ] A non-boolean box returns 422 "Good family unit is invalid" or "Basic necessities is invalid" and leaves the previous column unchanged.
-- [ ] A gap past 2000 characters returns 422 and leaves the previous column unchanged. Dependable generation and accumulated wealth are not keys in the stored object.
+- [x] A blank stage returns 200. Each box accepts true, false, and null. Both gaps and `notes` accept up to 2000 characters.
+- [x] A non-boolean box returns 422 "Good family unit is invalid" or "Basic necessities is invalid" and leaves the previous column unchanged.
+- [x] A gap past 2000 characters returns 422 and leaves the previous column unchanged. Dependable generation and accumulated wealth are not keys in the stored object.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: PUT both boxes false with one gap filled and one empty. Confirm both gap strings are stored.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: PUT both boxes false with one gap filled and one empty. Confirm both gap strings are stored.
 
 **Dependencies:** Task 3
 
@@ -244,10 +244,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 7–9
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] House, needs, and the post-visit assessment each save on their own
-- [ ] A bad value on one stage leaves that stage's previous column in place
-- [ ] A stage PUT before the visit is stored still returns 422 and saves nothing
+- [x] `bin/ci` from the repository root exits 0
+- [x] House, needs, and the post-visit assessment each save on their own
+- [x] A bad value on one stage leaves that stage's previous column in place
+- [x] A stage PUT before the visit is stored still returns 422 and saves nothing
 
 ## Task 10: Mark the family
 
