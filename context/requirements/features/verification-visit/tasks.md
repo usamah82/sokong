@@ -528,14 +528,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The matching submitter sees the visit time and the outcome, and does not see the interview. The quiet sentence stays for no looks and no visit. A stored visit replaces that sentence with "This case is in." and the local visit line. Looks with no visit still say "No visit is set."
 
 **Acceptance criteria:**
-- [ ] No looks and no visit render "This case is in. No one has looked. No visit is set." Looks and no visit render "This case is in." and "No visit is set."
-- [ ] A stored visit renders "A visit is set for {local time}." in the same format as the worker case. Qualified adds "This family is qualified." Disqualified adds "This family is disqualified."
-- [ ] The page does not render the interview, the bringing-a-basket answer, the assigned names, the basket text, consent, the identity check, a document number, the boxes, `marked_at`, or `marker_name`. At 390 CSS pixels it does not scroll horizontally.
+- [x] No looks and no visit render "This case is in. No one has looked. No visit is set." Looks and no visit render "This case is in." and "No visit is set."
+- [x] A stored visit renders "A visit is set for {local time}." in the same format as the worker case. Qualified adds "This family is qualified." Disqualified adds "This family is disqualified."
+- [x] The page does not render the interview, the bringing-a-basket answer, the assigned names, the basket text, consent, the identity check, a document number, the boxes, `marked_at`, or `marker_name`. At 390 CSS pixels it does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/progress.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: sign in as the submitter and open the four states: quiet, a look and no visit, a visit, and qualified.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/progress.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: sign in as the submitter and open the four states: quiet, a look and no visit, a visit, and qualified.
 
 **Dependencies:** Tasks 2, 11, and 12
 
