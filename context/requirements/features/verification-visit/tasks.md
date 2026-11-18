@@ -284,14 +284,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The first mark queues one message when the enrolment has an email. Qualified and disqualified use the same subject and the sentence for that outcome. A second mark queues nothing. A blank email still saves the mark. A raised enqueue still returns 201.
 
 **Acceptance criteria:**
-- [ ] The subject is "Sokong verification". Qualified body: "{head} at {place} is qualified." Disqualified body: "{head} at {place} is disqualified." The head is the enrolment head, and the place is `place_name`.
-- [ ] The body contains no other member's name, either phone, the basket text, the bringing-a-basket answer, an assigned worker's name, an identity value, a document number, or an interview answer. The Active Job log omits the head, the place, and the email.
-- [ ] A blank email queues nothing and still returns 201. A second mark queues nothing. A raised enqueue returns 201, keeps the outcome, and logs the error class only.
+- [x] The subject is "Sokong verification". Qualified body: "{head} at {place} is qualified." Disqualified body: "{head} at {place} is disqualified." The head is the enrolment head, and the place is `place_name`.
+- [x] The body contains no other member's name, either phone, the basket text, the bringing-a-basket answer, an assigned worker's name, an identity value, a document number, or an interview answer. The Active Job log omits the head, the place, and the email.
+- [x] A blank email queues nothing and still returns 201. A second mark queues nothing. A raised enqueue returns 201, keeps the outcome, and logs the error class only.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: mark an enrolment that has an email and confirm one queued message. Mark again and confirm the delivery list does not grow.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: mark an enrolment that has an email and confirm one queued message. Mark again and confirm the delivery list does not grow.
 
 **Dependencies:** Task 10
 
@@ -304,10 +304,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 10–11
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] A complete interview can be marked qualified or disqualified, and the family stays on record
-- [ ] A second mark and a later edit return 422 and change nothing
-- [ ] One outcome message is queued when the enrolment has an email
+- [x] `bin/ci` from the repository root exits 0
+- [x] A complete interview can be marked qualified or disqualified, and the family stays on record
+- [x] A second mark and a later edit return 422 and change nothing
+- [x] One outcome message is queued when the enrolment has an email
 
 ## Task 12: Pre-visit on the worker case
 
