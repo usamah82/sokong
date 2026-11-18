@@ -11,5 +11,6 @@ Rails.application.config.filter_parameters += [
   :birth_date, :absent_since, :absent_reason, :others_stay_detail, :care_for_parents_detail,
   :how_it_started, :previous_jobs, :wished_work, :skills, :school_going, :school_where, :school_travel,
   :hard_week, :who_steps_in, :children_at_home, :unsafe_detail, :need_most,
+  :good_family_unit_gap, :basic_necessities_gap,
   /\Abasket\z/
 ]
