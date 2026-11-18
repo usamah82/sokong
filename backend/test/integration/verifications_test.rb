@@ -257,6 +257,68 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_not created.key?("visit_at")
   end
 
+  test "the interview is on the linked worker's detail and nowhere else" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    other = create_locality(name: "Other Block", created_at: Time.current)
+
+    get "/enrolments/#{enrolment.id}", headers: bearer(token)
+    assert_response :ok
+    before = response.parsed_body
+    assert_includes before.keys, "verification"
+    assert_nil before["verification"]
+    assert_equal false, before["bringing_basket"]
+    assert_equal [ "Aman" ], before["assigned_workers"]
+    assert_not before.key?("marked_at")
+    assert_not before.key?("marker_name")
+
+    body = who_is_here_body(enrolment)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: body, headers: bearer(token), as: :json
+    assert_response :ok
+    saved = response.parsed_body
+
+    get "/enrolments/#{enrolment.id}", headers: bearer(token)
+    assert_response :ok
+    detail = response.parsed_body
+    assert_equal saved, detail.dig("verification", "who_is_here")
+    %w[formation daily_life dynamics house needs boxes].each do |part|
+      assert_nil detail.dig("verification", part)
+    end
+    assert_not detail.key?("marked_at")
+    assert_not detail.key?("marker_name")
+
+    get "/enrolments", headers: bearer(token)
+    assert_response :ok
+    row = response.parsed_body.find { |item| item["id"] == enrolment.id }
+    assert_equal "2026-11-24T01:00:00Z", row["visit_at"]
+    assert_not row.key?("verification")
+    assert_not row.key?("bringing_basket")
+    assert_not row.key?("assigned_workers")
+
+    submitter = confirmed_token(email: "siti@example.com")
+    get "/enrolments/#{enrolment.id}", headers: bearer(submitter)
+    assert_response :ok
+    shown = response.parsed_body
+    assert_not shown.key?("verification")
+    assert_not shown.key?("bringing_basket")
+    assert_not shown.key?("assigned_workers")
+    get "/enrolments", headers: bearer(submitter)
+    assert_response :ok
+    listed = response.parsed_body.find { |item| item["id"] == enrolment.id }
+    assert_not listed.key?("verification")
+    assert_not listed.key?("bringing_basket")
+    assert_not listed.key?("assigned_workers")
+
+    stranger = confirmed_token(email: "aminah@example.com")
+    get "/enrolments/#{enrolment.id}", headers: bearer(stranger)
+    assert_not_found
+    farid = worker_token(name: "Farid", locality: other)
+    get "/enrolments/#{enrolment.id}", headers: bearer(farid)
+    assert_not_found
+  end
+
   test "a body over 128 KiB on the visit route returns 413 and stores nothing" do
     enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
     token = worker_token(name: "Aman", locality: enrolment.locality)

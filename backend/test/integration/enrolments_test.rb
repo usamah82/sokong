@@ -1063,8 +1063,24 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
           }
         },
         "bringing_basket" => enrolment.bringing_basket,
-        "assigned_workers" => enrolment.assigned_workers
+        "assigned_workers" => enrolment.assigned_workers,
+        "verification" => verification_json(enrolment)
       )
+    end
+
+    def verification_json(enrolment)
+      record = enrolment.verification
+      return unless record
+
+      {
+        "who_is_here" => record.who_is_here,
+        "formation" => record.formation,
+        "daily_life" => record.daily_life,
+        "dynamics" => record.dynamics,
+        "house" => record.house,
+        "needs" => record.needs,
+        "boxes" => record.boxes
+      }
     end
 
     def look_count

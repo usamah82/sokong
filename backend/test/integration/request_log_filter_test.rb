@@ -37,4 +37,58 @@ class RequestLogFilterTest < ActiveSupport::TestCase
     assert_equal "[FILTERED]", member["monthly_amount"]
     assert_equal "female", member["gender"]
   end
+
+  test "interview answers are filtered and the stage choices stay visible" do
+    filtered = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters).filter(
+      "stage" => "who_is_here",
+      "bringing_basket" => false,
+      "assigned_workers" => [ "Aman" ],
+      "people" => [
+        {
+          "name" => "Siti",
+          "phone" => "+60123456789",
+          "birth_date" => "2024-02-29",
+          "gender" => "female",
+          "relationship" => "spouse",
+          "identity" => "verified",
+          "origin" => "Kedah",
+          "absent_since" => "2024-01-02",
+          "absent_reason" => "Work",
+          "documents" => [
+            { "kind" => "national_id", "number" => "900101015555", "other_label" => "Village letter" }
+          ]
+        }
+      ],
+      "notes" => "They spoke quietly",
+      "others_stay_detail" => "cousin",
+      "care_for_parents_detail" => "Mother",
+      "basket" => "rice",
+      "how_it_started" => "married",
+      "need_most" => "food"
+    )
+
+    assert_equal "who_is_here", filtered["stage"]
+    assert_equal false, filtered["bringing_basket"]
+    assert_equal "[FILTERED]", filtered["assigned_workers"]
+    assert_equal "[FILTERED]", filtered["notes"]
+    assert_equal "[FILTERED]", filtered["others_stay_detail"]
+    assert_equal "[FILTERED]", filtered["care_for_parents_detail"]
+    assert_equal "[FILTERED]", filtered["basket"]
+    assert_equal "[FILTERED]", filtered["how_it_started"]
+    assert_equal "[FILTERED]", filtered["need_most"]
+    person = filtered["people"].sole
+    assert_equal "[FILTERED]", person["name"]
+    assert_equal "[FILTERED]", person["phone"]
+    assert_equal "[FILTERED]", person["birth_date"]
+    assert_equal "[FILTERED]", person["origin"]
+    assert_equal "[FILTERED]", person["absent_since"]
+    assert_equal "[FILTERED]", person["absent_reason"]
+    assert_equal "female", person["gender"]
+    assert_equal "spouse", person["relationship"]
+    assert_equal "verified", person["identity"]
+    document = person["documents"].sole
+    assert_equal "national_id", document["kind"]
+    assert_equal "[FILTERED]", document["number"]
+    assert_equal "[FILTERED]", document["other_label"]
+  end
 end
