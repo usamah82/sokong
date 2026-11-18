@@ -2,6 +2,7 @@ type SignInResult = { ok: true } | { ok: false, message: string }
 
 const tokenKey = 'sokong.token'
 const roleKey = 'sokong.role'
+const nameKey = 'sokong.name'
 
 export function useAuth() {
   const config = useRuntimeConfig()
@@ -16,9 +17,15 @@ export function useAuth() {
       return sessionStorage.getItem(roleKey)
     },
 
+    name(): string {
+      if (typeof sessionStorage === 'undefined') return ''
+      return sessionStorage.getItem(nameKey) ?? ''
+    },
+
     clearToken() {
       sessionStorage.removeItem(tokenKey)
       sessionStorage.removeItem(roleKey)
+      sessionStorage.removeItem(nameKey)
     },
 
     async signIn(body: { email: string, password: string }): Promise<SignInResult> {
@@ -33,12 +40,15 @@ export function useAuth() {
       if (response.status === 200) {
         const payload = await response.json().catch(() => null) as {
           token?: unknown
-          account?: { role?: unknown }
+          account?: { role?: unknown, name?: unknown }
         } | null
         if (typeof payload?.token !== 'string' || payload.token === '') throw new Error('session was not created')
         sessionStorage.setItem(tokenKey, payload.token)
         if (typeof payload.account?.role === 'string' && payload.account.role !== '') {
           sessionStorage.setItem(roleKey, payload.account.role)
+        }
+        if (typeof payload.account?.name === 'string') {
+          sessionStorage.setItem(nameKey, payload.account.name)
         }
         return { ok: true }
       }
@@ -63,6 +73,7 @@ export function useAuth() {
       }
       sessionStorage.removeItem(tokenKey)
       sessionStorage.removeItem(roleKey)
+      sessionStorage.removeItem(nameKey)
     }
   }
 }

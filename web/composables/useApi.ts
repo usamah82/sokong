@@ -63,6 +63,8 @@ export type WorkerDetail = WorkerSummary & {
   members: WorkerMember[]
   looks: Look[]
   visit_at: string | null
+  bringing_basket: boolean | null
+  assigned_workers: string[] | null
 }
 
 type EnrolmentListResult =
@@ -76,6 +78,16 @@ type EnrolmentDetailResult =
 
 type LookResult =
   | { ok: true, look: Look }
+  | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
+
+export type VisitFields = {
+  visit_at: string
+  bringing_basket: boolean
+  assigned_workers: string[]
+}
+
+type VisitResult =
+  | { ok: true, visit: VisitFields }
   | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
 
 export type LocalityBoundary = {
@@ -176,6 +188,24 @@ export function useApi() {
       if (response.status === 401) return { ok: false, reason: 'unauthenticated' }
       if (response.status === 404) return { ok: false, reason: 'missing' }
       throw new Error('enrolment was not read')
+    },
+
+    async scheduleVisit(id: string, body: VisitFields): Promise<VisitResult> {
+      const token = sessionStorage.getItem('sokong.token')
+      const response = await fetch(new URL(`/enrolments/${id}/visit`, config.public.apiBase), {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body)
+      })
+      if (response.status === 200) return { ok: true, visit: await response.json() as VisitFields }
+      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
+      if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
+      throw new Error('visit was not saved')
     },
 
     async addLook(id: string, note: string): Promise<LookResult> {

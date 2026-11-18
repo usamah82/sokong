@@ -25,6 +25,6 @@ class SessionsController < ApplicationController
 
   private
     def account_json(account)
-      { id: account.id, email: account.email, role: account.role }
+      { id: account.id, email: account.email, role: account.role, name: account.name }
     end
 end

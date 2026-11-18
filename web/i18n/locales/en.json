@@ -30,7 +30,19 @@
     "no": "No",
     "looks": "Looks",
     "note": "Note",
-    "addNote": "Add note"
+    "addNote": "Add note",
+    "preVisit": "Pre-visit",
+    "aim": "Aim for a visit within a week of the enrolment.",
+    "setBefore": "Set the visit before recording it.",
+    "visitTime": "Visit time",
+    "visitInvalid": "Visit time is invalid",
+    "bringingBasket": "Bringing a basket",
+    "assignedWorkers": "Assigned workers",
+    "addWorker": "Add a worker",
+    "setVisit": "Set visit",
+    "changeVisit": "Change visit",
+    "workerRequired": "Assigned worker is required",
+    "late": "This visit is later than a week after the enrolment."
   },
   "progress": {
     "mark": "Sokong",
