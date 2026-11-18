@@ -1642,6 +1642,94 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal stored, enrolment.verification.reload.house
   end
 
+  test "what they need stores consent and rejects a non-boolean" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: {
+        place: "own", has_water: nil, has_electricity: nil, sleeping_rooms: nil,
+        safe: nil, meals: "", basket: "", notes: ""
+      },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    house = enrolment.verification.reload.house
+
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: {}, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["need_most"]
+    assert_nil response.parsed_body["consent_given"]
+    assert_equal "", response.parsed_body["notes"]
+
+    travel_to Time.utc(2026, 11, 18, 6, 0, 0) do
+      put "/enrolments/#{enrolment.id}/verification/needs",
+        params: {
+          need_most: " School supplies ", consent_given: true, notes: " Quiet ",
+          worker_name: "Hacker", recorded_at: "1999-01-01T00:00:00Z", wealth: "hidden"
+        },
+        headers: bearer(token), as: :json
+    end
+    assert_response :ok
+    assert_equal "School supplies", response.parsed_body["need_most"]
+    assert_equal true, response.parsed_body["consent_given"]
+    assert_equal "Quiet", response.parsed_body["notes"]
+    assert_equal "Aman", response.parsed_body["worker_name"]
+    assert_equal "2026-11-18T06:00:00Z", response.parsed_body["recorded_at"]
+    assert_not response.parsed_body.key?("wealth")
+    assert_no_enqueued_jobs
+    assert_equal house, enrolment.verification.reload.house
+
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { need_most: "", consent_given: false, notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal false, response.parsed_body["consent_given"]
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { consent_given: nil },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_nil response.parsed_body["consent_given"]
+    stored = enrolment.verification.reload.needs
+
+    [
+      [ "yes", "Consent is invalid" ],
+      [ 1, "Consent is invalid" ],
+      [ [ false ], "Consent is invalid" ]
+    ].each do |value, message|
+      put "/enrolments/#{enrolment.id}/verification/needs",
+        params: { consent_given: value },
+        headers: bearer(token), as: :json
+      assert_stage_error message, "consent_given" => [ "is invalid" ]
+    end
+
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { need_most: " #{'n' * 2000} ", notes: " #{'m' * 2000} ", consent_given: true },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "n" * 2000, response.parsed_body["need_most"]
+    assert_equal "m" * 2000, response.parsed_body["notes"]
+    stored = enrolment.verification.reload.needs
+
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { need_most: "n" * 2001, consent_given: "yes", notes: 12 },
+      headers: bearer(token), as: :json
+    assert_stage_error "What do you need most? is too long",
+      "need_most" => [ "is too long" ],
+      "consent_given" => [ "is invalid" ],
+      "notes" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { need_most: 12 },
+      headers: bearer(token), as: :json
+    assert_stage_error "What do you need most? is invalid", "need_most" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { notes: "m" * 2001 },
+      headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is too long", "notes" => [ "is too long" ]
+    assert_equal stored, enrolment.verification.reload.needs
+    assert_equal house, enrolment.verification.reload.house
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
