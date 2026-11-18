@@ -423,14 +423,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The house stage records the place, rent, utilities, safety, meals, and the basket. Rent opens the amount and the behind question. No on safety opens what feels unsafe. The basket is the last question before "Anything else they said".
 
 **Acceptance criteria:**
-- [ ] "This place" offers Own, Rent, Staying with someone, and Temporary. Rent shows "Rent per month" and "Are you behind on payments?". Water and electricity stay Yes and No. "How many meals a day?" offers the four spec labels.
-- [ ] A place other than Rent hides the rent follow-ups and sends them empty. Yes or an unselected safety answer hides "What feels unsafe?" and sends it empty.
-- [ ] Leaving the stage saves it. `readonly` renders the stored answers as text. The basket field is on this stage.
+- [x] "This place" offers Own, Rent, Staying with someone, and Temporary. Rent shows "Rent per month" and "Are you behind on payments?". Water and electricity stay Yes and No. "How many meals a day?" offers the four spec labels.
+- [x] A place other than Rent hides the rent follow-ups and sends them empty. Yes or an unselected safety answer hides "What feels unsafe?" and sends it empty.
+- [x] Leaving the stage saves it. `readonly` renders the stored answers as text. The basket field is on this stage.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: choose Rent and No for safety, confirm the follow-ups, then choose Own and confirm the rent fields are gone.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: choose Rent and No for safety, confirm the follow-ups, then choose Own and confirm the rent fields are gone.
 
 **Dependencies:** Tasks 7 and 13
 
