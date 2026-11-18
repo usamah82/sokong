@@ -3,6 +3,7 @@ class Enrolment < ApplicationRecord
   belongs_to :locality
   has_many :members, -> { order(:position) }, through: :family_unit
   has_many :looks, -> { order(:looked_at, :created_at) }, dependent: :destroy
+  has_one :verification, dependent: :destroy
 
   VISIT_AT_FORMAT = /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})\z/
 
