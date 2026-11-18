@@ -1432,6 +1432,81 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal column, enrolment.verification.reload.daily_life
   end
 
+  test "the house stores rent and an unsafe place only when those answers open" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    who = who_is_here_body(enrolment)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: who, headers: bearer(token), as: :json
+    assert_response :ok
+    who_saved = enrolment.verification.reload.who_is_here
+
+    blank = {
+      place: "", has_water: nil, has_electricity: nil, sleeping_rooms: nil,
+      safe: nil, meals: "", basket: "", notes: ""
+    }
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: blank, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "", response.parsed_body["place"]
+    assert_nil response.parsed_body["rent_per_month"]
+    assert_nil response.parsed_body["behind_on_payments"]
+    assert_equal "", response.parsed_body["unsafe_detail"]
+    assert_equal who_saved, enrolment.verification.reload.who_is_here
+
+    rent = blank.merge(
+      place: "rent", rent_per_month: 500, behind_on_payments: true,
+      has_water: true, has_electricity: false, sleeping_rooms: 2,
+      safe: false, unsafe_detail: " The stairs ", meals: "two", basket: " Rice ", notes: " Quiet "
+    )
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: rent, headers: bearer(token), as: :json
+    assert_response :ok
+    saved = response.parsed_body
+    assert_equal "rent", saved["place"]
+    assert_equal 500, saved["rent_per_month"]
+    assert_equal true, saved["behind_on_payments"]
+    assert_equal "The stairs", saved["unsafe_detail"]
+    assert_equal "Rice", saved["basket"]
+    assert_equal "Quiet", saved["notes"]
+
+    closed = rent.merge(place: "own", safe: true, rent_per_month: "nope", behind_on_payments: "yes", unsafe_detail: "x" * 2001)
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: closed, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "own", response.parsed_body["place"]
+    assert_nil response.parsed_body["rent_per_month"]
+    assert_nil response.parsed_body["behind_on_payments"]
+    assert_equal "", response.parsed_body["unsafe_detail"]
+    stored = enrolment.verification.reload.house
+
+    [
+      [ { place: "palace" }, "This place is invalid", "place", "is invalid" ],
+      [ { meals: "five" }, "How many meals a day? is invalid", "meals", "is invalid" ],
+      [ { sleeping_rooms: "2" }, "How many rooms do people sleep in? is invalid", "sleeping_rooms", "is invalid" ],
+      [ { sleeping_rooms: 1.5 }, "How many rooms do people sleep in? is invalid", "sleeping_rooms", "is invalid" ],
+      [ { sleeping_rooms: 100 }, "How many rooms do people sleep in? is invalid", "sleeping_rooms", "is invalid" ],
+      [ { rent_per_month: -1 }, "Rent per month is invalid", "rent_per_month", "is invalid" ],
+      [ { has_water: "yes" }, "Does it have water? is invalid", "has_water", "is invalid" ],
+      [ { basket: "b" * 501 }, "Basket is too long", "basket", "is too long" ]
+    ].each do |override, message, field, detail|
+      put "/enrolments/#{enrolment.id}/verification/house",
+        params: rent.merge(override), headers: bearer(token), as: :json
+      assert_stage_error message, field => [ detail ]
+    end
+    assert_equal stored, enrolment.verification.reload.house
+    assert_equal who_saved, enrolment.verification.who_is_here
+
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: rent.merge(sleeping_rooms: 0, rent_per_month: 999_999_999, basket: "b" * 500),
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal 0, response.parsed_body["sleeping_rooms"]
+    assert_equal 999_999_999, response.parsed_body["rent_per_month"]
+    assert_equal "b" * 500, response.parsed_body["basket"]
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
