@@ -718,7 +718,7 @@ describe('worker cases', () => {
       job: '',
       monthly_amount: null
     })
-    stubFetch(() => ({ status: 200, body: stored }))
+    const calls = stubFetch(() => ({ status: 200, body: stored }))
     sessionStorage.setItem('sokong.token', 'secret-token')
     const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
     await vi.waitFor(() => expect(page.find('#person-tab-1').exists()).toBe(true))
@@ -727,27 +727,73 @@ describe('worker cases', () => {
     expect(page.get('#enrolment-facts').text()).toContain('Siti')
     expect(page.get('#enrolment-facts').text()).toContain('Female')
     expect(page.get('#enrolment-facts').text()).not.toContain('+60129876543')
+    expect(page.find('#absent-since').exists()).toBe(false)
+    expect(page.find('#others-detail').exists()).toBe(false)
+    expect(page.find('#care-detail').exists()).toBe(false)
+    expect(page.find('#document-other-0').exists()).toBe(false)
 
     await page.get('#person-relationship').setValue('child')
     expect(page.find('#person-origin').exists()).toBe(false)
     await page.get('#person-relationship').setValue('spouse')
     expect(page.find('#person-origin').exists()).toBe(true)
+    await page.get('#person-origin').setValue('Kelantan')
     await page.get('#person-absent').setValue(true)
     expect(page.find('#absent-since').exists()).toBe(true)
     expect(page.find('#absent-reason').exists()).toBe(true)
+    await page.get('#absent-since').setValue('2020-01-01')
+    await page.get('#absent-reason').setValue('Work')
     await page.get('#others-stay').setValue('yes')
     expect(page.find('#others-detail').exists()).toBe(true)
+    await page.get('#others-detail').setValue('A cousin')
     await page.get('#care-for-parents').setValue('yes')
     expect(page.find('#care-detail').exists()).toBe(true)
+    await page.get('#care-detail').setValue('Mother')
     await page.get('#add-document').trigger('click')
     expect(page.find('#document-kind-0').exists()).toBe(true)
     expect(page.find('#document-number-0').exists()).toBe(true)
     await page.get('#document-kind-0').setValue('other')
     expect(page.find('#document-other-0').exists()).toBe(true)
+    await page.get('#document-other-0').setValue('Card')
 
     await page.get('#add-person').trigger('click')
     expect(page.find('#remove-person').exists()).toBe(true)
     expect(page.find('#enrolment-facts').exists()).toBe(false)
+    await page.get('#remove-person').trigger('click')
+
+    await page.get('#person-relationship').setValue('child')
+    await page.get('#person-absent').setValue(false)
+    await page.get('#others-stay').setValue('no')
+    await page.get('#care-for-parents').setValue('no')
+    await page.get('#document-kind-0').setValue('passport')
+    await page.get('#document-number-0').setValue('A1')
+    expect(page.find('#person-origin').exists()).toBe(false)
+    expect(page.find('#absent-since').exists()).toBe(false)
+    expect(page.find('#others-detail').exists()).toBe(false)
+    expect(page.find('#care-detail').exists()).toBe(false)
+    expect(page.find('#document-other-0').exists()).toBe(false)
+
+    await page.get('#person-name').setValue('Siti')
+    await page.get('#person-tab-0').trigger('click')
+    await page.get('#person-name').setValue('Rahim')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1))
+    const put = calls.find((call) => call.method === 'PUT')
+    expect(put!.json).toMatchObject({
+      others_stay: false,
+      others_stay_detail: '',
+      care_for_parents: false,
+      care_for_parents_detail: ''
+    })
+    const people = put!.json!.people as Array<Record<string, unknown>>
+    expect(people[1]).toMatchObject({
+      name: 'Siti',
+      relationship: 'child',
+      origin: '',
+      absent: false,
+      absent_since: '',
+      absent_reason: '',
+      documents: [ { kind: 'passport', number: 'A1', other_label: '' } ]
+    })
     vi.unstubAllGlobals()
   })
 
