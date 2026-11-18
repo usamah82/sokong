@@ -14,9 +14,10 @@ class SessionsTest < ActionDispatch::IntegrationTest
     assert_response :ok
     body = response.parsed_body
     assert_equal %w[account token], body.keys.sort
-    assert_equal %w[email id role], body["account"].keys.sort
+    assert_equal %w[email id name role], body["account"].keys.sort
     assert_equal account.id, body.dig("account", "id")
     assert_equal "Siti@Example.com", body.dig("account", "email")
+    assert_equal account.name, body.dig("account", "name")
     assert_equal "submitter", body.dig("account", "role")
 
     raw = body["token"]

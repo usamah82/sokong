@@ -2,6 +2,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrolmentDetail from '../../pages/enrolments/[id].vue'
 import EnrolmentsPage from '../../pages/enrolments/index.vue'
+import { formatVisit, visitIsLate } from '../../utils/visitTime'
 
 const unlinked = 'No locality is linked to this account.'
 const empty = 'No enrolments yet.'
@@ -79,7 +80,9 @@ function detail(looks: Array<{ id: string, worker_name: string, looked_at: strin
       }
     ],
     looks,
-    visit_at: null
+    visit_at: null as string | null,
+    bringing_basket: null as boolean | null,
+    assigned_workers: null as string[] | null
   }
 }
 
@@ -410,10 +413,124 @@ describe('worker cases', () => {
     stubFetch(() => ({ status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }))
     sessionStorage.setItem('sokong.token', 'secret-token')
     sessionStorage.setItem('sokong.role', 'worker')
+    sessionStorage.setItem('sokong.name', 'Aman')
     await mountSuspended(EnrolmentsPage)
     await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
     expect(sessionStorage.getItem('sokong.role')).toBeNull()
+    expect(sessionStorage.getItem('sokong.name')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('formats a visit in the browser zone and flags a time past a week', () => {
+    expect(formatVisit('2026-11-24T01:00:00Z', 'Asia/Kuala_Lumpur')).toBe('24 November 2026 at 09:00')
+    expect(visitIsLate('2026-11-17T01:00:00Z', '2026-11-24T01:00:00Z')).toBe(false)
+    expect(visitIsLate('2026-11-17T01:00:00Z', '2026-11-24T01:00:01Z')).toBe(true)
+  })
+
+  it('shows pre-visit and does not send an empty time or a blank name', async () => {
+    const calls = stubFetch(() => ({ status: 200, body: detail([ emptyLook ]) }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.name', 'Aman')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.text()).toContain('Pre-visit'))
+    expect(page.text()).toContain('Aim for a visit within a week of the enrolment.')
+    expect(page.text()).toContain('Set the visit before recording it.')
+    expect(page.text()).toContain('Visit time')
+    expect(page.text()).toContain('Bringing a basket')
+    expect(page.text()).toContain('Assigned workers')
+    expect(page.get<HTMLInputElement>('#assigned-worker-0').element.value).toBe('Aman')
+    expect(page.text()).not.toContain('Verification Interview')
+    expect(page.text()).not.toContain('Post-visit')
+    expect(page.text()).not.toContain('Mark qualified')
+    expect(page.text()).toContain('Rahim')
+    expect(page.text()).toContain(noHelp)
+    expect(page.find('#note').exists()).toBe(true)
+
+    await page.get('form.pre-visit').trigger('submit')
+    expect(page.text()).toContain('Visit time is invalid')
+    expect(calls.filter((call) => call.method === 'PATCH')).toHaveLength(0)
+
+    await page.get('#visit-time').setValue('2026-11-24T09:00')
+    await page.get('#add-worker').trigger('click')
+    await page.get('form.pre-visit').trigger('submit')
+    expect(calls.filter((call) => call.method === 'PATCH')).toHaveLength(0)
+    expect(page.get<HTMLInputElement>('#assigned-worker-0').element.value).toBe('Aman')
+    expect(page.get('#assigned-worker-1').attributes('aria-invalid')).toBe('true')
+    vi.unstubAllGlobals()
+  })
+
+  it('saves a visit and shows the local time', async () => {
+    const calls = stubFetch((method) => {
+      if (method === 'PATCH') {
+        return {
+          status: 200,
+          body: {
+            visit_at: '2026-11-24T01:00:00Z',
+            bringing_basket: true,
+            assigned_workers: [ 'Aman', 'Farid' ]
+          }
+        }
+      }
+      return { status: 200, body: detail([ emptyLook ]) }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.name', 'Aman')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#visit-time').exists()).toBe(true))
+    await page.get('#visit-time').setValue('2026-11-24T09:00')
+    await page.get('#bringing-basket').setValue(true)
+    await page.get('#add-worker').trigger('click')
+    await page.get('#assigned-worker-1').setValue('Farid')
+    await page.get('form.pre-visit').trigger('submit')
+    await vi.waitFor(() => expect(page.text()).toContain('Change visit'))
+    expect(page.text()).not.toContain('Set the visit before recording it.')
+    const patch = calls.find((call) => call.method === 'PATCH')
+    expect(new URL(patch!.url).pathname).toBe('/enrolments/case-1/visit')
+    expect(patch!.json).toMatchObject({
+      bringing_basket: true,
+      assigned_workers: [ 'Aman', 'Farid' ]
+    })
+    expect(typeof patch!.json!.visit_at).toBe('string')
+    const shown = page.get('#visit-clock')
+    expect(shown.attributes('datetime')).toBe('2026-11-24T01:00:00Z')
+    expect(shown.text()).toBe(formatVisit('2026-11-24T01:00:00Z', Intl.DateTimeFormat().resolvedOptions().timeZone))
+    expect(page.text()).toContain('This visit is later than a week after the enrolment.')
+    expect(page.text()).not.toContain('Verification Interview')
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps an on-time visit quiet and sends a checkbox change at the same instant', async () => {
+    const stored = detail([ emptyLook ])
+    stored.submitted_at = '2026-11-17T01:00:00Z'
+    stored.visit_at = '2026-11-24T01:00:00Z'
+    stored.bringing_basket = false
+    stored.assigned_workers = [ 'Aman' ]
+    const calls = stubFetch((method) => {
+      if (method === 'PATCH') {
+        return {
+          status: 200,
+          body: { visit_at: stored.visit_at, bringing_basket: true, assigned_workers: [ 'Aman' ] }
+        }
+      }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.text()).toContain('Change visit'))
+    expect(page.text()).not.toContain('Set the visit before recording it.')
+    expect(page.text()).not.toContain('This visit is later than a week after the enrolment.')
+    expect(page.get('#visit-clock').attributes('datetime')).toBe('2026-11-24T01:00:00Z')
+    await page.get('#bringing-basket').setValue(true)
+    await page.get('form.pre-visit').trigger('submit')
+    await vi.waitFor(() => expect(calls.some((call) => call.method === 'PATCH')).toBe(true))
+    const patch = calls.find((call) => call.method === 'PATCH')
+    expect(patch!.json).toMatchObject({
+      visit_at: '2026-11-24T01:00:00Z',
+      bringing_basket: true,
+      assigned_workers: [ 'Aman' ]
+    })
+    expect(page.text()).not.toContain('visit message')
     vi.unstubAllGlobals()
   })
 })

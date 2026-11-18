@@ -59,7 +59,7 @@ describe('sign in', () => {
   it('stores the token for a confirmed pair and opens enrolments', async () => {
     const calls = stubSession(200, {
       token: 'secret-token',
-      account: { id: 'account-1', email: 'Siti@Example.com', role: 'submitter' }
+      account: { id: 'account-1', email: 'Siti@Example.com', role: 'submitter', name: 'Aman' }
     })
     sessionStorage.setItem('other', 'kept')
     const page = await mountSuspended(SignInPage)
@@ -93,6 +93,7 @@ describe('sign in', () => {
     expect(page.text()).not.toContain('correct horse battery staple')
     expect(sessionStorage.getItem('sokong.token')).toBe('secret-token')
     expect(sessionStorage.getItem('sokong.role')).toBe('submitter')
+    expect(sessionStorage.getItem('sokong.name')).toBe('Aman')
     expect(sessionStorage.getItem('other')).toBe('kept')
     vi.unstubAllGlobals()
   })
@@ -170,6 +171,7 @@ describe('sign in', () => {
     }))
     sessionStorage.setItem('sokong.token', 'secret-token')
     sessionStorage.setItem('sokong.role', 'submitter')
+    sessionStorage.setItem('sokong.name', 'Aman')
     sessionStorage.setItem('other', 'kept')
     const page = await mountSuspended(SignInPage)
     await vi.waitFor(() => {
@@ -201,6 +203,7 @@ describe('sign in', () => {
     expect(calls[1]!.authorization).toBeNull()
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
     expect(sessionStorage.getItem('sokong.role')).toBeNull()
+    expect(sessionStorage.getItem('sokong.name')).toBeNull()
     vi.unstubAllGlobals()
   })
 
