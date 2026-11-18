@@ -1241,6 +1241,9 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       params: { people: [ limits ] }, headers: bearer(token), as: :json
     assert_response :ok
     assert_equal "j" * 200, response.parsed_body["people"].sole["job"]
+    assert_equal "s" * 200, response.parsed_body["people"].sole["school_where"]
+    assert_equal "p" * 2000, response.parsed_body["people"].sole["previous_jobs"]
+    assert_equal "k" * 2000, response.parsed_body["people"].sole["skills"]
     assert_equal 999_999_999, response.parsed_body["people"].sole["monthly_amount"]
 
     put "/enrolments/#{enrolment.id}/verification/daily_life",
@@ -1267,6 +1270,151 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal stored, enrolment.verification.reload.daily_life
     assert_equal who_saved, enrolment.verification.who_is_here
     assert_nil enrolment.verification.formation
+  end
+
+  test "a day in their life keeps each side, every person, and a blank answer" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    first = SecureRandom.uuid
+    second = SecureRandom.uuid
+    travel_to Time.utc(2026, 11, 18, 5, 0, 0) do
+      put "/enrolments/#{enrolment.id}/verification/daily_life",
+        params: {
+          people: [
+            { person_id: first, working: true, in_school: true, job: "", monthly_amount: nil, skills: nil },
+            { person_id: second, working: true, in_school: false, job: "Cook", monthly_amount: 0, skills: "Knives" }
+          ],
+          worker_name: "Hacker",
+          recorded_at: "1999-01-01T00:00:00Z"
+        },
+        headers: bearer(token), as: :json
+    end
+    assert_response :ok
+    body = response.parsed_body
+    assert_equal "Aman", body["worker_name"]
+    assert_equal "2026-11-18T05:00:00Z", body["recorded_at"]
+    assert_equal [ first, second ], body["people"].map { |person| person["person_id"] }
+    assert_equal true, body["people"][0]["working"]
+    assert_equal true, body["people"][0]["in_school"]
+    assert_equal "", body["people"][0]["job"]
+    assert_nil body["people"][0]["monthly_amount"]
+    assert_equal "", body["people"][0]["skills"]
+    assert_equal "", body["people"][0]["school_going"]
+
+    work_only = {
+      person_id: first, working: true, in_school: false, job: "Cook", monthly_amount: 40,
+      skills: "Knives", school_where: "s" * 201, school_travel: false, school_going: "x" * 2001
+    }
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ work_only ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    saved = response.parsed_body["people"].sole
+    assert_equal "Cook", saved["job"]
+    assert_equal 40, saved["monthly_amount"]
+    assert_equal "Knives", saved["skills"]
+    assert_equal "", saved["school_going"]
+    assert_equal "", saved["school_where"]
+    assert_equal "", saved["school_travel"]
+
+    school_only = {
+      person_id: first, working: nil, in_school: true, job: "j" * 201, monthly_amount: "800",
+      skills: "Still", school_going: "Well", school_where: "Here", school_travel: "Bus"
+    }
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ school_only ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    saved = response.parsed_body["people"].sole
+    assert_nil saved["working"]
+    assert_equal "", saved["job"]
+    assert_nil saved["monthly_amount"]
+    assert_equal "Still", saved["skills"]
+    assert_equal "Well", saved["school_going"]
+    assert_equal "Here", saved["school_where"]
+    assert_equal "Bus", saved["school_travel"]
+    column = enrolment.verification.reload.daily_life
+
+    long = {
+      person_id: first, working: true, in_school: true, skills: "",
+      wished_work: "w" * 2000, school_going: "g" * 2000, school_travel: "t" * 2000,
+      school_where: "s" * 200, previous_jobs: "p" * 2000
+    }
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    saved = response.parsed_body["people"].sole
+    assert_equal "w" * 2000, saved["wished_work"]
+    assert_equal "g" * 2000, saved["school_going"]
+    assert_equal "t" * 2000, saved["school_travel"]
+    assert_equal "s" * 200, saved["school_where"]
+    assert_equal "p" * 2000, saved["previous_jobs"]
+    column = enrolment.verification.reload.daily_life
+
+    [
+      [ { wished_work: "w" * 2001 }, "If you wish for a new job or income, what would that be? is too long", "wished_work" ],
+      [ { school_going: "g" * 2001 }, "How is school going? is too long", "school_going" ],
+      [ { school_travel: "t" * 2001 }, "How do you get there? is too long", "school_travel" ]
+    ].each do |override, message, field|
+      put "/enrolments/#{enrolment.id}/verification/daily_life",
+        params: { people: [ long.merge(override) ] }, headers: bearer(token), as: :json
+      assert_stage_error message, field => [ "is too long" ]
+    end
+
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(job: "j" * 201, monthly_amount: "800", school_where: "s" * 201) ] },
+      headers: bearer(token), as: :json
+    assert_stage_error "What job? is too long",
+      "job" => [ "is too long" ],
+      "monthly_amount" => [ "is invalid" ],
+      "school_where" => [ "is too long" ]
+
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(job: 12) ] }, headers: bearer(token), as: :json
+    assert_stage_error "What job? is invalid", "job" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(school_going: 12) ] }, headers: bearer(token), as: :json
+    assert_stage_error "How is school going? is invalid", "school_going" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(skills: 12) ] }, headers: bearer(token), as: :json
+    assert_stage_error "Any skills to highlight? is invalid", "skills" => [ "is invalid" ]
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(in_school: "yes") ] }, headers: bearer(token), as: :json
+    assert_stage_error "Are you in school? is invalid", "in_school" => [ "is invalid" ]
+
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(job: " #{'j' * 200} ") ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "j" * 200, response.parsed_body["people"].sole["job"]
+    column = enrolment.verification.reload.daily_life
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ long.merge(job: " #{'j' * 201} ") ] }, headers: bearer(token), as: :json
+    assert_stage_error "What job? is too long", "job" => [ "is too long" ]
+
+    neither = { person_id: first, working: false, in_school: false, skills: "k" * 2000, job: "j" * 201 }
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ neither ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "k" * 2000, response.parsed_body["people"].sole["skills"]
+    assert_equal "", response.parsed_body["people"].sole["job"]
+    column = enrolment.verification.reload.daily_life
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ neither.merge(skills: "k" * 2001) ] }, headers: bearer(token), as: :json
+    assert_stage_error "Any skills to highlight? is too long", "skills" => [ "is too long" ]
+
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: {}, headers: bearer(token), as: :json
+    assert_stage_error "Person is invalid", "person_id" => [ "is invalid" ]
+    [
+      { people: "nope" },
+      { people: [ "nope", long ] },
+      { people: [ long.merge(person_id: "nope") ] },
+      { people: [ long, long.merge(person_id: first) ] }
+    ].each do |params|
+      put "/enrolments/#{enrolment.id}/verification/daily_life",
+        params: params, headers: bearer(token), as: :json
+      assert_stage_error "Person is invalid", "person_id" => [ "is invalid" ]
+    end
+    assert_equal column, enrolment.verification.reload.daily_life
   end
 
   private

@@ -52,6 +52,14 @@ class RequestLogFilterTest < ActiveSupport::TestCase
           "relationship" => "spouse",
           "identity" => "verified",
           "origin" => "Kedah",
+          "working" => true,
+          "in_school" => false,
+          "previous_jobs" => "sewing",
+          "wished_work" => "a shop",
+          "skills" => "patterns",
+          "school_going" => "well",
+          "school_where" => "kampung",
+          "school_travel" => "walk",
           "absent_since" => "2024-01-02",
           "absent_reason" => "Work",
           "documents" => [
@@ -92,6 +100,14 @@ class RequestLogFilterTest < ActiveSupport::TestCase
     assert_equal "female", person["gender"]
     assert_equal "spouse", person["relationship"]
     assert_equal "verified", person["identity"]
+    assert_equal true, person["working"]
+    assert_equal false, person["in_school"]
+    assert_equal "[FILTERED]", person["previous_jobs"]
+    assert_equal "[FILTERED]", person["wished_work"]
+    assert_equal "[FILTERED]", person["skills"]
+    assert_equal "[FILTERED]", person["school_going"]
+    assert_equal "[FILTERED]", person["school_where"]
+    assert_equal "[FILTERED]", person["school_travel"]
     document = person["documents"].sole
     assert_equal "national_id", document["kind"]
     assert_equal "[FILTERED]", document["number"]
