@@ -101,14 +101,24 @@ function attempt() {
         openIndex.value = index
         return null
       }
+      if (person.previous_jobs.trim().length > 2000) {
+        error.value = t('interview.previousTooLong')
+        openIndex.value = index
+        return null
+      }
+      if (person.wished_work.trim().length > 2000) {
+        error.value = t('interview.wishedTooLong')
+        openIndex.value = index
+        return null
+      }
       if (amount(person.monthly_amount) === false) {
         error.value = t('interview.amountInvalid')
         openIndex.value = index
         return null
       }
     }
-    if (person.skills.trim().length > 2000 || person.previous_jobs.trim().length > 2000 || person.wished_work.trim().length > 2000) {
-      error.value = t('interview.notesTooLong')
+    if (person.skills.trim().length > 2000) {
+      error.value = t('interview.skillsTooLong')
       openIndex.value = index
       return null
     }
@@ -166,13 +176,18 @@ defineExpose({ attempt, fail })
       </button>
     </div>
     <template v-if="readonly">
-      <article v-for="person in people" :key="person.person_id" class="person">
-        <p>{{ labelFor(person, 0) }}</p>
+      <article v-for="(person, index) in people" :key="person.person_id" class="person">
+        <p>{{ labelFor(person, index) }}</p>
         <p><span class="label">{{ t('interview.working') }}</span> {{ person.working === 'yes' ? t('worker.yes') : person.working === 'no' ? t('worker.no') : '' }}</p>
         <p v-if="person.working === 'yes'"><span class="label">{{ t('interview.job') }}</span> {{ person.job }}</p>
         <p v-if="person.working === 'yes'"><span class="label">{{ t('interview.amount') }}</span> {{ person.monthly_amount }}</p>
+        <p v-if="person.working === 'yes'"><span class="label">{{ t('interview.previousJobs') }}</span> {{ person.previous_jobs }}</p>
+        <p v-if="person.working === 'yes'"><span class="label">{{ t('interview.wishedWork') }}</span> {{ person.wished_work }}</p>
         <p><span class="label">{{ t('interview.skills') }}</span> {{ person.skills }}</p>
         <p><span class="label">{{ t('interview.inSchool') }}</span> {{ person.in_school === 'yes' ? t('worker.yes') : person.in_school === 'no' ? t('worker.no') : '' }}</p>
+        <p v-if="person.in_school === 'yes'"><span class="label">{{ t('interview.schoolGoing') }}</span> {{ person.school_going }}</p>
+        <p v-if="person.in_school === 'yes'"><span class="label">{{ t('interview.schoolWhere') }}</span> {{ person.school_where }}</p>
+        <p v-if="person.in_school === 'yes'"><span class="label">{{ t('interview.schoolTravel') }}</span> {{ person.school_travel }}</p>
       </article>
       <p><span class="label">{{ t('interview.notes') }}</span> {{ notes }}</p>
     </template>
@@ -229,10 +244,10 @@ defineExpose({ attempt, fail })
       <label class="field">{{ t('interview.notes') }}
         <textarea id="daily-notes" v-model="notes" rows="3" />
       </label>
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
     </template>
     <label v-else class="field">{{ t('interview.notes') }}
       <textarea id="daily-notes" v-model="notes" rows="3" />
     </label>
+    <p v-if="error" class="error" role="alert">{{ error }}</p>
   </div>
 </template>

@@ -1138,6 +1138,9 @@ describe('worker cases', () => {
     await page.get('#monthly-amount').setValue('800')
     await page.get('#previous-jobs').setValue('Driving')
     await page.get('#wished-work').setValue('A shop')
+    await page.get('#in-school').setValue('yes')
+    expect(page.find('#job').exists()).toBe(true)
+    expect(page.find('#school-where').exists()).toBe(true)
     await page.get('#in-school').setValue('no')
     await page.get('#day-tab-1').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
@@ -1147,6 +1150,7 @@ describe('worker cases', () => {
     await page.get('#working').setValue('yes')
     await page.get('#job').setValue('Should be cleared')
     await page.get('#monthly-amount').setValue('50')
+    await page.get('#previous-jobs').setValue('a'.repeat(2001))
     await page.get('#working').setValue('no')
     expect(page.find('#job').exists()).toBe(false)
     await page.get('#in-school').setValue('yes')
@@ -1222,12 +1226,12 @@ describe('worker cases', () => {
           job: 'A stall',
           monthly_amount: 800,
           previous_jobs: 'Driving',
-          wished_work: '',
+          wished_work: 'A shop',
           skills: 'Cooking',
-          in_school: false,
-          school_going: '',
-          school_where: '',
-          school_travel: ''
+          in_school: true,
+          school_going: 'Well',
+          school_where: 'The village school',
+          school_travel: 'Walk'
         } ],
         notes: 'A long day'
       }
@@ -1239,7 +1243,12 @@ describe('worker cases', () => {
     await page.get('#stage-daily_life').trigger('click')
     expect(page.find('#working').exists()).toBe(false)
     expect(page.text()).toContain('A stall')
+    expect(page.text()).toContain('Driving')
+    expect(page.text()).toContain('A shop')
     expect(page.text()).toContain('Cooking')
+    expect(page.text()).toContain('Well')
+    expect(page.text()).toContain('The village school')
+    expect(page.text()).toContain('Walk')
     expect(page.text()).toContain('A long day')
     await page.get('#next-stage').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
