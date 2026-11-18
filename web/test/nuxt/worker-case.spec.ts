@@ -854,6 +854,7 @@ describe('worker cases', () => {
     expect(page.find('#add-document').exists()).toBe(false)
     expect(page.find('#remove-person').exists()).toBe(false)
     expect(page.find('#person-name').exists()).toBe(false)
+    expect(page.text()).toContain('Bringing a basket No')
     expect(page.text()).toContain('Verified')
     expect(page.text()).toContain('Card')
     expect(page.text()).toContain('A cousin')
