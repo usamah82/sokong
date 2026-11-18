@@ -7,7 +7,8 @@ class VerificationsController < ApplicationController
     "dynamics" => DynamicsStage,
     "daily_life" => DailyLifeStage,
     "house" => HouseStage,
-    "needs" => NeedsStage
+    "needs" => NeedsStage,
+    "boxes" => BoxesStage
   }.freeze
 
   def update
@@ -53,6 +54,9 @@ class VerificationsController < ApplicationController
     when "needs"
       verification.update!(needs: stored)
       render json: verification.needs
+    when "boxes"
+      verification.update!(boxes: stored)
+      render json: verification.boxes
     end
   end
 

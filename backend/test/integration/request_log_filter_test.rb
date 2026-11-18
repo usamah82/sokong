@@ -76,7 +76,9 @@ class RequestLogFilterTest < ActiveSupport::TestCase
       "hard_week" => "quiet",
       "who_steps_in" => "aunt",
       "children_at_home" => "two children",
-      "unsafe_detail" => "the stairs"
+      "unsafe_detail" => "the stairs",
+      "good_family_unit_gap" => "the father is away",
+      "basic_necessities_gap" => "rent is behind"
     )
 
     assert_equal "who_is_here", filtered["stage"]
@@ -92,6 +94,8 @@ class RequestLogFilterTest < ActiveSupport::TestCase
     assert_equal "[FILTERED]", filtered["who_steps_in"]
     assert_equal "[FILTERED]", filtered["children_at_home"]
     assert_equal "[FILTERED]", filtered["unsafe_detail"]
+    assert_equal "[FILTERED]", filtered["good_family_unit_gap"]
+    assert_equal "[FILTERED]", filtered["basic_necessities_gap"]
     person = filtered["people"].sole
     assert_equal "[FILTERED]", person["name"]
     assert_equal "[FILTERED]", person["phone"]

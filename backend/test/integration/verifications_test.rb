@@ -1730,6 +1730,103 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal house, enrolment.verification.reload.house
   end
 
+  test "post-visit stores both boxes and both gaps" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    put "/enrolments/#{enrolment.id}/verification/needs",
+      params: { need_most: "", consent_given: false, notes: "" },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    needs = enrolment.verification.reload.needs
+
+    put "/enrolments/#{enrolment.id}/verification/boxes",
+      params: {}, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_nil response.parsed_body["good_family_unit"]
+    assert_equal "", response.parsed_body["good_family_unit_gap"]
+    assert_nil response.parsed_body["basic_necessities"]
+    assert_equal "", response.parsed_body["basic_necessities_gap"]
+    assert_equal "", response.parsed_body["notes"]
+
+    travel_to Time.utc(2026, 11, 18, 6, 0, 0) do
+      put "/enrolments/#{enrolment.id}/verification/boxes",
+        params: {
+          good_family_unit: false, good_family_unit_gap: " The father is away ",
+          basic_necessities: false, basic_necessities_gap: "   ",
+          notes: " Quiet ", dependable_generation: true, accumulated_wealth: "hidden",
+          worker_name: "Hacker", recorded_at: "1999-01-01T00:00:00Z"
+        },
+        headers: bearer(token), as: :json
+    end
+    assert_response :ok
+    assert_equal false, response.parsed_body["good_family_unit"]
+    assert_equal "The father is away", response.parsed_body["good_family_unit_gap"]
+    assert_equal false, response.parsed_body["basic_necessities"]
+    assert_equal "", response.parsed_body["basic_necessities_gap"]
+    assert_equal "Quiet", response.parsed_body["notes"]
+    assert_equal "Aman", response.parsed_body["worker_name"]
+    assert_equal "2026-11-18T06:00:00Z", response.parsed_body["recorded_at"]
+    assert_not response.parsed_body.key?("dependable_generation")
+    assert_not response.parsed_body.key?("accumulated_wealth")
+    assert_equal needs, enrolment.verification.reload.needs
+
+    put "/enrolments/#{enrolment.id}/verification/boxes",
+      params: {
+        good_family_unit: true, good_family_unit_gap: "still written",
+        basic_necessities: nil, basic_necessities_gap: ""
+      },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal true, response.parsed_body["good_family_unit"]
+    assert_equal "still written", response.parsed_body["good_family_unit_gap"]
+    assert_nil response.parsed_body["basic_necessities"]
+    stored = enrolment.verification.reload.boxes
+
+    [
+      [ { good_family_unit: "yes" }, "Good family unit is invalid", "good_family_unit" ],
+      [ { good_family_unit: "true" }, "Good family unit is invalid", "good_family_unit" ],
+      [ { good_family_unit: "false" }, "Good family unit is invalid", "good_family_unit" ],
+      [ { good_family_unit: 1 }, "Good family unit is invalid", "good_family_unit" ],
+      [ { basic_necessities: "yes" }, "Basic necessities is invalid", "basic_necessities" ],
+      [ { basic_necessities: [ false ] }, "Basic necessities is invalid", "basic_necessities" ]
+    ].each do |extra, message, field|
+      put "/enrolments/#{enrolment.id}/verification/boxes",
+        params: extra, headers: bearer(token), as: :json
+      assert_stage_error message, field => [ "is invalid" ]
+    end
+    assert_equal stored, enrolment.verification.reload.boxes
+
+    put "/enrolments/#{enrolment.id}/verification/boxes",
+      params: {
+        good_family_unit: false, good_family_unit_gap: " #{'g' * 2000} ",
+        basic_necessities: true, basic_necessities_gap: " #{'b' * 2000} ",
+        notes: " #{'n' * 2000} "
+      },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "g" * 2000, response.parsed_body["good_family_unit_gap"]
+    assert_equal "b" * 2000, response.parsed_body["basic_necessities_gap"]
+    assert_equal "n" * 2000, response.parsed_body["notes"]
+    stored = enrolment.verification.reload.boxes
+
+    put "/enrolments/#{enrolment.id}/verification/boxes",
+      params: { good_family_unit_gap: "g" * 2001, basic_necessities_gap: 12, notes: "n" * 2001 },
+      headers: bearer(token), as: :json
+    assert_stage_error "Gap is too long",
+      "good_family_unit_gap" => [ "is too long" ],
+      "basic_necessities_gap" => [ "is invalid" ],
+      "notes" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/boxes",
+      params: { good_family_unit: "yes", basic_necessities: "yes" },
+      headers: bearer(token), as: :json
+    assert_stage_error "Good family unit is invalid",
+      "good_family_unit" => [ "is invalid" ],
+      "basic_necessities" => [ "is invalid" ]
+    assert_equal stored, enrolment.verification.reload.boxes
+    assert_equal needs, enrolment.verification.reload.needs
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
