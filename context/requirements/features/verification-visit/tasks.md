@@ -40,14 +40,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The first stored visit time queues one message when the enrolment has an email. A later change of the instant queues a new message and leaves the earlier subject and body as first queued. The same instant queues nothing, including when only the checkbox or the assigned names change. A blank email queues nothing. A raised enqueue still leaves the visit saved and returns 200. The body names the enrolment head and `place_name`, and the month is English even when `I18n.locale` is not.
 
 **Acceptance criteria:**
-- [ ] The subject is "Sokong visit". The first body is "A visit is set for {head} at {place}. The visit time is {utc}." A changed time uses "The visit time for {head} at {place} is now {utc}." `2026-11-24T01:00:00Z` is "24 November 2026 at 01:00 UTC" with `I18n.locale` set to a locale other than English.
-- [ ] The body contains no other member's name, either phone, the basket text, the bringing-a-basket answer, an assigned worker's name, an identity value, a document number, or an interview answer. The Active Job log for the enqueue contains neither the head, the place, nor the email.
-- [ ] A blank email queues nothing. The same instant queues nothing, including a PATCH that only changes `bringing_basket` or `assigned_workers`. A raised `deliver_later` returns 200, keeps the pre-visit fields, and logs the error class only. A look and a note still queue no mail.
+- [x] The subject is "Sokong visit". The first body is "A visit is set for {head} at {place}. The visit time is {utc}." A changed time uses "The visit time for {head} at {place} is now {utc}." `2026-11-24T01:00:00Z` is "24 November 2026 at 01:00 UTC" with `I18n.locale` set to a locale other than English.
+- [x] The body contains no other member's name, either phone, the basket text, the bringing-a-basket answer, an assigned worker's name, an identity value, a document number, or an interview answer. The Active Job log for the enqueue contains neither the head, the place, nor the email.
+- [x] A blank email queues nothing. The same instant queues nothing, including a PATCH that only changes `bringing_basket` or `assigned_workers`. A raised `deliver_later` returns 200, keeps the pre-visit fields, and logs the error class only. A look and a note still queue no mail.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb test/integration/looks_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: set a visit on an enrolment that has an email and confirm one queued message. Change the time and confirm the first rendered body is unchanged.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb test/integration/looks_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: set a visit on an enrolment that has an email and confirm one queued message. Change the time and confirm the first rendered body is unchanged.
 
 **Dependencies:** Task 1
 
@@ -60,10 +60,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 1–2
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] A linked worker can store a visit in the past and a visit later than a week, with the basket checkbox and an assigned name
-- [ ] One visit message is queued only when the email is present and the instant changes. A checkbox or name change on the same instant queues nothing. A changed time queues a second message
-- [ ] `GET /up` still returns success
+- [x] `bin/ci` from the repository root exits 0
+- [x] A linked worker can store a visit in the past and a visit later than a week, with the basket checkbox and an assigned name
+- [x] One visit message is queued only when the email is present and the instant changes. A checkbox or name change on the same instant queues nothing. A changed time queues a second message
+- [x] `GET /up` still returns success
 
 ## Task 3: Save Who is here
 
