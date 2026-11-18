@@ -570,7 +570,7 @@ describe('worker cases', () => {
     expect(page.find('#back-stage').exists()).toBe(false)
     expect(page.find('#next-stage').exists()).toBe(true)
     expect(page.find('#stage-boxes').exists()).toBe(false)
-    expect(page.text()).not.toContain('Post-visit')
+    expect(page.text()).toContain('Post-visit')
     expect(page.text()).toContain('The children are the people recorded here.')
     expect(page.get('#enrolment-facts').text()).toContain('Enrolment')
     expect(page.get('#enrolment-facts').text()).toContain('Rahim')
@@ -1059,7 +1059,7 @@ describe('worker cases', () => {
       notes: ''
     })
     expect(childPage.find('#next-stage').exists()).toBe(false)
-    expect(childPage.text()).not.toContain('Post-visit')
+    expect(childPage.text()).toContain('Post-visit')
     vi.unstubAllGlobals()
   })
 
@@ -1598,6 +1598,116 @@ describe('worker cases', () => {
     expect(page.text()).toContain('The family does not consent')
     await page.get('#back-stage').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    vi.unstubAllGlobals()
+  })
+
+  it('saves the boxes and still posts when a gap is blank', async () => {
+    const stored = visited()
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Gap is required', details: { gap: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#post-visit').exists()).toBe(true))
+    const section = page.get('#post-visit')
+    expect(page.find('#stage-boxes').exists()).toBe(false)
+    expect(section.text()).toContain('Post-visit')
+    expect(section.text()).toContain('Initial assessment')
+    expect(section.text()).toContain('This is your judgment from the visit.')
+    expect(section.text()).toContain('Integrity, action, and selflessness, for the family as a whole.')
+    expect(section.text()).toContain('Good family unit')
+    expect(section.text()).toContain('Basic necessities')
+    expect(section.find('#good-family-gap').exists()).toBe(true)
+    expect(section.find('#basic-gap').exists()).toBe(true)
+    expect(section.find('#back-stage').exists()).toBe(false)
+    expect(section.find('#next-stage').exists()).toBe(false)
+    expect(section.text()).not.toContain('Dependable generation')
+    expect(section.text()).not.toContain('Accumulated wealth')
+    expect(page.get('#status-boxes').text()).toBe('Not saved')
+
+    await page.get('#mark-disqualified').trigger('click')
+    await vi.waitFor(() => expect(calls.some((call) => call.method === 'POST')).toBe(true))
+    const boxes = calls.filter((call) => call.method === 'PUT' && new URL(call.url).pathname.endsWith('/verification/boxes'))
+    expect(boxes).toHaveLength(1)
+    expect(boxes[0]!.json).toEqual({
+      good_family_unit: false,
+      good_family_unit_gap: '',
+      basic_necessities: false,
+      basic_necessities_gap: '',
+      notes: ''
+    })
+    const post = calls.find((call) => call.method === 'POST')!
+    expect(new URL(post.url).pathname).toBe('/enrolments/case-1/qualification')
+    expect(post.json).toEqual({ outcome: 'disqualified' })
+    await vi.waitFor(() => expect(page.text()).toContain('Gap is required'))
+    expect(page.text().match(/Gap is required/g)).toHaveLength(1)
+    expect(page.get('#status-boxes').text()).toBe('Saved')
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a refused consent once and an incomplete visit from the API', async () => {
+    const stored = visited()
+    stored.verification = {
+      needs: { need_most: 'Rice', consent_given: false, notes: '' }
+    }
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST' && last?.json?.outcome === 'qualified') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'The family has not consented', details: { outcome: [ 'needs consent' ] } } } }
+      }
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'The visit record is incomplete', details: { who_is_here: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#mark-qualified').exists()).toBe(true))
+    await page.get('#good-family-unit').setValue(true)
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('The family has not consented'))
+    expect(calls.some((call) => call.method === 'POST' && call.json?.outcome === 'qualified')).toBe(true)
+    expect(page.text().match(/The family has not consented/g)).toHaveLength(1)
+
+    await page.get('#mark-disqualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('The visit record is incomplete'))
+    expect(calls.filter((call) => call.method === 'POST')).toHaveLength(2)
+    expect(page.text()).not.toContain('The family has not consented')
+    vi.unstubAllGlobals()
+  })
+
+  it('stores a qualified mark from the 201', async () => {
+    const stored = visited()
+    stored.verification = {
+      needs: { need_most: 'Rice', consent_given: true, notes: '' }
+    }
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 201, body: { outcome: 'qualified', marked_at: '2026-11-24T02:00:00Z', marker_name: 'Aman' } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#mark-qualified').exists()).toBe(true))
+    await page.get('#good-family-unit').setValue(true)
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.find('#mark-qualified').exists()).toBe(false))
+    expect(page.find('#mark-disqualified').exists()).toBe(false)
+    expect(page.find('#good-family-unit').exists()).toBe(false)
+    expect(page.get('#post-visit').text()).toContain('Good family unit')
+    expect(page.get('#status-boxes').text()).toBe('Saved')
+    expect(calls.some((call) => call.method === 'POST' && call.json?.outcome === 'qualified')).toBe(true)
     vi.unstubAllGlobals()
   })
 })

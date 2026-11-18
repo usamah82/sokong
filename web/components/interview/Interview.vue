@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { WorkerMember } from '../../composables/useApi'
+import Boxes from './Boxes.vue'
 import DailyLife from './DailyLife.vue'
 import Dynamics from './Dynamics.vue'
 import Formation from './Formation.vue'
@@ -28,8 +29,12 @@ const stages = [
 
 type StageKey = typeof stages[number]['key']
 
+const emit = defineEmits<{
+  marked: [mark: { outcome: string, marked_at: string, marker_name: string }]
+}>()
+
 const { t } = useI18n()
-const { saveStage } = useApi()
+const { saveStage, markQualification } = useApi()
 const { clearToken } = useAuth()
 const current = ref<StageKey>('who_is_here')
 const record = ref<Record<string, unknown>>(props.verification ? { ...props.verification } : {})
@@ -47,6 +52,14 @@ const dynamics = ref<Editor | null>(null)
 const dailyLife = ref<Editor | null>(null)
 const house = ref<Editor | null>(null)
 const needs = ref<Editor | null>(null)
+
+type BoxesEditor = Editor & {
+  notices: (outcome: 'qualified' | 'disqualified') => string[]
+  show: (messages: string[]) => void
+}
+
+const boxes = ref<BoxesEditor | null>(null)
+const boxesSaved = ref(Boolean(props.verification?.boxes))
 
 const index = computed(() => stages.findIndex((stage) => stage.key === current.value))
 const hasChild = computed(() => {
@@ -86,6 +99,56 @@ function statusText(key: StageKey) {
   if (current.value === key) parts.push(t('interview.current'))
   parts.push(saved.value.has(key) ? t('interview.saved') : t('interview.notSaved'))
   return parts.join(' ')
+}
+
+const consentGiven = computed(() => {
+  const stage = record.value.needs
+  if (!stage || typeof stage !== 'object') return null
+  const value = (stage as { consent_given?: unknown }).consent_given
+  return value === true || value === false ? value : null
+})
+
+function once(messages: string[]) {
+  return messages.filter((message, index) => message !== '' && messages.indexOf(message) === index)
+}
+
+async function mark(outcome: 'qualified' | 'disqualified') {
+  const editor = boxes.value
+  if (!editor || saving.value || props.readonly) return
+  const body = editor.attempt()
+  if (!body) return
+  const notices = editor.notices(outcome)
+  saving.value = true
+  try {
+    const saved = await saveStage(props.enrolmentId, 'boxes', body)
+    if (!saved.ok) {
+      if (saved.reason === 'unauthenticated') {
+        clearToken()
+        await navigateTo('/sign-in')
+        return
+      }
+      editor.show(once([ ...notices, saved.message ]))
+      return
+    }
+    record.value = { ...record.value, boxes: saved.stage }
+    boxesSaved.value = true
+    const marked = await markQualification(props.enrolmentId, outcome)
+    if (!marked.ok) {
+      if (marked.reason === 'unauthenticated') {
+        clearToken()
+        await navigateTo('/sign-in')
+        return
+      }
+      editor.show(once([ ...notices, marked.message ]))
+      return
+    }
+    editor.show([])
+    emit('marked', marked.mark)
+  } catch {
+    return
+  } finally {
+    saving.value = false
+  }
 }
 
 function labelOf(key: StageKey) {
@@ -184,4 +247,11 @@ async function leave(key: StageKey) {
       <button v-if="index < stages.length - 1" id="next-stage" class="primary" type="button" @click="leave(stages[index + 1]!.key)">{{ t('interview.next') }}</button>
     </div>
   </section>
+  <Boxes
+    ref="boxes"
+    :saved="boxesSaved ? stageSaved('boxes') : null"
+    :consent-given="consentGiven"
+    :readonly="readonly"
+    @mark="mark"
+  />
 </template>

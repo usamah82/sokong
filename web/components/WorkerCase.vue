@@ -19,6 +19,15 @@ const bringingBasket = ref(props.enrolment.bringing_basket === true)
 const assignedWorkers = ref(startingNames())
 const visitError = ref('')
 const savingVisit = ref(false)
+const emit = defineEmits<{
+  marked: [mark: { outcome: string, marked_at: string, marker_name: string }]
+}>()
+const outcome = ref(props.enrolment.outcome ?? null)
+
+function onMarked(mark: { outcome: string, marked_at: string, marker_name: string }) {
+  outcome.value = mark.outcome
+  emit('marked', mark)
+}
 
 const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
 const visitLabel = computed(() => visitAt.value ? formatVisit(visitAt.value, zone) : '')
@@ -198,7 +207,8 @@ async function saveVisit() {
       :help="enrolment.help"
       :family-phone="enrolment.family_phone"
       :verification="enrolment.verification ?? null"
-      :readonly="Boolean(enrolment.outcome)"
+      :readonly="Boolean(outcome)"
+      @marked="onMarked"
     />
   </div>
 </template>

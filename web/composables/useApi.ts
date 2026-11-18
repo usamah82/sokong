@@ -67,6 +67,8 @@ export type WorkerDetail = WorkerSummary & {
   assigned_workers: string[] | null
   verification?: Record<string, unknown> | null
   outcome?: string | null
+  marked_at?: string | null
+  marker_name?: string | null
 }
 
 type EnrolmentListResult =
@@ -94,6 +96,16 @@ type VisitResult =
 
 type StageResult =
   | { ok: true, stage: Record<string, unknown> }
+  | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
+
+export type Mark = {
+  outcome: 'qualified' | 'disqualified'
+  marked_at: string
+  marker_name: string
+}
+
+type MarkResult =
+  | { ok: true, mark: Mark }
   | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
 
 export type LocalityBoundary = {
@@ -230,6 +242,24 @@ export function useApi() {
       if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
       if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
       throw new Error('stage was not saved')
+    },
+
+    async markQualification(id: string, outcome: 'qualified' | 'disqualified'): Promise<MarkResult> {
+      const token = sessionStorage.getItem('sokong.token')
+      const response = await fetch(new URL(`/enrolments/${id}/qualification`, config.public.apiBase), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ outcome })
+      })
+      if (response.status === 201) return { ok: true, mark: await response.json() as Mark }
+      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
+      if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
+      throw new Error('family was not marked')
     },
 
     async addLook(id: string, note: string): Promise<LookResult> {
