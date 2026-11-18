@@ -1,8 +1,8 @@
 # Spec
 
-Status: revised 2026-11-18, waiting for approval with the plan.
+Status: approved 2026-11-18.
 
-Usamah approved the previous text on 2026-11-17, after accepting the screenshots. On 2026-11-18, during plan review, he asked for a pre-visit section, document numbers on each person, and the initial assessment moved into a post-visit section. This file is that revision.
+Usamah approved the previous text on 2026-11-17, after accepting the screenshots. On 2026-11-18, during plan review, he asked for a pre-visit section, document numbers on each person, and the initial assessment moved into a post-visit section. The same day he approved this revision with the plan.
 
 Catalog rows F06 and F07 are this feature. The first two Mara boxes, and the gap for each, are recorded at the end of this visit. Dependable generation, accumulated wealth, earlier assessments, and the status word stay F08. [intent.md](intent.md) stays the confirmed intent. This file says what "done" means.
 
