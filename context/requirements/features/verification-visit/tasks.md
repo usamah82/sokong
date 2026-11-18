@@ -471,14 +471,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Post-visit sits below the interview and is not a stage in the list. It records Initial assessment: the two boxes and their gaps, then offers Mark qualified and Mark disqualified. It shows "Saved" or "Not saved". An unchecked box with a blank gap shows "Gap is required" when a mark is pressed. Mark qualified also shows "The family has not consented" when the needs answer is false. The page still posts, and an API message that is already on screen is not repeated.
 
 **Acceptance criteria:**
-- [ ] The section heading is "Post-visit". "Initial assessment" names the judgment. It shows "Saved" or "Not saved", "This is your judgment from the visit.", and, under Good family unit, "Integrity, action, and selflessness, for the family as a whole." Dependable generation, accumulated wealth, and a status word are absent. The section is not in the stage list and has no Back and no Next.
-- [ ] Both boxes and both Gap fields are visible. Pressing either mark with an unchecked box and a blank gap shows "Gap is required". Pressing Mark qualified when consent is false also shows "The family has not consented". An unsaved part shows the API message "The visit record is incomplete".
-- [ ] A 201 stores the outcome on the case. The buttons read "Mark qualified" and "Mark disqualified". Saving the section calls `PUT /enrolments/:id/verification/boxes`.
+- [x] The section heading is "Post-visit". "Initial assessment" names the judgment. It shows "Saved" or "Not saved", "This is your judgment from the visit.", and, under Good family unit, "Integrity, action, and selflessness, for the family as a whole." Dependable generation, accumulated wealth, and a status word are absent. The section is not in the stage list and has no Back and no Next.
+- [x] Both boxes and both Gap fields are visible. Pressing either mark with an unchecked box and a blank gap shows "Gap is required". Pressing Mark qualified when consent is false also shows "The family has not consented". An unsaved part shows the API message "The visit record is incomplete".
+- [x] A 201 stores the outcome on the case. The buttons read "Mark qualified" and "Mark disqualified". Saving the section calls `PUT /enrolments/:id/verification/boxes`.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: at 390 CSS pixels, leave a gap blank and press both mark actions. Then fill the interview, mark the family, and see the 201 outcome on the case.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: at 390 CSS pixels, leave a gap blank and press both mark actions. Then fill the interview, mark the family, and see the 201 outcome on the case.
 
 **Dependencies:** Tasks 9, 10, and 13
 
@@ -493,10 +493,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 16–18
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] House, needs, and the two boxes save from the worker case
-- [ ] Mark qualified and Mark disqualified post the outcome
-- [ ] A blank gap and a refused consent are visible on Post-visit
+- [x] `bin/ci` from the repository root exits 0
+- [x] House, needs, and the two boxes save from the worker case
+- [x] Mark qualified and Mark disqualified post the outcome
+- [x] A blank gap and a refused consent are visible on Post-visit
 
 ## Task 19: Read-only after the mark
 
