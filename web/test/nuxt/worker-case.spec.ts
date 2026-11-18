@@ -697,13 +697,19 @@ describe('worker cases', () => {
     expect(page.get('#status-formation').text()).toBe('Saved')
     expect(page.get('#status-daily_life').text()).toContain('Current')
     await page.get('#stage-needs').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[2]!.url).pathname).toBe('/enrolments/case-1/verification/daily_life')
+    expect(calls.filter((call) => call.method === 'PUT')[2]!.json).toMatchObject({
+      notes: '',
+      people: [ { person_id: 'person-1', working: null, in_school: null, job: '', skills: '' } ]
+    })
     expect(page.find('#next-stage').exists()).toBe(false)
     expect(page.find('#back-stage').exists()).toBe(true)
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3)
 
     await page.get('#back-stage').trigger('click')
     await page.get('#stage-who_is_here').trigger('click')
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3)
     expect(page.get('#status-who_is_here').text()).toContain('Current')
     expect(page.get('#status-who_is_here').text()).toContain('Saved')
     expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('Rahim')
@@ -1060,6 +1066,192 @@ describe('worker cases', () => {
     expect(page.text()).toContain('Rain')
     expect(page.text()).toContain('They study at the table')
     expect(page.text()).toContain('How are the children at home?')
+    vi.unstubAllGlobals()
+  })
+
+  it('records work and school independently and saves every person on leave', async () => {
+    const stored = visited()
+    stored.members.push({
+      id: 'member-2',
+      role: 'spouse',
+      name: 'Siti',
+      age: 38,
+      gender: 'female',
+      description: '',
+      in_education: true,
+      working: false,
+      job: '',
+      monthly_amount: null
+    })
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        }, {
+          person_id: '22222222-2222-4222-8222-222222222222',
+          family_member_id: 'member-2',
+          head: false,
+          name: 'Siti',
+          relationship: 'spouse',
+          documents: []
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') return { status: 200, body: stored.verification!.who_is_here as Record<string, unknown> }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-daily_life').exists()).toBe(true))
+    await page.get('#stage-daily_life').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Are you working?'))
+    expect(page.text()).toContain('Are you in school?')
+    expect(page.text()).toContain('Any skills to highlight?')
+    expect(page.get('#daily-enrolment').text()).toContain('Working')
+    expect(page.get('#daily-enrolment').text()).toContain('Yes')
+    expect(page.get('#daily-enrolment').text()).toContain('Driver')
+    expect(page.get('#daily-enrolment').text()).toContain('800')
+    expect(page.get('#daily-enrolment').text()).toContain('In education')
+    expect(page.find('#job').exists()).toBe(false)
+    expect(page.find('#school-where').exists()).toBe(false)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#working').setValue('yes')
+    expect(page.find('#job').exists()).toBe(true)
+    expect(page.find('#monthly-amount').exists()).toBe(true)
+    expect(page.find('#previous-jobs').exists()).toBe(true)
+    expect(page.find('#wished-work').exists()).toBe(true)
+    await page.get('#job').setValue('A stall')
+    await page.get('#monthly-amount').setValue('12abc')
+    await page.get('#skills').setValue('Cooking')
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('Ringgit per month is invalid')
+    expect(page.get('#status-daily_life').text()).toContain('Current')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#monthly-amount').setValue('800')
+    await page.get('#previous-jobs').setValue('Driving')
+    await page.get('#wished-work').setValue('A shop')
+    await page.get('#in-school').setValue('yes')
+    expect(page.find('#job').exists()).toBe(true)
+    expect(page.find('#school-where').exists()).toBe(true)
+    await page.get('#in-school').setValue('no')
+    await page.get('#day-tab-1').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(page.get('#daily-enrolment').text()).toContain('In education')
+    expect(page.get('#daily-enrolment').text()).toContain('Yes')
+    expect(page.get('#daily-enrolment').text()).not.toContain('Driver')
+    await page.get('#working').setValue('yes')
+    await page.get('#job').setValue('Should be cleared')
+    await page.get('#monthly-amount').setValue('50')
+    await page.get('#previous-jobs').setValue('a'.repeat(2001))
+    await page.get('#working').setValue('no')
+    expect(page.find('#job').exists()).toBe(false)
+    await page.get('#in-school').setValue('yes')
+    expect(page.find('#school-going').exists()).toBe(true)
+    expect(page.find('#school-where').exists()).toBe(true)
+    expect(page.find('#school-travel').exists()).toBe(true)
+    await page.get('#school-going').setValue('Well')
+    await page.get('#school-where').setValue('The village school')
+    await page.get('#school-travel').setValue('Walk')
+    await page.get('#skills').setValue('Sewing')
+    await page.get('#day-tab-0').trigger('click')
+    expect(page.get<HTMLInputElement>('#job').element.value).toBe('A stall')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#daily-notes').setValue('A long day')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    const put = calls.filter((call) => call.method === 'PUT')[1]
+    expect(new URL(put!.url).pathname).toBe('/enrolments/case-1/verification/daily_life')
+    expect(put!.json).toMatchObject({
+      notes: 'A long day',
+      people: [
+        {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          working: true,
+          job: 'A stall',
+          monthly_amount: 800,
+          previous_jobs: 'Driving',
+          wished_work: 'A shop',
+          skills: 'Cooking',
+          in_school: false,
+          school_going: '',
+          school_where: '',
+          school_travel: ''
+        },
+        {
+          person_id: '22222222-2222-4222-8222-222222222222',
+          working: false,
+          job: '',
+          monthly_amount: null,
+          previous_jobs: '',
+          wished_work: '',
+          skills: 'Sewing',
+          in_school: true,
+          school_going: 'Well',
+          school_where: 'The village school',
+          school_travel: 'Walk'
+        }
+      ]
+    })
+    expect(page.get('#status-daily_life').text()).toBe('Saved')
+    vi.unstubAllGlobals()
+  })
+
+  it('renders a saved day as text', async () => {
+    const stored = visited()
+    stored.outcome = 'qualified'
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        } ]
+      },
+      daily_life: {
+        people: [ {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          working: true,
+          job: 'A stall',
+          monthly_amount: 800,
+          previous_jobs: 'Driving',
+          wished_work: 'A shop',
+          skills: 'Cooking',
+          in_school: true,
+          school_going: 'Well',
+          school_where: 'The village school',
+          school_travel: 'Walk'
+        } ],
+        notes: 'A long day'
+      }
+    }
+    const calls = stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-daily_life').exists()).toBe(true))
+    await page.get('#stage-daily_life').trigger('click')
+    expect(page.find('#working').exists()).toBe(false)
+    expect(page.text()).toContain('A stall')
+    expect(page.text()).toContain('Driving')
+    expect(page.text()).toContain('A shop')
+    expect(page.text()).toContain('Cooking')
+    expect(page.text()).toContain('Well')
+    expect(page.text()).toContain('The village school')
+    expect(page.text()).toContain('Walk')
+    expect(page.text()).toContain('A long day')
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     vi.unstubAllGlobals()
   })
 })

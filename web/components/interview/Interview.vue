@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { WorkerMember } from '../../composables/useApi'
+import DailyLife from './DailyLife.vue'
 import Dynamics from './Dynamics.vue'
 import Formation from './Formation.vue'
 import WhoIsHere from './WhoIsHere.vue'
@@ -40,6 +41,7 @@ type Editor = {
 const whoIsHere = ref<Editor | null>(null)
 const formation = ref<Editor | null>(null)
 const dynamics = ref<Editor | null>(null)
+const dailyLife = ref<Editor | null>(null)
 
 const index = computed(() => stages.findIndex((stage) => stage.key === current.value))
 const hasChild = computed(() => {
@@ -57,10 +59,18 @@ function stageSaved(key: string) {
   return value && typeof value === 'object' ? value as Record<string, unknown> : null
 }
 
+const whoPeople = computed(() => {
+  const stage = record.value.who_is_here
+  if (!stage || typeof stage !== 'object') return []
+  const people = (stage as { people?: unknown }).people
+  return Array.isArray(people) ? people : []
+})
+
 function editorFor(key: StageKey): Editor | null {
   if (key === 'who_is_here') return whoIsHere.value
   if (key === 'formation') return formation.value
   if (key === 'dynamics') return dynamics.value
+  if (key === 'daily_life') return dailyLife.value
   return null
 }
 
@@ -137,6 +147,14 @@ async function leave(key: StageKey) {
       :saved="stageSaved('dynamics')"
       :readonly="readonly"
       :has-child="hasChild"
+    />
+    <DailyLife
+      v-else-if="current === 'daily_life'"
+      ref="dailyLife"
+      :who-people="whoPeople"
+      :members="members"
+      :saved="stageSaved('daily_life')"
+      :readonly="readonly"
     />
     <section v-else :id="`open-${current}`">
       <h3>{{ labelOf(current) }}</h3>
