@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { WorkerMember } from '../../composables/useApi'
+import Dynamics from './Dynamics.vue'
+import Formation from './Formation.vue'
 import WhoIsHere from './WhoIsHere.vue'
 
 const props = defineProps<{
@@ -29,16 +31,38 @@ const current = ref<StageKey>('who_is_here')
 const record = ref<Record<string, unknown>>(props.verification ? { ...props.verification } : {})
 const saved = ref(new Set(stages.map((stage) => stage.key).filter((key) => props.verification?.[key])))
 const saving = ref(false)
-const whoIsHere = ref<{
+
+type Editor = {
   attempt: () => Record<string, unknown> | null
   fail: (message: string) => void
-} | null>(null)
+}
+
+const whoIsHere = ref<Editor | null>(null)
+const formation = ref<Editor | null>(null)
+const dynamics = ref<Editor | null>(null)
 
 const index = computed(() => stages.findIndex((stage) => stage.key === current.value))
-const whoSaved = computed(() => {
-  const value = record.value.who_is_here
-  return value && typeof value === 'object' ? value as Record<string, unknown> : null
+const hasChild = computed(() => {
+  const stage = record.value.who_is_here
+  if (!stage || typeof stage !== 'object') return false
+  const people = (stage as { people?: unknown }).people
+  if (!Array.isArray(people)) return false
+  return people.some((person) => {
+    return !!person && typeof person === 'object' && (person as { relationship?: unknown }).relationship === 'child'
+  })
 })
+
+function stageSaved(key: string) {
+  const value = record.value[key]
+  return value && typeof value === 'object' ? value as Record<string, unknown> : null
+}
+
+function editorFor(key: StageKey): Editor | null {
+  if (key === 'who_is_here') return whoIsHere.value
+  if (key === 'formation') return formation.value
+  if (key === 'dynamics') return dynamics.value
+  return null
+}
 
 function statusText(key: StageKey) {
   const parts: string[] = []
@@ -53,23 +77,25 @@ function labelOf(key: StageKey) {
 
 async function leave(key: StageKey) {
   if (saving.value || key === current.value) return
-  if (current.value === 'who_is_here' && !props.readonly) {
-    const body = whoIsHere.value?.attempt() ?? null
+  const editor = editorFor(current.value)
+  if (editor && !props.readonly) {
+    const body = editor.attempt()
     if (!body) return
+    const stage = current.value
     saving.value = true
     try {
-      const result = await saveStage(props.enrolmentId, 'who_is_here', body)
+      const result = await saveStage(props.enrolmentId, stage, body)
       if (!result.ok) {
         if (result.reason === 'unauthenticated') {
           clearToken()
           await navigateTo('/sign-in')
           return
         }
-        whoIsHere.value?.fail(result.message)
+        editor.fail(result.message)
         return
       }
-      record.value = { ...record.value, who_is_here: result.stage }
-      saved.value = new Set(saved.value).add('who_is_here')
+      record.value = { ...record.value, [stage]: result.stage }
+      saved.value = new Set(saved.value).add(stage)
     } catch {
       return
     } finally {
@@ -96,8 +122,21 @@ async function leave(key: StageKey) {
       ref="whoIsHere"
       :members="members"
       :family-phone="familyPhone"
-      :saved="whoSaved"
+      :saved="stageSaved('who_is_here')"
       :readonly="readonly"
+    />
+    <Formation
+      v-else-if="current === 'formation'"
+      ref="formation"
+      :saved="stageSaved('formation')"
+      :readonly="readonly"
+    />
+    <Dynamics
+      v-else-if="current === 'dynamics'"
+      ref="dynamics"
+      :saved="stageSaved('dynamics')"
+      :readonly="readonly"
+      :has-child="hasChild"
     />
     <section v-else :id="`open-${current}`">
       <h3>{{ labelOf(current) }}</h3>

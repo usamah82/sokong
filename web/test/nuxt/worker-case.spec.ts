@@ -687,16 +687,23 @@ describe('worker cases', () => {
     expect(page.find('#person-name').exists()).toBe(false)
 
     await page.get('#stage-daily_life').trigger('click')
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[1]!.url).pathname).toBe('/enrolments/case-1/verification/formation')
+    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toEqual({
+      started_year: null,
+      how_it_started: '',
+      notes: ''
+    })
+    expect(page.get('#status-formation').text()).toBe('Saved')
     expect(page.get('#status-daily_life').text()).toContain('Current')
     await page.get('#stage-needs').trigger('click')
     expect(page.find('#next-stage').exists()).toBe(false)
     expect(page.find('#back-stage').exists()).toBe(true)
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2)
 
     await page.get('#back-stage').trigger('click')
     await page.get('#stage-who_is_here').trigger('click')
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2)
     expect(page.get('#status-who_is_here').text()).toContain('Current')
     expect(page.get('#status-who_is_here').text()).toContain('Saved')
     expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('Rahim')
@@ -876,6 +883,183 @@ describe('worker cases', () => {
     await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
     expect(sessionStorage.getItem('sokong.token')).toBeNull()
     expect(sessionStorage.getItem('sokong.name')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('stays on formation for a year outside 1900 through this year and saves a real year', async () => {
+    const stored = visited()
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: 'person-1',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') {
+        return {
+          status: 200,
+          body: {
+            people: stored.verification!.who_is_here,
+            started_year: 2008,
+            how_it_started: 'They met at the market',
+            notes: 'Rice',
+            worker_name: 'Aman',
+            recorded_at: '2026-11-24T02:00:00Z'
+          }
+        }
+      }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-formation').exists()).toBe(true))
+    await page.get('#stage-formation').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('When did this family start?'))
+    expect(page.text()).toContain('How did it start?')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#started-year').setValue('1899')
+    await page.get('#stage-daily_life').trigger('click')
+    expect(page.text()).toContain('Enter the year, for example 2008.')
+    expect(page.get('#status-formation').text()).toContain('Current')
+    expect(page.get<HTMLInputElement>('#started-year').element.value).toBe('1899')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#started-year').setValue(String(new Date().getUTCFullYear() + 1))
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(page.get('#status-formation').text()).toContain('Current')
+
+    await page.get('#started-year').setValue('2008')
+    await page.get('#how-it-started').setValue('a'.repeat(2001))
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('How did it start? is too long')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    await page.get('#how-it-started').setValue('They met at the market')
+    await page.get('#formation-notes').setValue('Rice')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    const put = calls.filter((call) => call.method === 'PUT')[1]
+    expect(new URL(put!.url).pathname).toBe('/enrolments/case-1/verification/formation')
+    expect(put!.json).toEqual({
+      started_year: 2008,
+      how_it_started: 'They met at the market',
+      notes: 'Rice'
+    })
+    expect(page.get('#status-formation').text()).toBe('Saved')
+    expect(page.get('#status-daily_life').text()).toContain('Current')
+    vi.unstubAllGlobals()
+  })
+
+  it('asks about the children only when a person is a child', async () => {
+    const stored = visited()
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: 'person-1',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') return { status: 200, body: stored.verification!.who_is_here as Record<string, unknown> }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-dynamics').exists()).toBe(true))
+    await page.get('#stage-dynamics').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('What does a hard week look like here?'))
+    expect(page.text()).toContain('When someone here needs help, who steps in?')
+    expect(page.text()).toContain('Write what the family said.')
+    expect(page.text()).not.toContain('How are the children at home?')
+    expect(page.text().toLowerCase()).not.toContain('score')
+    await page.get('#hard-week').setValue('Rain')
+    await page.get('#who-steps-in').setValue('Siti')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toEqual({
+      hard_week: 'Rain',
+      who_steps_in: 'Siti',
+      children_at_home: '',
+      notes: ''
+    })
+    vi.unstubAllGlobals()
+
+    const withChild = visited()
+    withChild.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: 'person-2',
+          family_member_id: null,
+          head: false,
+          name: 'Ali',
+          relationship: 'child',
+          documents: []
+        } ]
+      }
+    }
+    const childCalls = stubFetch((method) => {
+      if (method === 'PUT') return { status: 200, body: withChild.verification!.who_is_here as Record<string, unknown> }
+      return { status: 200, body: withChild }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const childPage = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(childPage.find('#stage-dynamics').exists()).toBe(true))
+    await childPage.get('#stage-dynamics').trigger('click')
+    await vi.waitFor(() => expect(childPage.text()).toContain('How are the children at home?'))
+    await childPage.get('#children-at-home').setValue('They study at the table')
+    await childPage.get('#dynamics-notes').setValue('Nothing else')
+    await childPage.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(childCalls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    expect(new URL(childCalls.filter((call) => call.method === 'PUT')[1]!.url).pathname).toBe('/enrolments/case-1/verification/dynamics')
+    expect(childCalls.filter((call) => call.method === 'PUT')[1]!.json).toMatchObject({
+      children_at_home: 'They study at the table',
+      notes: 'Nothing else'
+    })
+    expect(childPage.get('#status-dynamics').text()).toBe('Saved')
+    await childPage.get('#stage-needs').trigger('click')
+    expect(childPage.find('#next-stage').exists()).toBe(false)
+    expect(childPage.text()).not.toContain('Post-visit')
+    vi.unstubAllGlobals()
+  })
+
+  it('renders formation and dynamics as text when the mark is set', async () => {
+    const stored = visited()
+    stored.outcome = 'qualified'
+    stored.verification = {
+      who_is_here: {
+        people: [ { person_id: 'person-2', name: 'Ali', relationship: 'child', head: false, documents: [] } ]
+      },
+      formation: { started_year: 2008, how_it_started: 'They met at the market', notes: 'Rice' },
+      dynamics: { hard_week: 'Rain', who_steps_in: 'Siti', children_at_home: 'They study at the table', notes: '' }
+    }
+    const calls = stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-formation').exists()).toBe(true))
+    await page.get('#stage-formation').trigger('click')
+    expect(page.find('#started-year').exists()).toBe(false)
+    expect(page.text()).toContain('2008')
+    expect(page.text()).toContain('They met at the market')
+    expect(page.text()).toContain('Rice')
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    await page.get('#stage-dynamics').trigger('click')
+    expect(page.find('#hard-week').exists()).toBe(false)
+    expect(page.text()).toContain('Rain')
+    expect(page.text()).toContain('They study at the table')
+    expect(page.text()).toContain('How are the children at home?')
     vi.unstubAllGlobals()
   })
 })
