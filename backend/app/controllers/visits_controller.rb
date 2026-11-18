@@ -8,6 +8,11 @@ class VisitsController < ApplicationController
     enrolment = linked_enrolment
     return render_not_found unless enrolment
 
+    if enrolment.outcome.present?
+      render json: { error: VerificationMessages.envelope(:finished) }, status: :unprocessable_content
+      return
+    end
+
     previous_visit_at = enrolment.visit_at
     result = enrolment.schedule_visit(
       visit_at: params[:visit_at],

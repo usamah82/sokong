@@ -10,6 +10,7 @@ Rails.application.routes.draw do
     member do
       patch :visit, to: "visits#update"
       put "verification/:stage", to: "verifications#update"
+      post :qualification, to: "qualifications#create"
     end
   end
   resources :accounts, only: :create

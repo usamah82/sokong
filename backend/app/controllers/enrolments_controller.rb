@@ -85,7 +85,8 @@ class EnrolmentsController < ApplicationController
         enroler_contact: enrolment.enroler_contact,
         on_behalf: enrolment.on_behalf,
         locality: { id: enrolment.locality.id, name: enrolment.locality.name },
-        visit_at: enrolment.visit_at&.utc&.iso8601
+        visit_at: enrolment.visit_at&.utc&.iso8601,
+        outcome: enrolment.outcome
       }
     end
 
@@ -103,7 +104,9 @@ class EnrolmentsController < ApplicationController
         looks: enrolment.looks.map { |look| look_json(look) },
         bringing_basket: enrolment.bringing_basket,
         assigned_workers: enrolment.assigned_workers,
-        verification: verification_json(enrolment)
+        verification: verification_json(enrolment),
+        marked_at: enrolment.marked_at&.utc&.iso8601,
+        marker_name: enrolment.marker_name
       )
     end
 
@@ -160,7 +163,8 @@ class EnrolmentsController < ApplicationController
         progress: {
           case_in: true,
           looks: enrolment.looks.map { |look| look_json(look) },
-          visit_at: enrolment.visit_at&.utc&.iso8601
+          visit_at: enrolment.visit_at&.utc&.iso8601,
+          outcome: enrolment.outcome
         }
       }
     end
