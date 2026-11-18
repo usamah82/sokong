@@ -1847,7 +1847,8 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       { "outcome" => "qualified", "marked_at" => "2026-11-18T06:00:00Z", "marker_name" => "Aman" },
       response.parsed_body
     )
-    assert_no_enqueued_jobs
+    assert_enqueued_emails 1
+    clear_enqueued_jobs
 
     post "/enrolments/#{enrolment.id}/qualification", params: {}, headers: bearer(token), as: :json
     assert_stage_error "Outcome is required", "outcome" => [ "is required" ]
@@ -2031,9 +2032,133 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_not_found
   end
 
+  test "the first mark queues one outcome message" do
+    enrolment = submit_family
+    add_member(enrolment, name: "Rahim", role: "child") if enrolment.members.none? { |member| member.name == "Rahim" }
+    enrolment.update!(family_phone: "+60123456789", enroler_contact: "+60198765432")
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    patch "/enrolments/#{enrolment.id}/visit",
+      params: { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "Farid" ] },
+      headers: bearer(token), as: :json
+    assert_response :ok
+    clear_enqueued_jobs
+    save_interview(enrolment, token, consent: true, head_identity: "verified", spouse_identity: "not_verified")
+    job_log = StringIO.new
+    previous_logger = ActiveJob::Base.logger
+    ActiveJob::Base.logger = ActiveSupport::Logger.new(job_log)
+
+    assert_enqueued_emails 1 do
+      post "/enrolments/#{enrolment.id}/qualification",
+        params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    end
+    assert_response :created
+    assert_enqueued_email_with EnrolmentMailer, :outcome_qualified, args: [
+      "siti@example.com", "Siti", "Kampung Baru"
+    ]
+    perform_enqueued_jobs
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal [ "siti@example.com" ], mail.to
+    assert_equal "Sokong verification", mail.subject
+    assert_equal "Siti at Kampung Baru is qualified.", mail_text(mail)
+    assert_outcome_mail_is_only_the_sentence(mail)
+    assert_includes job_log.string, "Enqueued EnrolmentInvitationDeliveryJob"
+    assert_not_includes job_log.string, "Siti"
+    assert_not_includes job_log.string, "Kampung Baru"
+    assert_not_includes job_log.string, "siti@example.com"
+    delivered = ActionMailer::Base.deliveries.size
+
+    assert_no_enqueued_emails do
+      post "/enrolments/#{enrolment.id}/qualification",
+        params: { outcome: "disqualified" }, headers: bearer(token), as: :json
+    end
+    assert_stage_error "The mark is already set", "outcome" => [ "is already set" ]
+    perform_enqueued_jobs
+    assert_equal delivered, ActionMailer::Base.deliveries.size
+  ensure
+    ActiveJob::Base.logger = previous_logger
+  end
+
+  test "a disqualified mark names that outcome" do
+    enrolment = submit_family
+    enrolment.update!(family_phone: "+60123456789", enroler_contact: "+60198765432")
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    clear_enqueued_jobs
+    save_interview(enrolment, token, consent: false, boxes_checked: false)
+    ActionMailer::Base.deliveries.clear
+
+    assert_enqueued_emails 1 do
+      post "/enrolments/#{enrolment.id}/qualification",
+        params: { outcome: "disqualified" }, headers: bearer(token), as: :json
+    end
+    assert_response :created
+    perform_enqueued_jobs
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal "Sokong verification", mail.subject
+    assert_equal "Siti at Kampung Baru is disqualified.", mail_text(mail)
+    assert_outcome_mail_is_only_the_sentence(mail)
+  end
+
+  test "a blank email and a raised outcome enqueue still save the mark" do
+    blank = submit_family
+    blank.update!(email: "")
+    token = worker_token(name: "Aman", locality: blank.locality)
+    set_visit(blank, token)
+    save_interview(blank, token, consent: true)
+    assert_no_enqueued_emails do
+      post "/enrolments/#{blank.id}/qualification",
+        params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    end
+    assert_response :created
+    assert_equal "qualified", blank.reload.outcome
+
+    enrolment = submit_family
+    linked = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, linked)
+    save_interview(enrolment, linked, consent: true)
+    clear_enqueued_jobs
+    previous = ActiveJob::Base.queue_adapter
+    adapter = RaisingQueueAdapter.new
+    ActiveJob::Base.queue_adapter = adapter
+    log = StringIO.new
+    logger = ActiveSupport::Logger.new(log)
+    previous_logger = ActionController::API.logger
+    ActionController::API.logger = logger
+    ActionController::Base.logger = logger
+
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "disqualified" }, headers: bearer(linked), as: :json
+
+    assert_response :created
+    assert_equal 1, adapter.attempts
+    assert_equal "disqualified", enrolment.reload.outcome
+    assert_includes log.string, "RuntimeError"
+    assert_not_includes log.string, "Siti"
+    assert_not_includes log.string, "Kampung Baru"
+    assert_not_includes log.string, "siti@example.com"
+    assert_not_includes log.string, "queue down"
+  ensure
+    ActiveJob::Base.queue_adapter = previous
+    ActionController::API.logger = previous_logger
+    ActionController::Base.logger = previous_logger
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
+    end
+
+    def assert_outcome_mail_is_only_the_sentence(mail)
+      text = mail.body.to_s
+      assert_not_includes text, "Rahim"
+      assert_not_includes text, "+60123456789"
+      assert_not_includes text, "+60198765432"
+      assert_not_includes text, "Farid"
+      assert_not_includes text, "Rice"
+      assert_not_includes text, "verified"
+      assert_not_includes text, "not_verified"
+      assert_not_includes text, "true"
     end
 
     def assert_visit_mail_is_only_the_sentence(mail)

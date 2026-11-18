@@ -14,6 +14,7 @@ class QualificationsController < ApplicationController
       return
     end
 
+    queue_outcome_message(enrolment)
     render json: {
       outcome: enrolment.outcome,
       marked_at: enrolment.marked_at.utc.iso8601,
@@ -31,5 +32,19 @@ class QualificationsController < ApplicationController
 
     def render_not_found
       render json: { error: { code: "NOT_FOUND", message: "Not found" } }, status: :not_found
+    end
+
+    def queue_outcome_message(enrolment)
+      return if enrolment.email.blank?
+
+      head = enrolment.members.find { |member| member.role == "head" }&.name
+      message = if enrolment.outcome == "qualified"
+        EnrolmentMailer.outcome_qualified(enrolment.email, head, enrolment.place_name)
+      else
+        EnrolmentMailer.outcome_disqualified(enrolment.email, head, enrolment.place_name)
+      end
+      message.deliver_later
+    rescue StandardError => error
+      logger.info("Outcome message was not queued: #{error.class}")
     end
 end
