@@ -135,6 +135,8 @@ async function saveVisit() {
 <template>
   <div class="worker-case">
     <h1>{{ enrolment.place_name }}</h1>
+    <p v-if="outcome === 'qualified'" id="outcome">{{ t('worker.qualified') }}</p>
+    <p v-else-if="outcome === 'disqualified'" id="outcome">{{ t('worker.disqualified') }}</p>
     <p><span class="label">{{ t('wizard.family.place') }}</span> {{ enrolment.place_name }}</p>
     <p><NuxtLink :id="`locality-${enrolment.locality.id}`" :to="`/localities/${enrolment.locality.id}`">{{ t('boundary.open') }}</NuxtLink></p>
     <p><span class="label">{{ t('wizard.notes.howToFind') }}</span> {{ enrolment.how_to_find }}</p>
@@ -177,7 +179,12 @@ async function saveVisit() {
       <p v-if="!visitAt">{{ t('worker.setBefore') }}</p>
       <p v-if="late">{{ t('worker.late') }}</p>
       <time v-if="visitAt" id="visit-clock" :datetime="visitAt">{{ visitLabel }}</time>
-      <form class="pre-visit" novalidate @submit.prevent="saveVisit">
+      <template v-if="outcome">
+        <p><span class="label">{{ t('worker.bringingBasket') }}</span> {{ bringingBasket ? t('worker.yes') : t('worker.no') }}</p>
+        <p class="label">{{ t('worker.assignedWorkers') }}</p>
+        <p v-for="(worker, index) in assignedWorkers" :key="index">{{ worker }}</p>
+      </template>
+      <form v-else class="pre-visit" novalidate @submit.prevent="saveVisit">
         <label class="field">{{ t('worker.visitTime') }}
           <input id="visit-time" v-model="visitInput" type="datetime-local" :aria-invalid="visitError === t('worker.visitInvalid')">
         </label>

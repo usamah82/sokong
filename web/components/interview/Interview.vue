@@ -243,8 +243,8 @@ async function leave(key: StageKey) {
       <h3>{{ labelOf(current) }}</h3>
     </section>
     <div class="actions">
-      <button v-if="index > 0" id="back-stage" class="secondary" type="button" @click="leave(stages[index - 1]!.key)">{{ t('interview.back') }}</button>
-      <button v-if="index < stages.length - 1" id="next-stage" class="primary" type="button" @click="leave(stages[index + 1]!.key)">{{ t('interview.next') }}</button>
+      <button v-if="!readonly && index > 0" id="back-stage" class="secondary" type="button" @click="leave(stages[index - 1]!.key)">{{ t('interview.back') }}</button>
+      <button v-if="!readonly && index < stages.length - 1" id="next-stage" class="primary" type="button" @click="leave(stages[index + 1]!.key)">{{ t('interview.next') }}</button>
     </div>
   </section>
   <Boxes

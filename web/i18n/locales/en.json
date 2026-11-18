@@ -41,6 +41,8 @@
     "addWorker": "Add a worker",
     "setVisit": "Set visit",
     "changeVisit": "Change visit",
+    "qualified": "This family is qualified.",
+    "disqualified": "This family is disqualified.",
     "workerRequired": "Assigned worker is required",
     "late": "This visit is later than a week after the enrolment."
   },
