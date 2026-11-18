@@ -4,6 +4,7 @@ import type { WorkerMember } from '../../composables/useApi'
 import DailyLife from './DailyLife.vue'
 import Dynamics from './Dynamics.vue'
 import Formation from './Formation.vue'
+import House from './House.vue'
 import WhoIsHere from './WhoIsHere.vue'
 
 const props = defineProps<{
@@ -42,6 +43,7 @@ const whoIsHere = ref<Editor | null>(null)
 const formation = ref<Editor | null>(null)
 const dynamics = ref<Editor | null>(null)
 const dailyLife = ref<Editor | null>(null)
+const house = ref<Editor | null>(null)
 
 const index = computed(() => stages.findIndex((stage) => stage.key === current.value))
 const hasChild = computed(() => {
@@ -71,6 +73,7 @@ function editorFor(key: StageKey): Editor | null {
   if (key === 'formation') return formation.value
   if (key === 'dynamics') return dynamics.value
   if (key === 'daily_life') return dailyLife.value
+  if (key === 'house') return house.value
   return null
 }
 
@@ -154,6 +157,12 @@ async function leave(key: StageKey) {
       :who-people="whoPeople"
       :members="members"
       :saved="stageSaved('daily_life')"
+      :readonly="readonly"
+    />
+    <House
+      v-else-if="current === 'house'"
+      ref="house"
+      :saved="stageSaved('house')"
       :readonly="readonly"
     />
     <section v-else :id="`open-${current}`">
