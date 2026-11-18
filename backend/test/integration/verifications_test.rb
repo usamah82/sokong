@@ -1162,6 +1162,113 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_nil detail["boxes"]
   end
 
+  test "a day in their life stores working and school independently" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    who = who_is_here_body(enrolment)
+    put "/enrolments/#{enrolment.id}/verification/who_is_here",
+      params: who, headers: bearer(token), as: :json
+    assert_response :ok
+    who_saved = enrolment.verification.reload.who_is_here
+
+    assert_no_enqueued_emails do
+      put "/enrolments/#{enrolment.id}/verification/daily_life",
+        params: { people: [] }, headers: bearer(token), as: :json
+    end
+    assert_response :ok
+    assert_equal [], response.parsed_body["people"]
+    assert_equal who_saved, enrolment.verification.reload.who_is_here
+
+    person_id = SecureRandom.uuid
+    both = {
+      person_id: person_id,
+      working: true,
+      job: " Tailor ",
+      monthly_amount: 800,
+      previous_jobs: " Sewing ",
+      wished_work: " A shop ",
+      skills: " Patterns ",
+      in_school: true,
+      school_going: " Well ",
+      school_where: " Kampung school ",
+      school_travel: " Walk "
+    }
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ both ], wealth: "hidden" }, headers: bearer(token), as: :json
+    assert_response :ok
+    saved = response.parsed_body["people"].sole
+    assert_equal "Tailor", saved["job"]
+    assert_equal 800, saved["monthly_amount"]
+    assert_equal "Sewing", saved["previous_jobs"]
+    assert_equal "A shop", saved["wished_work"]
+    assert_equal "Patterns", saved["skills"]
+    assert_equal "Well", saved["school_going"]
+    assert_equal "Kampung school", saved["school_where"]
+    assert_equal "Walk", saved["school_travel"]
+    assert_not response.parsed_body.key?("wealth")
+    assert_equal who_saved, enrolment.verification.reload.who_is_here
+
+    closed = both.merge(
+      working: false,
+      in_school: nil,
+      job: "x" * 201,
+      monthly_amount: "nope",
+      previous_jobs: "p" * 2001,
+      wished_work: 12,
+      school_going: "s" * 2001,
+      school_where: "w" * 201,
+      school_travel: false,
+      skills: "Still here"
+    )
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ closed ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    cleared = response.parsed_body["people"].sole
+    assert_equal false, cleared["working"]
+    assert_nil cleared["in_school"]
+    assert_equal "", cleared["job"]
+    assert_nil cleared["monthly_amount"]
+    assert_equal "", cleared["previous_jobs"]
+    assert_equal "", cleared["wished_work"]
+    assert_equal "", cleared["school_going"]
+    assert_equal "", cleared["school_where"]
+    assert_equal "", cleared["school_travel"]
+    assert_equal "Still here", cleared["skills"]
+
+    limits = both.merge(job: "j" * 200, school_where: "s" * 200, previous_jobs: "p" * 2000, skills: "k" * 2000, monthly_amount: 999_999_999)
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ limits ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "j" * 200, response.parsed_body["people"].sole["job"]
+    assert_equal 999_999_999, response.parsed_body["people"].sole["monthly_amount"]
+
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ both.merge(monthly_amount: 0) ] }, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal 0, response.parsed_body["people"].sole["monthly_amount"]
+    stored = enrolment.verification.reload.daily_life
+
+    [
+      [ { monthly_amount: "800" }, "Ringgit per month is invalid", "monthly_amount", "is invalid" ],
+      [ { monthly_amount: 1.5 }, "Ringgit per month is invalid", "monthly_amount", "is invalid" ],
+      [ { monthly_amount: -1 }, "Ringgit per month is invalid", "monthly_amount", "is invalid" ],
+      [ { monthly_amount: 1_000_000_000 }, "Ringgit per month is invalid", "monthly_amount", "is invalid" ],
+      [ { job: "j" * 201 }, "What job? is too long", "job", "is too long" ],
+      [ { school_where: "s" * 201 }, "Where is school? is too long", "school_where", "is too long" ],
+      [ { previous_jobs: "p" * 2001 }, "Any previous jobs? is too long", "previous_jobs", "is too long" ],
+      [ { skills: "k" * 2001 }, "Any skills to highlight? is too long", "skills", "is too long" ],
+      [ { working: "yes" }, "Are you working? is invalid", "working", "is invalid" ]
+    ].each do |override, message, field, detail|
+      put "/enrolments/#{enrolment.id}/verification/daily_life",
+        params: { people: [ both.merge(override) ] }, headers: bearer(token), as: :json
+      assert_stage_error message, field => [ detail ]
+    end
+    assert_equal stored, enrolment.verification.reload.daily_life
+    assert_equal who_saved, enrolment.verification.who_is_here
+    assert_nil enrolment.verification.formation
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
