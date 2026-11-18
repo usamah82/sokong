@@ -9,6 +9,7 @@ Rails.application.routes.draw do
     resources :looks, only: :create
     member do
       patch :visit, to: "visits#update"
+      put "verification/:stage", to: "verifications#update"
     end
   end
   resources :accounts, only: :create

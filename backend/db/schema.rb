@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_100000) do
   create_table "accounts", id: { type: :string, limit: 36 }, force: :cascade do |t|
     t.string "email", null: false
     t.string "email_normalized", null: false
@@ -117,6 +117,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_090000) do
     t.index ["enrolment_id"], name: "index_looks_on_enrolment_id"
   end
 
+  create_table "verifications", id: { type: :string, limit: 36 }, force: :cascade do |t|
+    t.string "enrolment_id", limit: 36, null: false
+    t.json "who_is_here"
+    t.json "formation"
+    t.json "daily_life"
+    t.json "dynamics"
+    t.json "house"
+    t.json "needs"
+    t.json "boxes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["enrolment_id"], name: "index_verifications_on_enrolment_id", unique: true
+  end
+
   add_foreign_key "auth_tokens", "accounts"
   add_foreign_key "email_confirmations", "accounts"
   add_foreign_key "enrolments", "family_units"
@@ -126,4 +140,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_090000) do
   add_foreign_key "locality_assignments", "localities"
   add_foreign_key "looks", "accounts"
   add_foreign_key "looks", "enrolments"
+  add_foreign_key "verifications", "enrolments"
 end
