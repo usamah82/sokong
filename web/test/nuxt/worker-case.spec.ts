@@ -708,9 +708,16 @@ describe('worker cases', () => {
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3)
 
     await page.get('#back-stage').trigger('click')
-    await page.get('#stage-who_is_here').trigger('click')
     await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
-    expect(new URL(calls.filter((call) => call.method === 'PUT')[3]!.url).pathname).toBe('/enrolments/case-1/verification/house')
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[3]!.url).pathname).toBe('/enrolments/case-1/verification/needs')
+    expect(calls.filter((call) => call.method === 'PUT')[3]!.json).toEqual({
+      need_most: '',
+      consent_given: null,
+      notes: ''
+    })
+    await page.get('#stage-who_is_here').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(5))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[4]!.url).pathname).toBe('/enrolments/case-1/verification/house')
     expect(page.get('#status-who_is_here').text()).toContain('Current')
     expect(page.get('#status-who_is_here').text()).toContain('Saved')
     expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('Rahim')
@@ -1338,6 +1345,7 @@ describe('worker cases', () => {
     })
 
     await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(page.find('#place').exists()).toBe(true))
     expect(page.get<HTMLInputElement>('#place').element.value).toBe('rent')
     expect(page.get<HTMLInputElement>('#rent-per-month').element.value).toBe('400')
     expect(page.get<HTMLInputElement>('#behind-on-payments').element.value).toBe('yes')
@@ -1347,9 +1355,9 @@ describe('worker cases', () => {
     await page.get('#safe').setValue('yes')
     expect(page.find('#unsafe-detail').exists()).toBe(false)
     await page.get('#next-stage').trigger('click')
-    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3))
-    expect(new URL(calls.filter((call) => call.method === 'PUT')[2]!.url).pathname).toBe('/enrolments/case-1/verification/house')
-    expect(calls.filter((call) => call.method === 'PUT')[2]!.json).toEqual({
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[3]!.url).pathname).toBe('/enrolments/case-1/verification/house')
+    expect(calls.filter((call) => call.method === 'PUT')[3]!.json).toEqual({
       place: 'own',
       rent_per_month: null,
       behind_on_payments: null,
@@ -1473,25 +1481,123 @@ describe('worker cases', () => {
     expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toMatchObject({ sleeping_rooms: 0 })
 
     await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(page.find('#sleeping-rooms').exists()).toBe(true))
     await page.get('#sleeping-rooms').setValue('99')
     await page.get('#next-stage').trigger('click')
-    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3))
-    expect(calls.filter((call) => call.method === 'PUT')[2]!.json).toMatchObject({ sleeping_rooms: 99 })
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
+    expect(calls.filter((call) => call.method === 'PUT')[3]!.json).toMatchObject({ sleeping_rooms: 99 })
 
     await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(page.find('#basket').exists()).toBe(true))
     await page.get('#basket').setValue('a'.repeat(501))
     await page.get('#next-stage').trigger('click')
     expect(page.text()).toContain('Basket is too long')
     expect(page.get('#status-house').text()).toContain('Current')
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(5)
 
     await page.get('#basket').setValue('a'.repeat(500))
     await page.get('#next-stage').trigger('click')
-    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
-    expect(calls.filter((call) => call.method === 'PUT')[3]!.json).toMatchObject({
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(6))
+    expect(calls.filter((call) => call.method === 'PUT')[5]!.json).toMatchObject({
       sleeping_rooms: 99,
       basket: 'a'.repeat(500)
     })
+    vi.unstubAllGlobals()
+  })
+
+  it('lists only the stored help and saves one consent choice', async () => {
+    const stored = visited()
+    stored.help = [ 'food' ]
+    stored.other_help = 'A ride'
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') return { status: 200, body: calls[calls.length - 1]?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-needs').exists()).toBe(true))
+    await page.get('#stage-needs').trigger('click')
+    await vi.waitFor(() => expect(page.find('#need-most').exists()).toBe(true))
+    expect(page.get('#needs-enrolment').text()).toContain('Food')
+    expect(page.get('#needs-enrolment').text()).not.toContain('Clothing')
+    expect(page.get('#needs-enrolment').text()).not.toContain('A ride')
+    expect(page.text()).toContain('The family consents')
+    expect(page.text()).toContain('The family does not consent')
+    expect(page.find('#next-stage').exists()).toBe(false)
+    expect(page.find('#back-stage').exists()).toBe(true)
+
+    await page.get('#need-most').setValue('a'.repeat(2001))
+    await page.get('#back-stage').trigger('click')
+    expect(page.text()).toContain('What do you need most? is too long')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#need-most').setValue('Rice')
+    await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[1]!.url).pathname).toBe('/enrolments/case-1/verification/needs')
+    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toEqual({
+      need_most: 'Rice',
+      consent_given: null,
+      notes: ''
+    })
+    expect(page.get('#status-needs').text()).toBe('Saved')
+
+    await page.get('#stage-needs').trigger('click')
+    await vi.waitFor(() => expect(page.find('#consent-yes').exists()).toBe(true))
+    await page.get('#consent-yes').setValue(true)
+    await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
+    expect(calls.filter((call) => call.method === 'PUT')[3]!.json).toMatchObject({
+      need_most: 'Rice',
+      consent_given: true
+    })
+
+    await page.get('#stage-needs').trigger('click')
+    await vi.waitFor(() => expect(page.find('#consent-no').exists()).toBe(true))
+    await page.get('#consent-no').setValue(true)
+    await page.get('#back-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(6))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[5]!.url).pathname).toBe('/enrolments/case-1/verification/needs')
+    expect(calls.filter((call) => call.method === 'PUT')[5]!.json).toMatchObject({
+      need_most: 'Rice',
+      consent_given: false
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('renders a saved need as text', async () => {
+    const stored = visited()
+    stored.outcome = 'qualified'
+    stored.help = [ 'food', 'clothing' ]
+    stored.verification = {
+      needs: { need_most: 'Rice', consent_given: false, notes: '' }
+    }
+    const calls = stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-needs').exists()).toBe(true))
+    await page.get('#stage-needs').trigger('click')
+    expect(page.find('#need-most').exists()).toBe(false)
+    expect(page.find('#consent-yes').exists()).toBe(false)
+    expect(page.get('#needs-enrolment').text()).toContain('Food')
+    expect(page.get('#needs-enrolment').text()).toContain('Clothing')
+    expect(page.get('#needs-enrolment').text()).not.toContain('School supplies')
+    expect(page.text()).toContain('Rice')
+    expect(page.text()).toContain('The family does not consent')
+    await page.get('#back-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     vi.unstubAllGlobals()
   })
 })
