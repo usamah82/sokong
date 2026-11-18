@@ -4,7 +4,8 @@ class VerificationsController < ApplicationController
   CLEANERS = {
     "who_is_here" => WhoIsHereStage,
     "formation" => FormationStage,
-    "dynamics" => DynamicsStage
+    "dynamics" => DynamicsStage,
+    "daily_life" => DailyLifeStage
   }.freeze
 
   def update
@@ -41,6 +42,9 @@ class VerificationsController < ApplicationController
     when "dynamics"
       verification.update!(dynamics: stored)
       render json: verification.dynamics
+    when "daily_life"
+      verification.update!(daily_life: stored)
+      render json: verification.daily_life
     end
   end
 
