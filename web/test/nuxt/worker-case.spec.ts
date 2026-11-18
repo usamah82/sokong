@@ -281,11 +281,41 @@ describe('worker cases', () => {
       expect(page.get('#case-case-1').text()).toContain('Rahim')
     })
     expect(page.get('#case-case-1').text()).toContain('Block 4')
+    expect(page.get('#case-case-1').text()).toContain('No visit is set.')
     expect(page.get('#case-case-1').attributes('href')).toBe('/enrolments/case-1')
     expect(calls).toHaveLength(1)
     expect(calls[0]!.method).toBe('GET')
     expect(new URL(calls[0]!.url).pathname).toBe('/enrolments')
     expect(page.text()).not.toContain(empty)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows each visit and each outcome for a worker', async () => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const visit = '2026-11-24T01:00:00Z'
+    const marked = { ...summary, visit_at: visit, outcome: 'disqualified' }
+    const open = { ...summary, id: 'case-2', place_name: 'Block 2', head_name: 'Mina', visit_at: null, outcome: null }
+    stubFetch(() => ({ status: 200, body: [ marked, open ] }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    sessionStorage.setItem('sokong.role', 'worker')
+    const page = await mountSuspended(EnrolmentsPage)
+    await vi.waitFor(() => expect(page.find('#case-case-2').exists()).toBe(true))
+    const row = page.get('#case-case-1')
+    const lines = row.findAll('span')
+    expect(lines[0]!.text()).toBe('Block 4 Rahim')
+    expect(lines[1]!.text()).toBe(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(lines[1]!.classes()).toContain('case-line')
+    expect(lines[2]!.text()).toBe('This family is disqualified.')
+    expect(lines[2]!.classes()).toContain('case-line')
+    expect(lines).toHaveLength(3)
+    expect(row.attributes('href')).toBe('/enrolments/case-1')
+    const other = page.get('#case-case-2')
+    const openLines = other.findAll('span')
+    expect(openLines[0]!.text()).toBe('Block 2 Mina')
+    expect(openLines[1]!.text()).toBe('No visit is set.')
+    expect(openLines[1]!.classes()).toContain('case-line')
+    expect(openLines).toHaveLength(2)
+    expect(page.find('#sign-out').exists()).toBe(true)
     vi.unstubAllGlobals()
   })
 

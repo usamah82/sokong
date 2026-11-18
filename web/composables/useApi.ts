@@ -37,6 +37,8 @@ export type WorkerSummary = {
   enroler_contact: string
   on_behalf: boolean
   locality: { id: string, name: string }
+  visit_at?: string | null
+  outcome?: string | null
 }
 
 export type WorkerMember = {
