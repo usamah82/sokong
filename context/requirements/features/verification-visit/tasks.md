@@ -551,14 +551,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Each row on the enrolments list shows the place, the head's name, the visit line, and the outcome line when an outcome is stored. A row with no outcome has no outcome line. The same lines are used for the submitter, who may have many enrolments, and for the worker.
 
 **Acceptance criteria:**
-- [ ] A submitter list of two enrolments shows each place, each head, and each visit line. One row with an outcome shows that outcome sentence. The other row has no outcome line.
-- [ ] A worker list uses the same visit line and the same outcome line. "No visit is set." is the line when `visit_at` is null.
-- [ ] At 390 CSS pixels the list does not scroll horizontally. Opening a row still goes to that case. Sign out still works.
+- [x] A submitter list of two enrolments shows each place, each head, and each visit line. One row with an outcome shows that outcome sentence. The other row has no outcome line.
+- [x] A worker list uses the same visit line and the same outcome line. "No visit is set." is the line when `visit_at` is null.
+- [x] At 390 CSS pixels the list does not scroll horizontally. Opening a row still goes to that case. Sign out still works.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/progress.spec.ts test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: at 390 CSS pixels, open the list as a submitter with two enrolments and as a worker. Each row shows its own visit and its own outcome.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/progress.spec.ts test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: at 390 CSS pixels, open the list as a submitter with two enrolments and as a worker. Each row shows its own visit and its own outcome.
 
 **Dependencies:** Task 20
 
@@ -572,9 +572,9 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 19–21
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] The marked worker case is text, and the visit and mark actions are gone
-- [ ] Submitter progress shows the quiet sentence, the visit line, and the outcome
-- [ ] The enrolments list shows each visit and each outcome for a submitter and for a worker
-- [ ] A browser pass at 390 CSS pixels covers the worker case, submitter progress, and the enrolments list
-- [ ] Ready for the run loop's walkthrough
+- [x] `bin/ci` from the repository root exits 0
+- [x] The marked worker case is text, and the visit and mark actions are gone
+- [x] Submitter progress shows the quiet sentence, the visit line, and the outcome
+- [x] The enrolments list shows each visit and each outcome for a submitter and for a worker
+- [x] A browser pass at 390 CSS pixels covers the worker case, submitter progress, and the enrolments list
+- [x] Ready for the run loop's walkthrough
