@@ -148,14 +148,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `daily_life` stores one object per person the client sends. Working and school are independent. Follow-ups the answer does not open are stored empty. Skills stay either way. An empty people array is a saved blank stage.
 
 **Acceptance criteria:**
-- [ ] A person can be working and in school, either one, or neither. A Yes stores that side's answers. A No or a null stores that side empty and keeps `skills`.
-- [ ] `monthly_amount` accepts a JSON integer from 0 through 999999999 and rejects a string, a float, and a number outside that range. `job` and `school_where` are limited to 200 characters. The long answers are limited to 2000.
-- [ ] A failed PUT leaves the previous daily-life column unchanged and does not change the other stages.
+- [x] A person can be working and in school, either one, or neither. A Yes stores that side's answers. A No or a null stores that side empty and keeps `skills`.
+- [x] `monthly_amount` accepts a JSON integer from 0 through 999999999 and rejects a string, a float, and a number outside that range. `job` and `school_where` are limited to 200 characters. The long answers are limited to 2000.
+- [x] A failed PUT leaves the previous daily-life column unchanged and does not change the other stages.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: PUT one working person and one in-school person. Confirm the closed follow-ups are empty strings or null.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: PUT one working person and one in-school person. Confirm the closed follow-ups are empty strings or null.
 
 **Dependencies:** Task 3
 
@@ -168,10 +168,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 3–6
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] Who is here, formation, daily life, and dynamics each save and replace on their own
-- [ ] The matching submitter's GET body has no `verification` key
-- [ ] Interview names and free text are filtered from the request log
+- [x] `bin/ci` from the repository root exits 0
+- [x] Who is here, formation, daily life, and dynamics each save and replace on their own
+- [x] The matching submitter's GET body has no `verification` key
+- [x] Interview names and free text are filtered from the request log
 
 ## Task 7: Save the house and the meals
 
