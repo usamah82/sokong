@@ -392,14 +392,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The stage asks the Who is here people, one at a time, head first. Working and school are independent. Enrolment working, education, job, and monthly amount sit above the matching fields. Switching person keeps what was typed and does not save. Leaving the stage saves every person.
 
 **Acceptance criteria:**
-- [ ] "Are you working?" and "Are you in school?" are always shown. Yes on working opens the job, the amount, previous jobs, and the wished work. "Any skills to highlight?" stays either way. Yes on school opens the three school questions.
-- [ ] A No or an unselected choice hides its follow-up. The hidden answers are sent empty. Moving to the next person does not call PUT. Next from the stage does.
-- [ ] `readonly` shows each person's stored answers as text. At 390 CSS pixels the open person does not scroll horizontally.
+- [x] "Are you working?" and "Are you in school?" are always shown. Yes on working opens the job, the amount, previous jobs, and the wished work. "Any skills to highlight?" stays either way. Yes on school opens the three school questions.
+- [x] A No or an unselected choice hides its follow-up. The hidden answers are sent empty. Moving to the next person does not call PUT. Next from the stage does.
+- [x] `readonly` shows each person's stored answers as text. At 390 CSS pixels the open person does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: record one person as working and not in school, and another as in school and not working. Leave the stage and reload. Both answers are still there.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: record one person as working and not in school, and another as in school and not working. Leave the stage and reload. Both answers are still there.
 
 **Dependencies:** Tasks 6 and 13
 
@@ -413,10 +413,10 @@ A task is done only when its acceptance lines are true and [definition of done](
 
 ## Checkpoint: After Tasks 12–15
 
-- [ ] `bin/ci` from the repository root exits 0
-- [ ] The worker case can set a visit and save Who is here, formation, dynamics, and daily life
-- [ ] A bad phone and a bad year stay on their stage
-- [ ] At 390 CSS pixels those stages do not scroll horizontally
+- [x] `bin/ci` from the repository root exits 0
+- [x] The worker case can set a visit and save Who is here, formation, dynamics, and daily life
+- [x] A bad phone and a bad year stay on their stage
+- [x] At 390 CSS pixels those stages do not scroll horizontally
 
 ## Task 16: The house and the meals
 
