@@ -8,7 +8,7 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       token = worker_token(name: "Aman", locality: enrolment.locality)
       before = enrolment.reload
 
-      assert_no_enqueued_jobs do
+      assert_enqueued_emails 1 do
         patch "/enrolments/#{enrolment.id}/visit",
           params: {
             visit_at: "2026-10-01T01:00:00Z",
@@ -35,7 +35,7 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       assert_unchanged_case before, enrolment
 
       late = (enrolment.submitted_at + (7 * 24 * 60 * 60) + 1).utc.iso8601
-      assert_no_enqueued_jobs do
+      assert_enqueued_emails 1 do
         patch "/enrolments/#{enrolment.id}/visit",
           params: {
             visit_at: "2026-11-24T09:00:00+08:00",
@@ -50,7 +50,7 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       assert_equal false, response.parsed_body["bringing_basket"]
       assert_equal [ "Aman", "Farid" ], response.parsed_body["assigned_workers"]
 
-      assert_no_enqueued_jobs do
+      assert_enqueued_emails 1 do
         patch "/enrolments/#{enrolment.id}/visit",
           params: {
             visit_at: late,
@@ -150,8 +150,10 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       [ { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "A" * 201 ] }, "Assigned worker is invalid", "assigned_workers" ],
       [ { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: eleven_names }, "Assigned worker is invalid", "assigned_workers" ]
     ].each do |params, message, key|
-      assert_no_changes -> { enrolment.reload.attributes.slice("visit_at", "bringing_basket", "assigned_workers", "updated_at") } do
-        patch "/enrolments/#{enrolment.id}/visit", params: params, headers: bearer(token), as: :json
+      assert_no_enqueued_emails do
+        assert_no_changes -> { enrolment.reload.attributes.slice("visit_at", "bringing_basket", "assigned_workers", "updated_at") } do
+          patch "/enrolments/#{enrolment.id}/visit", params: params, headers: bearer(token), as: :json
+        end
       end
       assert_visit_invalid message, key
     end
@@ -171,26 +173,36 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     other = create_locality(name: "Other Block", created_at: Time.current)
     body = { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "Aman" ] }
 
-    assert_no_difference "Enrolment.count" do
-      patch "/enrolments/#{enrolment.id}/visit", params: body, as: :json
+    assert_no_enqueued_emails do
+      assert_no_difference "Enrolment.count" do
+        patch "/enrolments/#{enrolment.id}/visit", params: body, as: :json
+      end
     end
     assert_sign_in_required
     assert_nil enrolment.reload.visit_at
 
     submitter = confirmed_token(email: "siti@example.com")
-    patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(submitter), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(submitter), as: :json
+    end
     assert_not_found
 
     stranger = worker_token(name: "Farid", locality: other)
-    patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(stranger), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(stranger), as: :json
+    end
     assert_not_found
 
     unlinked = worker_token(name: "Noor")
-    patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(unlinked), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit", params: body, headers: bearer(unlinked), as: :json
+    end
     assert_not_found
 
     linked = worker_token(name: "Aman", locality: enrolment.locality)
-    patch "/enrolments/#{SecureRandom.uuid}/visit", params: body, headers: bearer(linked), as: :json
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{SecureRandom.uuid}/visit", params: body, headers: bearer(linked), as: :json
+    end
     assert_not_found
     assert_nil enrolment.reload.visit_at
   end
@@ -249,9 +261,11 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
     token = worker_token(name: "Aman", locality: enrolment.locality)
 
-    patch "/enrolments/#{enrolment.id}/visit",
-      params: "x" * (128 * 1024 + 1),
-      headers: bearer(token).merge("CONTENT_TYPE" => "application/json")
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit",
+        params: "x" * (128 * 1024 + 1),
+        headers: bearer(token).merge("CONTENT_TYPE" => "application/json")
+    end
 
     assert_response :content_too_large
     error = response.parsed_body.fetch("error")
@@ -261,7 +275,171 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_nil enrolment.assigned_workers
   end
 
+  test "the first visit time queues one message and a changed time queues another" do
+    enrolment = submit_enrolment(email: "siti@example.com", name: "Siti Aminah", place: "Kampung Baru")
+    add_member(enrolment, name: "Rahim", role: "child")
+    enrolment.update!(family_phone: "+60123456789", enroler_contact: "+60198765432")
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    clear_enqueued_jobs
+    ActionMailer::Base.deliveries.clear
+    job_log = StringIO.new
+    previous_logger = ActiveJob::Base.logger
+    ActiveJob::Base.logger = ActiveSupport::Logger.new(job_log)
+    previous_enforce = I18n.enforce_available_locales
+    I18n.enforce_available_locales = false
+    previous_locale = I18n.locale
+    I18n.locale = :ms
+
+    assert_enqueued_emails 1 do
+      patch "/enrolments/#{enrolment.id}/visit",
+        params: {
+          visit_at: "2026-11-24T09:00:00+08:00",
+          bringing_basket: true,
+          assigned_workers: [ "Farid" ]
+        },
+        headers: bearer(token),
+        as: :json
+    end
+    assert_response :ok
+    assert_enqueued_email_with EnrolmentMailer, :visit_set, args: [
+      "siti@example.com",
+      "Siti Aminah",
+      "Kampung Baru",
+      "24 November 2026 at 01:00 UTC"
+    ]
+
+    assert_enqueued_emails 1 do
+      patch "/enrolments/#{enrolment.id}/visit",
+        params: {
+          visit_at: "2026-11-25T01:00:00Z",
+          bringing_basket: true,
+          assigned_workers: [ "Farid" ]
+        },
+        headers: bearer(token),
+        as: :json
+    end
+    assert_enqueued_email_with EnrolmentMailer, :visit_changed, args: [
+      "siti@example.com",
+      "Siti Aminah",
+      "Kampung Baru",
+      "25 November 2026 at 01:00 UTC"
+    ]
+    perform_enqueued_jobs
+    assert_equal 2, ActionMailer::Base.deliveries.size
+    first = ActionMailer::Base.deliveries.first
+    changed = ActionMailer::Base.deliveries.last
+    assert_equal [ "siti@example.com" ], first.to
+    assert_equal "Sokong visit", first.subject
+    assert_equal(
+      "A visit is set for Siti Aminah at Kampung Baru. The visit time is 24 November 2026 at 01:00 UTC.",
+      mail_text(first)
+    )
+    assert_visit_mail_is_only_the_sentence(first)
+    assert_equal [ "siti@example.com" ], changed.to
+    assert_equal "Sokong visit", changed.subject
+    assert_equal(
+      "The visit time for Siti Aminah at Kampung Baru is now 25 November 2026 at 01:00 UTC.",
+      mail_text(changed)
+    )
+    assert_includes job_log.string, "Enqueued EnrolmentInvitationDeliveryJob"
+    assert_not_includes job_log.string, "Siti Aminah"
+    assert_not_includes job_log.string, "Kampung Baru"
+    assert_not_includes job_log.string, "siti@example.com"
+  ensure
+    ActiveJob::Base.logger = previous_logger
+    I18n.locale = previous_locale
+    I18n.enforce_available_locales = previous_enforce
+  end
+
+  test "a blank email and an unchanged instant queue no visit message" do
+    blank = submit_enrolment(email: "", name: "Siti")
+    token = worker_token(name: "Aman", locality: blank.locality)
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{blank.id}/visit",
+        params: { visit_at: "2026-11-24T01:00:00Z", bringing_basket: false, assigned_workers: [ "Aman" ] },
+        headers: bearer(token),
+        as: :json
+    end
+    assert_response :ok
+
+    enrolment = submit_enrolment(email: "siti@example.com", name: "Siti")
+    linked = worker_token(name: "Aman", locality: enrolment.locality)
+    patch "/enrolments/#{enrolment.id}/visit",
+      params: { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "Aman" ] },
+      headers: bearer(linked),
+      as: :json
+    assert_response :ok
+    assert_no_enqueued_emails do
+      patch "/enrolments/#{enrolment.id}/visit",
+        params: { visit_at: "2026-11-24T01:00:00Z", bringing_basket: false, assigned_workers: [ "Farid" ] },
+        headers: bearer(linked),
+        as: :json
+    end
+    assert_response :ok
+    assert_equal false, enrolment.reload.bringing_basket
+    assert_equal [ "Farid" ], enrolment.assigned_workers
+  end
+
+  test "a raised enqueue still saves the visit and logs the error class only" do
+    enrolment = submit_enrolment(email: "siti@example.com", name: "Siti Aminah", place: "Kampung Baru")
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    previous = ActiveJob::Base.queue_adapter
+    adapter = RaisingQueueAdapter.new
+    ActiveJob::Base.queue_adapter = adapter
+    log = StringIO.new
+    logger = ActiveSupport::Logger.new(log)
+    previous_logger = ActionController::API.logger
+    ActionController::API.logger = logger
+    ActionController::Base.logger = logger
+
+    patch "/enrolments/#{enrolment.id}/visit",
+      params: { visit_at: "2026-11-24T01:00:00Z", bringing_basket: true, assigned_workers: [ "Aman" ] },
+      headers: bearer(token),
+      as: :json
+
+    assert_response :ok
+    assert_equal 1, adapter.attempts
+    enrolment.reload
+    assert_equal Time.utc(2026, 11, 24, 1, 0, 0), enrolment.visit_at
+    assert_equal true, enrolment.bringing_basket
+    assert_includes log.string, "RuntimeError"
+    assert_not_includes log.string, "Siti Aminah"
+    assert_not_includes log.string, "Kampung Baru"
+    assert_not_includes log.string, "siti@example.com"
+    assert_not_includes log.string, "queue down"
+  ensure
+    ActiveJob::Base.queue_adapter = previous
+    ActionController::API.logger = previous_logger
+    ActionController::Base.logger = previous_logger
+  end
+
   private
+    def mail_text(mail)
+      mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
+    end
+
+    def assert_visit_mail_is_only_the_sentence(mail)
+      text = mail.body.to_s
+      assert_not_includes text, "Rahim"
+      assert_not_includes text, "+60123456789"
+      assert_not_includes text, "+60198765432"
+      assert_not_includes text, "Farid"
+      assert_not_includes text, "true"
+    end
+
+    def add_member(enrolment, name:, role:)
+      enrolment.family_unit.members.create!(
+        role: role,
+        position: enrolment.members.count,
+        name: name,
+        gender: "unspecified",
+        description: "",
+        in_education: false,
+        working: false,
+        job: ""
+      )
+    end
+
     def ten_names
       (1..10).map { |index| "Worker #{index}" }
     end
@@ -318,9 +496,10 @@ class VerificationsTest < ActionDispatch::IntegrationTest
       }
     end
 
-    def submit_enrolment(email:, name:)
+    def submit_enrolment(email:, name:, place: "Kampung Baru")
       post "/enrolments", params: valid_enrolment.merge(
         email: email,
+        place_name: place,
         members: [ { role: "head", name: name, gender: "unspecified" } ]
       ), as: :json
       assert_response :created
@@ -346,6 +525,24 @@ class VerificationsTest < ActionDispatch::IntegrationTest
 
     def bearer(token)
       { "Authorization" => "Bearer #{token}" }
+    end
+
+    class RaisingQueueAdapter
+      attr_reader :attempts
+
+      def initialize
+        @attempts = 0
+      end
+
+      def enqueue(*)
+        @attempts += 1
+        raise "queue down"
+      end
+
+      def enqueue_at(*)
+        @attempts += 1
+        raise "queue down"
+      end
     end
 
     def worker_token(name:, locality: nil)
