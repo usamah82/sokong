@@ -1647,6 +1647,9 @@ describe('worker cases', () => {
       basic_necessities_gap: '',
       notes: ''
     })
+    const boxesIndex = calls.findIndex((call) => call.method === 'PUT' && new URL(call.url).pathname.endsWith('/verification/boxes'))
+    const postIndex = calls.findIndex((call) => call.method === 'POST')
+    expect(postIndex).toBeGreaterThan(boxesIndex)
     const post = calls.find((call) => call.method === 'POST')!
     expect(new URL(post.url).pathname).toBe('/enrolments/case-1/qualification')
     expect(post.json).toEqual({ outcome: 'disqualified' })
@@ -1718,6 +1721,209 @@ describe('worker cases', () => {
     expect(calls.filter((call) => call.method === 'POST')).toHaveLength(2)
     expect(page.text().match(/Gap is required/g)).toHaveLength(1)
     expect(calls.findLast((call) => call.method === 'POST')!.json).toEqual({ outcome: 'disqualified' })
+    vi.unstubAllGlobals()
+  })
+
+  it('reloads a saved assessment and sends those boxes on the next mark', async () => {
+    const stored = visited()
+    stored.verification = {
+      boxes: {
+        good_family_unit: true,
+        good_family_unit_gap: '',
+        basic_necessities: false,
+        basic_necessities_gap: 'Food',
+        notes: 'A note'
+      }
+    }
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Basket is required', details: { basket: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#good-family-unit').exists()).toBe(true))
+    expect(page.get('#status-boxes').text()).toBe('Saved')
+    expect(page.get<HTMLInputElement>('#good-family-unit').element.checked).toBe(true)
+    expect(page.get<HTMLInputElement>('#basic-necessities').element.checked).toBe(false)
+    expect(page.get<HTMLTextAreaElement>('#basic-gap').element.value).toBe('Food')
+    await page.get('#mark-disqualified').trigger('click')
+    await vi.waitFor(() => expect(calls.some((call) => call.method === 'POST')).toBe(true))
+    const boxes = calls.find((call) => call.method === 'PUT')!
+    expect(boxes.json).toEqual({
+      good_family_unit: true,
+      good_family_unit_gap: '',
+      basic_necessities: false,
+      basic_necessities_gap: 'Food',
+      notes: 'A note'
+    })
+    expect(page.text()).not.toContain('Gap is required')
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a blank basic necessities gap beside the API message', async () => {
+    const stored = visited()
+    stored.verification = { needs: { need_most: 'Rice', consent_given: false, notes: '' } }
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Basket is required', details: { basket: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#good-family-unit').exists()).toBe(true))
+    await page.get('#good-family-unit').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Basket is required'))
+    expect(calls.some((call) => call.method === 'POST' && call.json?.outcome === 'qualified')).toBe(true)
+    expect(page.text().match(/Gap is required/g)).toHaveLength(1)
+    expect(page.text().match(/The family has not consented/g)).toHaveLength(1)
+    expect(page.text().match(/Basket is required/g)).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps a written gap off the mark sentences', async () => {
+    const stored = visited()
+    stored.verification = { needs: { need_most: 'Rice', consent_given: false, notes: '' } }
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Basket is required', details: { basket: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#good-family-gap').exists()).toBe(true))
+    await page.get('#good-family-gap').setValue('  They share meals  ')
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Basket is required'))
+    expect(page.text()).not.toContain('Gap is required')
+    expect(page.text().match(/The family has not consented/g)).toHaveLength(1)
+    expect(page.text().match(/Basket is required/g)).toHaveLength(1)
+    const boxes = calls.find((call) => call.method === 'PUT')!
+    expect(boxes.json).toMatchObject({ good_family_unit: false, good_family_unit_gap: 'They share meals', basic_necessities: true })
+    vi.unstubAllGlobals()
+  })
+
+  it('shows Consent is required when the needs answer is missing', async () => {
+    const stored = visited()
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Consent is required', details: { consent_given: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#good-family-unit').exists()).toBe(true))
+    await page.get('#good-family-unit').setValue(true)
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Consent is required'))
+    expect(page.text().match(/Consent is required/g)).toHaveLength(1)
+    expect(page.text()).not.toContain('The family has not consented')
+    expect(page.text()).not.toContain('Gap is required')
+    expect(calls.some((call) => call.method === 'POST')).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the consent sentence when the boxes save is rejected', async () => {
+    const stored = visited()
+    stored.verification = { needs: { need_most: 'Rice', consent_given: false, notes: '' } }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Gap is too long', details: { good_family_unit_gap: [ 'is too long' ] } } } }
+      }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#good-family-unit').exists()).toBe(true))
+    await page.get('#good-family-unit').setValue(true)
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Gap is too long'))
+    expect(page.text().match(/Gap is too long/g)).toHaveLength(1)
+    expect(page.text().match(/The family has not consented/g)).toHaveLength(1)
+    expect(page.get('#status-boxes').text()).toBe('Not saved')
+    expect(calls.some((call) => call.method === 'POST')).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('blocks a note past 2000 characters and still saves a note of 2000', async () => {
+    const stored = visited()
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') return { status: 201, body: { outcome: 'disqualified', marked_at: '2026-11-24T02:00:00Z', marker_name: 'Aman' } }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#boxes-notes').exists()).toBe(true))
+    await page.get('#boxes-notes').setValue('a'.repeat(2001))
+    await page.get('#mark-disqualified').trigger('click')
+    expect(page.text()).toContain('Anything else they said is too long')
+    expect(page.get('#status-boxes').text()).toBe('Not saved')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    expect(calls.filter((call) => call.method === 'POST')).toHaveLength(0)
+
+    await page.get('#boxes-notes').setValue('a'.repeat(2000))
+    await page.get('#good-family-unit').setValue(true)
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-disqualified').trigger('click')
+    await vi.waitFor(() => expect(calls.some((call) => call.method === 'POST')).toBe(true))
+    expect(calls.find((call) => call.method === 'PUT')!.json).toMatchObject({ notes: 'a'.repeat(2000) })
+    vi.unstubAllGlobals()
+  })
+
+  it('treats a whitespace gap as blank', async () => {
+    const stored = visited()
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Basket is required', details: { basket: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#good-family-gap').exists()).toBe(true))
+    await page.get('#good-family-gap').setValue('   ')
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-disqualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Gap is required'))
+    expect(page.text().match(/Gap is required/g)).toHaveLength(1)
+    expect(calls.find((call) => call.method === 'PUT')!.json).toMatchObject({ good_family_unit_gap: '' })
+    vi.unstubAllGlobals()
+  })
+
+  it('signs out when the mark returns 401', async () => {
+    const stored = visited()
+    stubFetch((method) => {
+      if (method === 'POST') return { status: 401, body: { error: { code: 'UNAUTHENTICATED', message: 'Sign in is required' } } }
+      if (method === 'PUT') return { status: 200, body: {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#mark-qualified').exists()).toBe(true))
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(navigated).toEqual([ '/sign-in' ]))
+    expect(sessionStorage.getItem('sokong.token')).toBeNull()
+    expect(page.find('#mark-qualified').exists()).toBe(true)
     vi.unstubAllGlobals()
   })
 
