@@ -98,14 +98,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Worker detail includes `verification`, null until the first saved part and then the six interview keys plus `boxes`. Submitter JSON has no verification key, no checkbox, and no assigned names. Worker list items do not include them. The request log filters the interview's names, phones, document numbers, assigned worker names, and free text.
 
 **Acceptance criteria:**
-- [ ] After Who is here is saved, worker detail returns that stage and null for the other parts, including `boxes`. Before any save, `verification` is null. `marked_at` and `marker_name` are not added yet. Worker detail also returns `bringing_basket` and `assigned_workers`.
-- [ ] Submitter show and list bodies have no `verification`, `bringing_basket`, or `assigned_workers` key. A worker list item has `visit_at` and has no `verification` key. Another submitter and a worker of another locality still receive 404.
-- [ ] The parameter filter redacts `name`, `phone`, `number`, `other_label`, `assigned_workers`, `origin`, `notes`, `basket`, and the free-text answers. It leaves `gender`, `relationship`, `identity`, `kind`, and `stage` visible.
+- [x] After Who is here is saved, worker detail returns that stage and null for the other parts, including `boxes`. Before any save, `verification` is null. `marked_at` and `marker_name` are not added yet. Worker detail also returns `bringing_basket` and `assigned_workers`.
+- [x] Submitter show and list bodies have no `verification`, `bringing_basket`, or `assigned_workers` key. A worker list item has `visit_at` and has no `verification` key. Another submitter and a worker of another locality still receive 404.
+- [x] The parameter filter redacts `name`, `phone`, `number`, `other_label`, `assigned_workers`, `origin`, `notes`, `basket`, and the free-text answers. It leaves `gender`, `relationship`, `identity`, `kind`, and `stage` visible.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb test/integration/request_log_filter_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: open the same enrolment as the linked worker and as the matching submitter. Only the worker body contains `verification`.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb test/integration/request_log_filter_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: open the same enrolment as the linked worker and as the matching submitter. Only the worker body contains `verification`.
 
 **Dependencies:** Task 3
 
