@@ -709,7 +709,8 @@ describe('worker cases', () => {
 
     await page.get('#back-stage').trigger('click')
     await page.get('#stage-who_is_here').trigger('click')
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3)
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(4))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[3]!.url).pathname).toBe('/enrolments/case-1/verification/house')
     expect(page.get('#status-who_is_here').text()).toContain('Current')
     expect(page.get('#status-who_is_here').text()).toContain('Saved')
     expect(page.get<HTMLInputElement>('#person-name').element.value).toBe('Rahim')
@@ -1035,6 +1036,21 @@ describe('worker cases', () => {
     })
     expect(childPage.get('#status-dynamics').text()).toBe('Saved')
     await childPage.get('#stage-needs').trigger('click')
+    await vi.waitFor(() => expect(childCalls.filter((call) => call.method === 'PUT')).toHaveLength(3))
+    expect(new URL(childCalls.filter((call) => call.method === 'PUT')[2]!.url).pathname).toBe('/enrolments/case-1/verification/house')
+    expect(childCalls.filter((call) => call.method === 'PUT')[2]!.json).toEqual({
+      place: '',
+      rent_per_month: null,
+      behind_on_payments: null,
+      has_water: null,
+      has_electricity: null,
+      sleeping_rooms: null,
+      safe: null,
+      unsafe_detail: '',
+      meals: '',
+      basket: '',
+      notes: ''
+    })
     expect(childPage.find('#next-stage').exists()).toBe(false)
     expect(childPage.text()).not.toContain('Post-visit')
     vi.unstubAllGlobals()
@@ -1250,6 +1266,117 @@ describe('worker cases', () => {
     expect(page.text()).toContain('The village school')
     expect(page.text()).toContain('Walk')
     expect(page.text()).toContain('A long day')
+    await page.get('#next-stage').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    vi.unstubAllGlobals()
+  })
+
+  it('hides rent and the unsafe note unless those answers open them', async () => {
+    const stored = visited()
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: '11111111-1111-4111-8111-111111111111',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          relationship: '',
+          documents: []
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'PUT') return { status: 200, body: stored.verification!.who_is_here as Record<string, unknown> }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-house').exists()).toBe(true))
+    await page.get('#stage-house').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('This place'))
+    expect(page.text()).toContain('Own')
+    expect(page.text()).toContain('Rent')
+    expect(page.text()).toContain('Staying with someone')
+    expect(page.text()).toContain('Temporary')
+    expect(page.text()).toContain('Does it have water?')
+    expect(page.text()).toContain('Does it have electricity?')
+    expect(page.text()).toContain('How many meals a day?')
+    expect(page.text()).toContain('3 a day')
+    expect(page.text()).toContain('Not every day')
+    expect(page.text()).toContain('Basket')
+    expect(page.find('#rent-per-month').exists()).toBe(false)
+    expect(page.find('#unsafe-detail').exists()).toBe(false)
+
+    await page.get('#place').setValue('rent')
+    expect(page.find('#rent-per-month').exists()).toBe(true)
+    expect(page.find('#behind-on-payments').exists()).toBe(true)
+    await page.get('#rent-per-month').setValue('12abc')
+    await page.get('#next-stage').trigger('click')
+    expect(page.text()).toContain('Rent per month is invalid')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+
+    await page.get('#rent-per-month').setValue('400')
+    await page.get('#behind-on-payments').setValue('yes')
+    await page.get('#place').setValue('own')
+    expect(page.find('#rent-per-month').exists()).toBe(false)
+    await page.get('#safe').setValue('no')
+    expect(page.find('#unsafe-detail').exists()).toBe(true)
+    await page.get('#unsafe-detail').setValue('The stairs')
+    await page.get('#safe').setValue('yes')
+    expect(page.find('#unsafe-detail').exists()).toBe(false)
+    await page.get('#has-water').setValue('yes')
+    await page.get('#has-electricity').setValue('no')
+    await page.get('#sleeping-rooms').setValue('2')
+    await page.get('#meals').setValue('three')
+    await page.get('#basket').setValue('Rice')
+    await page.get('#house-notes').setValue('The roof leaks')
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[1]!.url).pathname).toBe('/enrolments/case-1/verification/house')
+    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toEqual({
+      place: 'own',
+      rent_per_month: null,
+      behind_on_payments: null,
+      has_water: true,
+      has_electricity: false,
+      sleeping_rooms: 2,
+      safe: true,
+      unsafe_detail: '',
+      meals: 'three',
+      basket: 'Rice',
+      notes: 'The roof leaks'
+    })
+    expect(page.get('#status-house').text()).toBe('Saved')
+    vi.unstubAllGlobals()
+  })
+
+  it('renders a saved house as text', async () => {
+    const stored = visited()
+    stored.outcome = 'qualified'
+    stored.verification = {
+      house: {
+        place: 'rent',
+        rent_per_month: 400,
+        behind_on_payments: true,
+        has_water: true,
+        has_electricity: false,
+        sleeping_rooms: 2,
+        safe: false,
+        unsafe_detail: 'The stairs',
+        meals: 'three',
+        basket: 'Rice',
+        notes: 'The roof leaks'
+      }
+    }
+    const calls = stubFetch(() => ({ status: 200, body: stored }))
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#stage-house').exists()).toBe(true))
+    await page.get('#stage-house').trigger('click')
+    expect(page.find('#place').exists()).toBe(false)
+    expect(page.text()).toContain('400')
+    expect(page.text()).toContain('The stairs')
+    expect(page.text()).toContain('Rice')
     await page.get('#next-stage').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     vi.unstubAllGlobals()
