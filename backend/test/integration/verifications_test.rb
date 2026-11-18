@@ -1849,6 +1849,15 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     )
     assert_no_enqueued_jobs
 
+    post "/enrolments/#{enrolment.id}/qualification", params: {}, headers: bearer(token), as: :json
+    assert_stage_error "Outcome is required", "outcome" => [ "is required" ]
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "wealth" }, headers: bearer(token), as: :json
+    assert_stage_error "Outcome is invalid", "outcome" => [ "is invalid" ]
+    assert_equal "qualified", enrolment.reload.outcome
+    assert_equal Time.utc(2026, 11, 18, 6, 0, 0), enrolment.marked_at
+    assert_no_enqueued_jobs
+
     travel_to Time.utc(2026, 11, 18, 7, 0, 0) do
       post "/enrolments/#{enrolment.id}/qualification",
         params: { outcome: "disqualified" }, headers: bearer(token), as: :json
@@ -1903,6 +1912,13 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     token = worker_token(name: "Aman", locality: enrolment.locality)
     set_visit(enrolment, token)
     save_interview(enrolment, token, consent: false, boxes_checked: false)
+    enrolment.verification.update!(house: enrolment.verification.house.merge("basket" => ""))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Basket is required", "basket" => [ "is required" ]
+    assert_nil enrolment.reload.outcome
+    assert_no_enqueued_jobs
+    enrolment.verification.update!(house: enrolment.verification.house.merge("basket" => "Rice"))
 
     post "/enrolments/#{enrolment.id}/qualification",
       params: { outcome: "qualified" }, headers: bearer(token), as: :json
