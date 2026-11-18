@@ -153,6 +153,8 @@ describe('submitter progress', () => {
     expect(text.indexOf('2026-11-12T09:00:00Z')).toBeLessThan(text.indexOf('2026-11-12T10:00:00Z'))
     expect(text).toContain('No visit is set.')
     expect(text).not.toContain('A visit is set for')
+    expect(text).not.toContain('This family is qualified.')
+    expect(text).not.toContain('This family is disqualified.')
     expect(text).not.toContain('No one has looked')
     expect(page.get('#look-earlier').text()).not.toContain('Called the enroler, no answer')
     vi.unstubAllGlobals()
@@ -243,6 +245,35 @@ describe('submitter progress', () => {
     expect(page.text()).toContain('No visit is set.')
     expect(page.get('#outcome').text()).toBe('This family is disqualified.')
     expect(page.find('#visit-line').exists()).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a visit with no mark and a disqualified visit', async () => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const visit = '2026-11-24T01:00:00Z'
+    stubFetch(200, {
+      ...newer,
+      progress: { case_in: true, looks: [], visit_at: visit, outcome: null }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const unmarked = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-new' })
+    await vi.waitFor(() => expect(unmarked.find('#visit-line').exists()).toBe(true))
+    expect(unmarked.text()).toContain('This case is in.')
+    expect(unmarked.get('#visit-line').text()).toBe(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(unmarked.find('#outcome').exists()).toBe(false)
+    expect(unmarked.text()).not.toContain('This family is qualified.')
+    expect(unmarked.text()).not.toContain('This family is disqualified.')
+    vi.unstubAllGlobals()
+
+    stubFetch(200, {
+      ...newer,
+      progress: { case_in: true, looks: [], visit_at: visit, outcome: 'disqualified' }
+    })
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-new' })
+    await vi.waitFor(() => expect(page.find('#outcome').exists()).toBe(true))
+    expect(page.get('#visit-line').text()).toBe(`A visit is set for ${formatVisit(visit, zone)}.`)
+    expect(page.get('#outcome').text()).toBe('This family is disqualified.')
+    expect(page.text()).not.toContain('This family is qualified.')
     vi.unstubAllGlobals()
   })
 })
