@@ -195,6 +195,7 @@ async function saveVisit() {
       v-if="visitAt"
       :enrolment-id="enrolment.id"
       :members="enrolment.members"
+      :help="enrolment.help"
       :family-phone="enrolment.family_phone"
       :verification="enrolment.verification ?? null"
       :readonly="Boolean(enrolment.outcome)"

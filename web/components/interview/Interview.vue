@@ -5,11 +5,13 @@ import DailyLife from './DailyLife.vue'
 import Dynamics from './Dynamics.vue'
 import Formation from './Formation.vue'
 import House from './House.vue'
+import Needs from './Needs.vue'
 import WhoIsHere from './WhoIsHere.vue'
 
 const props = defineProps<{
   enrolmentId: string
   members: WorkerMember[]
+  help: string[]
   familyPhone: string
   verification: Record<string, unknown> | null
   readonly: boolean
@@ -44,6 +46,7 @@ const formation = ref<Editor | null>(null)
 const dynamics = ref<Editor | null>(null)
 const dailyLife = ref<Editor | null>(null)
 const house = ref<Editor | null>(null)
+const needs = ref<Editor | null>(null)
 
 const index = computed(() => stages.findIndex((stage) => stage.key === current.value))
 const hasChild = computed(() => {
@@ -74,6 +77,7 @@ function editorFor(key: StageKey): Editor | null {
   if (key === 'dynamics') return dynamics.value
   if (key === 'daily_life') return dailyLife.value
   if (key === 'house') return house.value
+  if (key === 'needs') return needs.value
   return null
 }
 
@@ -163,6 +167,13 @@ async function leave(key: StageKey) {
       v-else-if="current === 'house'"
       ref="house"
       :saved="stageSaved('house')"
+      :readonly="readonly"
+    />
+    <Needs
+      v-else-if="current === 'needs'"
+      ref="needs"
+      :help="help"
+      :saved="stageSaved('needs')"
       :readonly="readonly"
     />
     <section v-else :id="`open-${current}`">
