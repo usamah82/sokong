@@ -503,14 +503,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** Once an outcome is stored, the worker case hides Set visit, Change visit, Add a worker, Back, Next, Add a person, Add a document, and both mark actions. The stage list remains. Each stage and Post-visit open as text. Pre-visit is text. Qualified shows "This family is qualified." Disqualified shows "This family is disqualified."
 
 **Acceptance criteria:**
-- [ ] A qualified case shows "This family is qualified." A disqualified case shows "This family is disqualified." The visit time, the bringing-a-basket answer, and the assigned names stay visible as text, including the late sentence when it applies.
-- [ ] The hidden actions are absent, not only disabled. Opening a stage or Post-visit shows the stored answers as text, including a document type and number. Enrolment facts remain visible above the answers they sit over.
-- [ ] The note form still submits. At 390 CSS pixels the marked case does not scroll horizontally.
+- [x] A qualified case shows "This family is qualified." A disqualified case shows "This family is disqualified." The visit time, the bringing-a-basket answer, and the assigned names stay visible as text, including the late sentence when it applies.
+- [x] The hidden actions are absent, not only disabled. Opening a stage or Post-visit shows the stored answers as text, including a document type and number. Enrolment facts remain visible above the answers they sit over.
+- [x] The note form still submits. At 390 CSS pixels the marked case does not scroll horizontally.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: open a qualified case and a disqualified case at 390 CSS pixels. Confirm the actions are gone and each stage opens as text.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: open a qualified case and a disqualified case at 390 CSS pixels. Confirm the actions are gone and each stage opens as text.
 
 **Dependencies:** Tasks 12 and 18
 
