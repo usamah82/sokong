@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { WorkerDetail } from '../composables/useApi'
+import Interview from './interview/Interview.vue'
 import { formatVisit, toLocalInput, toUtcInstant, visitIsLate } from '../utils/visitTime'
 
 const props = defineProps<{ enrolment: WorkerDetail }>()
@@ -190,5 +191,13 @@ async function saveVisit() {
         </div>
       </form>
     </section>
+    <Interview
+      v-if="visitAt"
+      :enrolment-id="enrolment.id"
+      :members="enrolment.members"
+      :family-phone="enrolment.family_phone"
+      :verification="enrolment.verification ?? null"
+      :readonly="Boolean(enrolment.outcome)"
+    />
   </div>
 </template>

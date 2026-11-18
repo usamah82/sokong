@@ -65,6 +65,8 @@ export type WorkerDetail = WorkerSummary & {
   visit_at: string | null
   bringing_basket: boolean | null
   assigned_workers: string[] | null
+  verification?: Record<string, unknown> | null
+  outcome?: string | null
 }
 
 type EnrolmentListResult =
@@ -88,6 +90,10 @@ export type VisitFields = {
 
 type VisitResult =
   | { ok: true, visit: VisitFields }
+  | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
+
+type StageResult =
+  | { ok: true, stage: Record<string, unknown> }
   | { ok: false, reason: 'unauthenticated' | 'invalid', message: string }
 
 export type LocalityBoundary = {
@@ -206,6 +212,24 @@ export function useApi() {
       if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
       if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
       throw new Error('visit was not saved')
+    },
+
+    async saveStage(id: string, stage: string, body: Record<string, unknown>): Promise<StageResult> {
+      const token = sessionStorage.getItem('sokong.token')
+      const response = await fetch(new URL(`/enrolments/${id}/verification/${stage}`, config.public.apiBase), {
+        method: 'PUT',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body)
+      })
+      if (response.status === 200) return { ok: true, stage: await response.json() as Record<string, unknown> }
+      const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null
+      if (response.status === 401) return { ok: false, reason: 'unauthenticated', message: payload?.error?.message ?? '' }
+      if (response.status === 422) return { ok: false, reason: 'invalid', message: payload?.error?.message ?? '' }
+      throw new Error('stage was not saved')
     },
 
     async addLook(id: string, note: string): Promise<LookResult> {
