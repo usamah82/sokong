@@ -858,7 +858,8 @@ describe('worker cases', () => {
     expect(page.text()).toContain('Card')
     expect(page.text()).toContain('A cousin')
     expect(page.text()).toContain('They asked for rice')
-    await page.get('#next-stage').trigger('click')
+    expect(page.find('#next-stage').exists()).toBe(false)
+    await page.get('#stage-formation').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     expect(page.get('#status-formation').text()).toContain('Current')
     vi.unstubAllGlobals()
@@ -1082,9 +1083,10 @@ describe('worker cases', () => {
     expect(page.text()).toContain('2008')
     expect(page.text()).toContain('They met at the market')
     expect(page.text()).toContain('Rice')
-    await page.get('#next-stage').trigger('click')
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    expect(page.find('#next-stage').exists()).toBe(false)
+    expect(page.find('#back-stage').exists()).toBe(false)
     await page.get('#stage-dynamics').trigger('click')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     expect(page.find('#hard-week').exists()).toBe(false)
     expect(page.text()).toContain('Rain')
     expect(page.text()).toContain('They study at the table')
@@ -1273,7 +1275,8 @@ describe('worker cases', () => {
     expect(page.text()).toContain('The village school')
     expect(page.text()).toContain('Walk')
     expect(page.text()).toContain('A long day')
-    await page.get('#next-stage').trigger('click')
+    expect(page.find('#next-stage').exists()).toBe(false)
+    await page.get('#stage-house').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     vi.unstubAllGlobals()
   })
@@ -1409,7 +1412,8 @@ describe('worker cases', () => {
     expect(page.text()).toContain('400')
     expect(page.text()).toContain('The stairs')
     expect(page.text()).toContain('Rice')
-    await page.get('#next-stage').trigger('click')
+    expect(page.find('#next-stage').exists()).toBe(false)
+    await page.get('#stage-needs').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     vi.unstubAllGlobals()
 
@@ -1596,7 +1600,8 @@ describe('worker cases', () => {
     expect(page.get('#needs-enrolment').text()).not.toContain('School supplies')
     expect(page.text()).toContain('Rice')
     expect(page.text()).toContain('The family does not consent')
-    await page.get('#back-stage').trigger('click')
+    expect(page.find('#back-stage').exists()).toBe(false)
+    await page.get('#stage-house').trigger('click')
     expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
     vi.unstubAllGlobals()
   })
@@ -1947,11 +1952,64 @@ describe('worker cases', () => {
     await page.get('#basic-necessities').setValue(true)
     await page.get('#mark-qualified').trigger('click')
     await vi.waitFor(() => expect(page.find('#mark-qualified').exists()).toBe(false))
+    expect(page.get('#outcome').text()).toBe('This family is qualified.')
     expect(page.find('#mark-disqualified').exists()).toBe(false)
     expect(page.find('#good-family-unit').exists()).toBe(false)
     expect(page.get('#post-visit').text()).toContain('Good family unit')
     expect(page.get('#status-boxes').text()).toBe('Saved')
     expect(calls.some((call) => call.method === 'POST' && call.json?.outcome === 'qualified')).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a marked case as text and still takes a note', async () => {
+    const stored = visited()
+    stored.outcome = 'disqualified'
+    stored.bringing_basket = true
+    stored.assigned_workers = [ 'Aman', 'Siti' ]
+    stored.verification = {
+      who_is_here: {
+        people: [ {
+          person_id: 'person-1',
+          family_member_id: 'member-1',
+          head: true,
+          name: 'Rahim',
+          documents: [ { kind: 'passport', number: 'A1', other_label: '' } ],
+          relationship: '',
+          identity: 'verified'
+        } ]
+      }
+    }
+    const calls = stubFetch((method) => {
+      if (method === 'POST') {
+        return { status: 201, body: { id: 'look-2', worker_name: 'Aminah', looked_at: '2026-11-12T10:00:00Z', note: 'Called' } }
+      }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#outcome').exists()).toBe(true))
+    expect(page.get('#outcome').text()).toBe('This family is disqualified.')
+    expect(page.text()).toContain('This visit is later than a week after the enrolment.')
+    expect(page.find('#visit-clock').exists()).toBe(true)
+    expect(page.text()).toContain('Bringing a basket Yes')
+    expect(page.text()).toContain('Aman')
+    expect(page.text()).toContain('Siti')
+    expect(page.find('#save-visit').exists()).toBe(false)
+    expect(page.find('#visit-time').exists()).toBe(false)
+    expect(page.find('#add-worker').exists()).toBe(false)
+    expect(page.find('#back-stage').exists()).toBe(false)
+    expect(page.find('#next-stage').exists()).toBe(false)
+    expect(page.find('#add-person').exists()).toBe(false)
+    expect(page.find('#add-document').exists()).toBe(false)
+    expect(page.find('#mark-qualified').exists()).toBe(false)
+    expect(page.find('#mark-disqualified').exists()).toBe(false)
+    expect(page.find('#stage-who_is_here').exists()).toBe(true)
+    expect(page.text()).toContain('Passport A1')
+    expect(page.get('.enrolment-facts').text()).toContain('Rahim')
+    await page.get('#note').setValue('Called')
+    await page.get('form').trigger('submit')
+    await vi.waitFor(() => expect(calls.some((call) => call.method === 'POST')).toBe(true))
+    expect(calls.find((call) => call.method === 'POST')!.json).toEqual({ note: 'Called' })
     vi.unstubAllGlobals()
   })
 })
