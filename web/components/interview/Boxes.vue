@@ -64,11 +64,11 @@ defineExpose({ attempt, notices, show })
       <p><span class="label">{{ t('interview.notes') }}</span> {{ notes }}</p>
     </template>
     <template v-else>
-      <p>{{ t('interview.integrity') }}</p>
       <label class="check">
         <input id="good-family-unit" v-model="good" type="checkbox">
         {{ t('interview.goodFamily') }}
       </label>
+      <p>{{ t('interview.integrity') }}</p>
       <label class="field">{{ t('interview.gap') }}
         <textarea id="good-family-gap" v-model="goodGap" rows="2" />
       </label>

@@ -1622,6 +1622,12 @@ describe('worker cases', () => {
     expect(section.text()).toContain('Integrity, action, and selflessness, for the family as a whole.')
     expect(section.text()).toContain('Good family unit')
     expect(section.text()).toContain('Basic necessities')
+    const copy = section.text()
+    const family = copy.indexOf('Good family unit')
+    const integrity = copy.indexOf('Integrity, action, and selflessness, for the family as a whole.')
+    const gap = copy.indexOf('Gap')
+    expect(integrity).toBeGreaterThan(family)
+    expect(gap).toBeGreaterThan(integrity)
     expect(section.find('#good-family-gap').exists()).toBe(true)
     expect(section.find('#basic-gap').exists()).toBe(true)
     expect(section.find('#back-stage').exists()).toBe(false)
@@ -1680,6 +1686,38 @@ describe('worker cases', () => {
     await vi.waitFor(() => expect(page.text()).toContain('The visit record is incomplete'))
     expect(calls.filter((call) => call.method === 'POST')).toHaveLength(2)
     expect(page.text()).not.toContain('The family has not consented')
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the local mark sentences beside a different API message', async () => {
+    const stored = visited()
+    stored.verification = {
+      needs: { need_most: 'Rice', consent_given: false, notes: '' }
+    }
+    const calls = stubFetch((method) => {
+      const last = calls[calls.length - 1]
+      if (method === 'POST') {
+        return { status: 422, body: { error: { code: 'VALIDATION_ERROR', message: 'Basket is required', details: { basket: [ 'is required' ] } } } }
+      }
+      if (method === 'PUT') return { status: 200, body: last?.json ?? {} }
+      return { status: 200, body: stored }
+    })
+    sessionStorage.setItem('sokong.token', 'secret-token')
+    const page = await mountSuspended(EnrolmentDetail, { route: '/enrolments/case-1' })
+    await vi.waitFor(() => expect(page.find('#mark-qualified').exists()).toBe(true))
+    await page.get('#basic-necessities').setValue(true)
+    await page.get('#mark-qualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Basket is required'))
+    expect(calls.some((call) => call.method === 'POST' && call.json?.outcome === 'qualified')).toBe(true)
+    expect(page.text().match(/Gap is required/g)).toHaveLength(1)
+    expect(page.text().match(/The family has not consented/g)).toHaveLength(1)
+    expect(page.text().match(/Basket is required/g)).toHaveLength(1)
+
+    await page.get('#mark-disqualified').trigger('click')
+    await vi.waitFor(() => expect(page.text()).not.toContain('The family has not consented'))
+    expect(calls.filter((call) => call.method === 'POST')).toHaveLength(2)
+    expect(page.text().match(/Gap is required/g)).toHaveLength(1)
+    expect(calls.findLast((call) => call.method === 'POST')!.json).toEqual({ outcome: 'disqualified' })
     vi.unstubAllGlobals()
   })
 
