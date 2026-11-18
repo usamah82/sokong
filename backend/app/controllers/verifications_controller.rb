@@ -21,6 +21,11 @@ class VerificationsController < ApplicationController
     cleaner = CLEANERS[params[:stage]]
     return render_not_found unless cleaner
 
+    if enrolment.outcome.present?
+      render json: { error: VerificationMessages.envelope(:finished) }, status: :unprocessable_content
+      return
+    end
+
     if enrolment.visit_at.nil?
       render json: { error: VerificationMessages.envelope(:visit_not_set) }, status: :unprocessable_content
       return

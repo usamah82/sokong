@@ -100,6 +100,24 @@ class Enrolment < ApplicationRecord
     self
   end
 
+  def mark(outcome, worker:)
+    return :outcome_required if outcome.nil?
+    return :outcome_invalid unless outcome == "qualified" || outcome == "disqualified"
+    return :visit_not_set if visit_at.nil?
+    return :finished_mark if self.outcome.present?
+
+    gap = first_mark_gap
+    return gap if gap
+    return :consent_refused if outcome == "qualified" && verification.needs["consent_given"] == false
+
+    update!(
+      outcome: outcome,
+      marked_at: Time.current.utc.change(usec: 0),
+      marker_name: worker.name
+    )
+    nil
+  end
+
   def pre_visit_json
     {
       visit_at: visit_at&.utc&.iso8601,
@@ -109,6 +127,43 @@ class Enrolment < ApplicationRecord
   end
 
   private
+    def first_mark_gap
+      record = verification
+      return :who_is_here if record.nil? || record.who_is_here.nil?
+      return :formation if record.formation.nil?
+      return :daily_life if record.daily_life.nil?
+      return :dynamics if record.dynamics.nil?
+      return :house if record.house.nil?
+      return :needs if record.needs.nil?
+      return :boxes if record.boxes.nil?
+
+      basket = record.house["basket"].to_s
+      return :basket_required if basket.strip.empty?
+      return :basket_too_long if basket.length > 500
+      return :consent_required if record.needs["consent_given"].nil?
+
+      record.who_is_here.fetch("people", []).each do |person|
+        identity = person["identity"].to_s
+        return :identity_required if identity.empty?
+        return :identity_invalid unless WhoIsHereStage::IDENTITIES.include?(identity)
+      end
+      record.who_is_here.fetch("people", []).each do |person|
+        next if person["head"] == true
+
+        relationship = person["relationship"].to_s
+        return :relationship_required if relationship.empty?
+        return :relationship_invalid unless WhoIsHereStage::RELATIONSHIPS.include?(relationship)
+      end
+
+      boxes = record.boxes
+      return :good_family_unit_required if boxes["good_family_unit"].nil?
+      return :basic_necessities_required if boxes["basic_necessities"].nil?
+      return :gap_required if boxes["good_family_unit"] == false && boxes["good_family_unit_gap"].to_s.strip.empty?
+      return :gap_required if boxes["basic_necessities"] == false && boxes["basic_necessities_gap"].to_s.strip.empty?
+
+      nil
+    end
+
     def parsed_visit_at(value)
       match = VISIT_AT_FORMAT.match(value.to_s)
       return :visit_invalid unless match

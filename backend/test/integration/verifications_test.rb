@@ -270,8 +270,12 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_nil before["verification"]
     assert_equal false, before["bringing_basket"]
     assert_equal [ "Aman" ], before["assigned_workers"]
-    assert_not before.key?("marked_at")
-    assert_not before.key?("marker_name")
+    assert_includes before.keys, "marked_at"
+    assert_nil before["marked_at"]
+    assert_includes before.keys, "marker_name"
+    assert_nil before["marker_name"]
+    assert_includes before.keys, "outcome"
+    assert_nil before["outcome"]
 
     body = who_is_here_body(enrolment)
     put "/enrolments/#{enrolment.id}/verification/who_is_here",
@@ -286,8 +290,9 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     %w[formation daily_life dynamics house needs boxes].each do |part|
       assert_nil detail.dig("verification", part)
     end
-    assert_not detail.key?("marked_at")
-    assert_not detail.key?("marker_name")
+    assert_nil detail["marked_at"]
+    assert_nil detail["marker_name"]
+    assert_nil detail["outcome"]
 
     get "/enrolments", headers: bearer(token)
     assert_response :ok
@@ -1827,6 +1832,189 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_equal needs, enrolment.verification.reload.needs
   end
 
+  test "a complete visit is marked once and then locked" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    save_interview(enrolment, token, consent: true, head_identity: "not_verified", spouse_identity: "no_papers")
+
+    travel_to Time.utc(2026, 11, 18, 6, 0, 0) do
+      post "/enrolments/#{enrolment.id}/qualification",
+        params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    end
+    assert_response :created
+    assert_equal(
+      { "outcome" => "qualified", "marked_at" => "2026-11-18T06:00:00Z", "marker_name" => "Aman" },
+      response.parsed_body
+    )
+    assert_no_enqueued_jobs
+
+    travel_to Time.utc(2026, 11, 18, 7, 0, 0) do
+      post "/enrolments/#{enrolment.id}/qualification",
+        params: { outcome: "disqualified" }, headers: bearer(token), as: :json
+    end
+    assert_stage_error "The mark is already set", "outcome" => [ "is already set" ]
+    assert_equal "qualified", enrolment.reload.outcome
+    assert_equal Time.utc(2026, 11, 18, 6, 0, 0), enrolment.marked_at
+    assert_no_enqueued_jobs
+
+    patch "/enrolments/#{enrolment.id}/visit",
+      params: { visit_at: "", bringing_basket: true, assigned_workers: [ "Aman" ] },
+      headers: bearer(token), as: :json
+    assert_stage_error "Verification is finished", {}
+    assert_equal Time.utc(2026, 11, 24, 1, 0, 0), enrolment.reload.visit_at
+    put "/enrolments/#{enrolment.id}/verification/house",
+      params: { basket: "Changed" }, headers: bearer(token), as: :json
+    assert_stage_error "Verification is finished", {}
+    assert_equal "Rice", enrolment.verification.reload.house["basket"]
+    assert_no_enqueued_jobs
+
+    get "/enrolments/#{enrolment.id}", headers: bearer(token)
+    assert_response :ok
+    detail = response.parsed_body
+    assert_equal "qualified", detail["outcome"]
+    assert_equal "2026-11-18T06:00:00Z", detail["marked_at"]
+    assert_equal "Aman", detail["marker_name"]
+
+    get "/enrolments", headers: bearer(token)
+    row = response.parsed_body.find { |item| item["id"] == enrolment.id }
+    assert_equal "qualified", row["outcome"]
+    assert_not row.key?("marked_at")
+    assert_not row.key?("marker_name")
+    assert_not row.key?("verification")
+
+    submitter = confirmed_token(email: "siti@example.com")
+    get "/enrolments/#{enrolment.id}", headers: bearer(submitter)
+    assert_response :ok
+    shown = response.parsed_body
+    assert_equal "qualified", shown.dig("progress", "outcome")
+    assert_not shown.key?("marked_at")
+    assert_not shown.key?("marker_name")
+    assert_not shown.key?("verification")
+    assert_not shown.key?("bringing_basket")
+
+    post "/enrolments", params: valid_enrolment.merge(email: "aminah@example.com"), as: :json
+    assert_response :created
+    assert_nil response.parsed_body.dig("progress", "outcome")
+  end
+
+  test "a refused consent can be disqualified and cannot be qualified" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    set_visit(enrolment, token)
+    save_interview(enrolment, token, consent: false, boxes_checked: false)
+
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "The family has not consented", "outcome" => [ "needs consent" ]
+    assert_nil enrolment.reload.outcome
+    assert_no_enqueued_jobs
+
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "disqualified" }, headers: bearer(token), as: :json
+    assert_response :created
+    assert_equal "disqualified", response.parsed_body["outcome"]
+
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "The mark is already set", "outcome" => [ "is already set" ]
+    assert_equal "disqualified", enrolment.reload.outcome
+  end
+
+  test "the mark names the first missing part and the first bad field" do
+    enrolment = submit_family
+    token = worker_token(name: "Aman", locality: enrolment.locality)
+    post "/enrolments/#{enrolment.id}/qualification", params: {}, headers: bearer(token), as: :json
+    assert_stage_error "Outcome is required", "outcome" => [ "is required" ]
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "wealth" }, headers: bearer(token), as: :json
+    assert_stage_error "Outcome is invalid", "outcome" => [ "is invalid" ]
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Set the visit before recording it", {}
+    assert_nil enrolment.reload.outcome
+
+    set_visit(enrolment, token)
+    %w[who_is_here formation daily_life dynamics house needs boxes].each do |part|
+      post "/enrolments/#{enrolment.id}/qualification",
+        params: { outcome: "qualified" }, headers: bearer(token), as: :json
+      assert_stage_error "The visit record is incomplete", part => [ "is required" ]
+      save_stage(enrolment, token, part, stage_body(enrolment, part))
+    end
+
+    blank_basket = enrolment.verification.reload.house.merge("basket" => "")
+    enrolment.verification.update!(house: blank_basket)
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Basket is required", "basket" => [ "is required" ]
+    enrolment.verification.update!(house: blank_basket.merge("basket" => "b" * 501))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Basket is too long", "basket" => [ "is too long" ]
+    enrolment.verification.update!(house: blank_basket.merge("basket" => "Rice"))
+
+    enrolment.verification.update!(needs: enrolment.verification.needs.merge("consent_given" => nil))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Consent is required", "consent_given" => [ "is required" ]
+    enrolment.verification.update!(needs: enrolment.verification.needs.merge("consent_given" => true))
+
+    people = enrolment.verification.who_is_here["people"]
+    people[0]["identity"] = ""
+    enrolment.verification.update!(who_is_here: enrolment.verification.who_is_here.merge("people" => people))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Identity check is required", "identity" => [ "is required" ]
+    people[0]["identity"] = "citizen"
+    enrolment.verification.update!(who_is_here: enrolment.verification.who_is_here.merge("people" => people))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Identity check is invalid", "identity" => [ "is invalid" ]
+    people[0]["identity"] = "verified"
+    people[1]["identity"] = "not_verified"
+    people[1]["relationship"] = ""
+    enrolment.verification.update!(who_is_here: enrolment.verification.who_is_here.merge("people" => people))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Relationship is required", "relationship" => [ "is required" ]
+    people[1]["relationship"] = "cousin"
+    enrolment.verification.update!(who_is_here: enrolment.verification.who_is_here.merge("people" => people))
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Relationship is invalid", "relationship" => [ "is invalid" ]
+    people[1]["relationship"] = "spouse"
+    enrolment.verification.update!(who_is_here: enrolment.verification.who_is_here.merge("people" => people))
+
+    boxes = enrolment.verification.boxes.merge("good_family_unit" => nil)
+    enrolment.verification.update!(boxes: boxes)
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Good family unit is required", "good_family_unit" => [ "is required" ]
+    boxes = boxes.merge("good_family_unit" => false, "good_family_unit_gap" => "", "basic_necessities" => nil)
+    enrolment.verification.update!(boxes: boxes)
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Basic necessities is required", "basic_necessities" => [ "is required" ]
+    boxes = boxes.merge("basic_necessities" => false, "basic_necessities_gap" => "Rent")
+    enrolment.verification.update!(boxes: boxes)
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Gap is required", "gap" => [ "is required" ]
+    boxes = boxes.merge("good_family_unit_gap" => "Away", "basic_necessities_gap" => "")
+    enrolment.verification.update!(boxes: boxes)
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "disqualified" }, headers: bearer(token), as: :json
+    assert_stage_error "Gap is required", "gap" => [ "is required" ]
+    assert_nil enrolment.reload.outcome
+
+    post "/enrolments/#{enrolment.id}/qualification", params: { outcome: "qualified" }, as: :json
+    assert_sign_in_required
+    submitter = confirmed_token(email: "siti@example.com")
+    post "/enrolments/#{enrolment.id}/qualification",
+      params: { outcome: "qualified" }, headers: bearer(submitter), as: :json
+    assert_not_found
+  end
+
   private
     def mail_text(mail)
       mail.text_part&.body&.to_s&.strip || mail.body.to_s.strip
@@ -1937,6 +2125,47 @@ class VerificationsTest < ActionDispatch::IntegrationTest
         as: :json
       assert_response :ok
       clear_enqueued_jobs
+    end
+
+    def save_stage(enrolment, token, stage, body)
+      put "/enrolments/#{enrolment.id}/verification/#{stage}",
+        params: body, headers: bearer(token), as: :json
+      assert_response :ok
+    end
+
+    def save_interview(enrolment, token, consent:, head_identity: "verified", spouse_identity: "verified", boxes_checked: true)
+      body = who_is_here_body(enrolment)
+      body[:people][0][:identity] = head_identity
+      body[:people][1][:identity] = spouse_identity
+      save_stage(enrolment, token, "who_is_here", body)
+      %w[formation daily_life dynamics house needs].each do |stage|
+        save_stage(enrolment, token, stage, stage_body(enrolment, stage, consent:))
+      end
+      gap = boxes_checked ? "" : "The father is away"
+      save_stage(enrolment, token, "boxes", {
+        good_family_unit: boxes_checked, good_family_unit_gap: gap,
+        basic_necessities: boxes_checked, basic_necessities_gap: gap, notes: ""
+      })
+    end
+
+    def stage_body(enrolment, stage, consent: true)
+      case stage
+      when "who_is_here" then who_is_here_body(enrolment)
+      when "formation" then { started_year: nil, how_it_started: "", notes: "" }
+      when "daily_life" then { people: [], notes: "" }
+      when "dynamics" then { hard_week: "", who_steps_in: "", children_at_home: "", notes: "" }
+      when "house"
+        {
+          place: "own", rent_per_month: nil, behind_on_payments: nil, has_water: nil,
+          has_electricity: nil, sleeping_rooms: nil, safe: nil, meals: "", basket: "Rice", notes: ""
+        }
+      when "needs" then { need_most: "", consent_given: consent, notes: "" }
+      when "boxes"
+        {
+          good_family_unit: true, good_family_unit_gap: "",
+          basic_necessities: true, basic_necessities_gap: "", notes: ""
+        }
+      end
     end
 
     def who_is_here_body(enrolment)

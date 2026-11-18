@@ -1026,7 +1026,8 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
         "enroler_contact" => enrolment.enroler_contact,
         "on_behalf" => enrolment.on_behalf,
         "locality" => { "id" => enrolment.locality.id, "name" => enrolment.locality.name },
-        "visit_at" => enrolment.visit_at&.utc&.iso8601
+        "visit_at" => enrolment.visit_at&.utc&.iso8601,
+        "outcome" => enrolment.outcome
       }
     end
 
@@ -1064,7 +1065,9 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
         },
         "bringing_basket" => enrolment.bringing_basket,
         "assigned_workers" => enrolment.assigned_workers,
-        "verification" => verification_json(enrolment)
+        "verification" => verification_json(enrolment),
+        "marked_at" => enrolment.marked_at&.utc&.iso8601,
+        "marker_name" => enrolment.marker_name
       )
     end
 
@@ -1119,7 +1122,12 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
             "monthly_amount" => member.monthly_amount
           }
         },
-        "progress" => { "case_in" => true, "looks" => [], "visit_at" => enrolment.visit_at&.utc&.iso8601 }
+        "progress" => {
+          "case_in" => true,
+          "looks" => [],
+          "visit_at" => enrolment.visit_at&.utc&.iso8601,
+          "outcome" => enrolment.outcome
+        }
       }
     end
 end

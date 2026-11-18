@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_110000) do
   create_table "accounts", id: { type: :string, limit: 36 }, force: :cascade do |t|
     t.string "email", null: false
     t.string "email_normalized", null: false
@@ -62,6 +62,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_100000) do
     t.datetime "updated_at", null: false
     t.boolean "bringing_basket"
     t.json "assigned_workers"
+    t.string "outcome"
+    t.datetime "marked_at"
+    t.string "marker_name"
     t.index ["family_unit_id"], name: "index_enrolments_on_family_unit_id", unique: true
     t.index ["locality_id"], name: "index_enrolments_on_locality_id"
   end
