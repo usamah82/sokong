@@ -314,14 +314,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The worker case shows Pre-visit: the aim sentence, the visit field, the "Bringing a basket" checkbox, and the assigned worker names. The name list starts with the signed-in worker. "Add a worker" adds a row, and a row that is present needs a name. After a time is stored the button reads Change visit, the UTC value sits on `<time datetime>`, and the visible text is the browser's local zone. A time more than seven days after `submitted_at` also shows the late sentence. Exactly seven days does not. Verification Interview, Post-visit, and both mark actions stay off the page until a visit is stored.
 
 **Acceptance criteria:**
-- [ ] The section heading is "Pre-visit". The page shows "Aim for a visit within a week of the enrolment.", "Set the visit before recording it.", a field labeled "Visit time", "Bringing a basket", and "Assigned workers". An empty or unparseable time shows "Visit time is invalid" and does not send. A present name row with a blank name does not send. A successful save shows the formatted time and "Change visit".
-- [ ] `formatVisit` renders `2026-11-24T01:00:00Z` in `Asia/Kuala_Lumpur` as "24 November 2026 at 09:00". The late sentence appears only when the instant is later than `submitted_at` plus seven days. Changing only the checkbox or a name, with the same instant, does not expect a new visit message.
-- [ ] The existing members, help, looks, and note form still render. At 390 CSS pixels the case does not scroll horizontally. Date, time, and number inputs use the same full-width rule as text inputs.
+- [x] The section heading is "Pre-visit". The page shows "Aim for a visit within a week of the enrolment.", "Set the visit before recording it.", a field labeled "Visit time", "Bringing a basket", and "Assigned workers". An empty or unparseable time shows "Visit time is invalid" and does not send. A present name row with a blank name does not send. A successful save shows the formatted time and "Change visit".
+- [x] `formatVisit` renders `2026-11-24T01:00:00Z` in `Asia/Kuala_Lumpur` as "24 November 2026 at 09:00". The late sentence appears only when the instant is later than `submitted_at` plus seven days. Changing only the checkbox or a name, with the same instant, does not expect a new visit message.
+- [x] The existing members, help, looks, and note form still render. At 390 CSS pixels the case does not scroll horizontally. Date, time, and number inputs use the same full-width rule as text inputs.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: in the browser at 390 CSS pixels, set a visit with the checkbox and a worker name, see the local time, change it, and submit an empty field. Verification Interview and Post-visit are not on the page before the first successful save.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: in the browser at 390 CSS pixels, set a visit with the checkbox and a worker name, see the local time, change it, and submit an empty field. Verification Interview and Post-visit are not on the page before the first successful save.
 
 **Dependencies:** Task 2
 
