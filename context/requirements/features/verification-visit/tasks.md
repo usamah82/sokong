@@ -124,14 +124,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** `formation` and `dynamics` save on their own. A blank stage is valid. A year outside 1900 through the current UTC year is rejected with the spec sentence. The children answer is stored empty when Who is here has no child.
 
 **Acceptance criteria:**
-- [ ] Each stage returns 200 for blank answers and for filled answers. Replacing one leaves the other, and Who is here, unchanged.
-- [ ] A string year, a year before 1900, and a year after the current UTC year return 422 "Enter the year, for example 2008." A year equal to the current UTC year returns 200.
-- [ ] `children_at_home` is stored as `""` when no saved person has relationship `child`. It is kept when a child is saved. A string past 2000 characters returns 422 and leaves the previous column unchanged.
+- [x] Each stage returns 200 for blank answers and for filled answers. Replacing one leaves the other, and Who is here, unchanged.
+- [x] A string year, a year before 1900, and a year after the current UTC year return 422 "Enter the year, for example 2008." A year equal to the current UTC year returns 200.
+- [x] `children_at_home` is stored as `""` when no saved person has relationship `child`. It is kept when a child is saved. A string past 2000 characters returns 422 and leaves the previous column unchanged.
 
 **Verification:**
-- [ ] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: PUT `formation` with a year, then PUT `dynamics`, and confirm Who is here is unchanged.
+- [x] Tests pass: `cd backend && bin/rails test test/integration/verifications_test.rb`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: PUT `formation` with a year, then PUT `dynamics`, and confirm Who is here is unchanged.
 
 **Dependencies:** Task 3
 
