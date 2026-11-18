@@ -447,14 +447,14 @@ A task is done only when its acceptance lines are true and [definition of done](
 **Description:** The needs stage lists the enrolment help above the question, asks what the family needs most, and records one consent choice. Only the help keys stored on the enrolment are listed, with the spec's four labels.
 
 **Acceptance criteria:**
-- [ ] The stored help keys appear under "Enrolment" as Food, Clothing, School supplies, and Help applying to a body (for example social security, welfare, or a tithe body). A key that was not stored is absent. `other_help` stays in the existing help block and is not repeated here.
-- [ ] "The family consents" and "The family does not consent" are one choice. Neither selected is sent as null.
-- [ ] Leaving the stage saves it. This stage has Back and no Next. `readonly` renders the need and the consent as text.
+- [x] The stored help keys appear under "Enrolment" as Food, Clothing, School supplies, and Help applying to a body (for example social security, welfare, or a tithe body). A key that was not stored is absent. `other_help` stays in the existing help block and is not repeated here.
+- [x] "The family consents" and "The family does not consent" are one choice. Neither selected is sent as null.
+- [x] Leaving the stage saves it. This stage has Back and no Next. `readonly` renders the need and the consent as text.
 
 **Verification:**
-- [ ] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
-- [ ] Build succeeds: `bin/ci` from the repository root
-- [ ] Manual check: open an enrolment whose help is food only. The needs stage lists Food and does not list Clothing.
+- [x] Tests pass: `cd web && npx vitest run test/nuxt/worker-case.spec.ts`
+- [x] Build succeeds: `bin/ci` from the repository root
+- [x] Manual check: open an enrolment whose help is food only. The needs stage lists Food and does not list Clothing.
 
 **Dependencies:** Tasks 8 and 13
 
