@@ -95,8 +95,10 @@ defineExpose({ attempt, fail })
     <template v-if="readonly">
       <p><span class="label">{{ t('interview.place') }}</span> {{ place }}</p>
       <p v-if="place === 'rent'"><span class="label">{{ t('interview.rentPerMonth') }}</span> {{ rent }}</p>
+      <p v-if="place === 'rent'"><span class="label">{{ t('interview.behind') }}</span> {{ yesNoLabel(behind) }}</p>
       <p><span class="label">{{ t('interview.water') }}</span> {{ yesNoLabel(water) }}</p>
       <p><span class="label">{{ t('interview.electricity') }}</span> {{ yesNoLabel(electricity) }}</p>
+      <p><span class="label">{{ t('interview.rooms') }}</span> {{ rooms }}</p>
       <p><span class="label">{{ t('interview.safe') }}</span> {{ yesNoLabel(safe) }}</p>
       <p v-if="safe === 'no'">{{ unsafe }}</p>
       <p><span class="label">{{ t('interview.meals') }}</span> {{ meals }}</p>

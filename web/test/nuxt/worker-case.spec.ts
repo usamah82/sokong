@@ -1286,7 +1286,7 @@ describe('worker cases', () => {
       }
     }
     const calls = stubFetch((method) => {
-      if (method === 'PUT') return { status: 200, body: stored.verification!.who_is_here as Record<string, unknown> }
+      if (method === 'PUT') return { status: 200, body: calls[calls.length - 1]?.json ?? {} }
       return { status: 200, body: stored }
     })
     sessionStorage.setItem('sokong.token', 'secret-token')
@@ -1317,13 +1317,8 @@ describe('worker cases', () => {
 
     await page.get('#rent-per-month').setValue('400')
     await page.get('#behind-on-payments').setValue('yes')
-    await page.get('#place').setValue('own')
-    expect(page.find('#rent-per-month').exists()).toBe(false)
     await page.get('#safe').setValue('no')
-    expect(page.find('#unsafe-detail').exists()).toBe(true)
     await page.get('#unsafe-detail').setValue('The stairs')
-    await page.get('#safe').setValue('yes')
-    expect(page.find('#unsafe-detail').exists()).toBe(false)
     await page.get('#has-water').setValue('yes')
     await page.get('#has-electricity').setValue('no')
     await page.get('#sleeping-rooms').setValue('2')
@@ -1332,8 +1327,27 @@ describe('worker cases', () => {
     await page.get('#house-notes').setValue('The roof leaks')
     await page.get('#next-stage').trigger('click')
     await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(2))
-    expect(new URL(calls.filter((call) => call.method === 'PUT')[1]!.url).pathname).toBe('/enrolments/case-1/verification/house')
-    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toEqual({
+    expect(calls.filter((call) => call.method === 'PUT')[1]!.json).toMatchObject({
+      place: 'rent',
+      rent_per_month: 400,
+      behind_on_payments: true,
+      safe: false,
+      unsafe_detail: 'The stairs'
+    })
+
+    await page.get('#back-stage').trigger('click')
+    expect(page.get<HTMLInputElement>('#place').element.value).toBe('rent')
+    expect(page.get<HTMLInputElement>('#rent-per-month').element.value).toBe('400')
+    expect(page.get<HTMLInputElement>('#behind-on-payments').element.value).toBe('yes')
+    expect(page.get<HTMLTextAreaElement>('#unsafe-detail').element.value).toBe('The stairs')
+    await page.get('#place').setValue('own')
+    expect(page.find('#rent-per-month').exists()).toBe(false)
+    await page.get('#safe').setValue('yes')
+    expect(page.find('#unsafe-detail').exists()).toBe(false)
+    await page.get('#next-stage').trigger('click')
+    await vi.waitFor(() => expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(3))
+    expect(new URL(calls.filter((call) => call.method === 'PUT')[2]!.url).pathname).toBe('/enrolments/case-1/verification/house')
+    expect(calls.filter((call) => call.method === 'PUT')[2]!.json).toEqual({
       place: 'own',
       rent_per_month: null,
       behind_on_payments: null,
@@ -1374,6 +1388,8 @@ describe('worker cases', () => {
     await vi.waitFor(() => expect(page.find('#stage-house').exists()).toBe(true))
     await page.get('#stage-house').trigger('click')
     expect(page.find('#place').exists()).toBe(false)
+    expect(page.text()).toContain('Are you behind on payments? Yes')
+    expect(page.text()).toContain('How many rooms do people sleep in? 2')
     expect(page.text()).toContain('400')
     expect(page.text()).toContain('The stairs')
     expect(page.text()).toContain('Rice')
