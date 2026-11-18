@@ -1,9 +1,9 @@
 class DailyLifeStage
-  KEYS = %w[people].freeze
+  KEYS = %w[people notes].freeze
   UUID = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
   FIELD_ORDER = %w[
     person_id working job monthly_amount previous_jobs wished_work skills
-    in_school school_going school_where school_travel
+    in_school school_going school_where school_travel notes
   ].freeze
   AMOUNT_MESSAGE = "Ringgit per month is invalid"
 
@@ -20,7 +20,11 @@ class DailyLifeStage
     people = clean_people
     return error_result if @stop
 
-    error_result || { "people" => people }
+    payload = {
+      "people" => people,
+      "notes" => clean_text(@input["notes"], "notes", "Anything else they said", 2000)
+    }
+    error_result || payload
   end
 
   private

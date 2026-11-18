@@ -1178,6 +1178,7 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     end
     assert_response :ok
     assert_equal [], response.parsed_body["people"]
+    assert_equal "", response.parsed_body["notes"]
     assert_equal who_saved, enrolment.verification.reload.who_is_here
 
     person_id = SecureRandom.uuid
@@ -1414,6 +1415,20 @@ class VerificationsTest < ActionDispatch::IntegrationTest
         params: params, headers: bearer(token), as: :json
       assert_stage_error "Person is invalid", "person_id" => [ "is invalid" ]
     end
+    assert_equal column, enrolment.verification.reload.daily_life
+
+    noted = { person_id: first, working: false, in_school: false, skills: "" }
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ noted ], notes: " #{'n' * 2000} " }, headers: bearer(token), as: :json
+    assert_response :ok
+    assert_equal "n" * 2000, response.parsed_body["notes"]
+    column = enrolment.verification.reload.daily_life
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ noted ], notes: "n" * 2001 }, headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is too long", "notes" => [ "is too long" ]
+    put "/enrolments/#{enrolment.id}/verification/daily_life",
+      params: { people: [ noted ], notes: 12 }, headers: bearer(token), as: :json
+    assert_stage_error "Anything else they said is invalid", "notes" => [ "is invalid" ]
     assert_equal column, enrolment.verification.reload.daily_life
   end
 
