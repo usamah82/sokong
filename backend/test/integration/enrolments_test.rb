@@ -1025,7 +1025,9 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
         "head_name" => enrolment.members.find { |member| member.role == "head" }.name,
         "enroler_contact" => enrolment.enroler_contact,
         "on_behalf" => enrolment.on_behalf,
-        "locality" => { "id" => enrolment.locality.id, "name" => enrolment.locality.name }
+        "locality" => { "id" => enrolment.locality.id, "name" => enrolment.locality.name },
+        "visit_at" => enrolment.visit_at&.utc&.iso8601,
+        "outcome" => enrolment.outcome
       }
     end
 
@@ -1061,8 +1063,27 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
             "note" => look.note
           }
         },
-        "visit_at" => nil
+        "bringing_basket" => enrolment.bringing_basket,
+        "assigned_workers" => enrolment.assigned_workers,
+        "verification" => verification_json(enrolment),
+        "marked_at" => enrolment.marked_at&.utc&.iso8601,
+        "marker_name" => enrolment.marker_name
       )
+    end
+
+    def verification_json(enrolment)
+      record = enrolment.verification
+      return unless record
+
+      {
+        "who_is_here" => record.who_is_here,
+        "formation" => record.formation,
+        "daily_life" => record.daily_life,
+        "dynamics" => record.dynamics,
+        "house" => record.house,
+        "needs" => record.needs,
+        "boxes" => record.boxes
+      }
     end
 
     def look_count
@@ -1101,7 +1122,12 @@ class EnrolmentsTest < ActionDispatch::IntegrationTest
             "monthly_amount" => member.monthly_amount
           }
         },
-        "progress" => { "case_in" => true, "looks" => [], "visit_at" => nil }
+        "progress" => {
+          "case_in" => true,
+          "looks" => [],
+          "visit_at" => enrolment.visit_at&.utc&.iso8601,
+          "outcome" => enrolment.outcome
+        }
       }
     end
 end

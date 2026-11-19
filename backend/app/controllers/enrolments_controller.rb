@@ -48,7 +48,7 @@ class EnrolmentsController < ApplicationController
 
   private
     def visible_enrolments
-      relation = Enrolment.includes(:locality, :members, :looks).order(submitted_at: :desc, created_at: :desc)
+      relation = Enrolment.includes(:locality, :members, :looks, :verification).order(submitted_at: :desc, created_at: :desc)
       case current_account.role
       when "submitter"
         relation.where("lower(email) = ?", current_account.email_normalized)
@@ -84,7 +84,9 @@ class EnrolmentsController < ApplicationController
         head_name: enrolment.members.find { |member| member.role == "head" }&.name,
         enroler_contact: enrolment.enroler_contact,
         on_behalf: enrolment.on_behalf,
-        locality: { id: enrolment.locality.id, name: enrolment.locality.name }
+        locality: { id: enrolment.locality.id, name: enrolment.locality.name },
+        visit_at: enrolment.visit_at&.utc&.iso8601,
+        outcome: enrolment.outcome
       }
     end
 
@@ -100,8 +102,27 @@ class EnrolmentsController < ApplicationController
         longitude: enrolment.longitude&.to_f,
         members: enrolment.members.map { |member| member_json(member) },
         looks: enrolment.looks.map { |look| look_json(look) },
-        visit_at: nil
+        bringing_basket: enrolment.bringing_basket,
+        assigned_workers: enrolment.assigned_workers,
+        verification: verification_json(enrolment),
+        marked_at: enrolment.marked_at&.utc&.iso8601,
+        marker_name: enrolment.marker_name
       )
+    end
+
+    def verification_json(enrolment)
+      record = enrolment.verification
+      return unless record
+
+      {
+        who_is_here: record.who_is_here,
+        formation: record.formation,
+        daily_life: record.daily_life,
+        dynamics: record.dynamics,
+        house: record.house,
+        needs: record.needs,
+        boxes: record.boxes
+      }
     end
 
     def look_json(look)
@@ -142,7 +163,8 @@ class EnrolmentsController < ApplicationController
         progress: {
           case_in: true,
           looks: enrolment.looks.map { |look| look_json(look) },
-          visit_at: nil
+          visit_at: enrolment.visit_at&.utc&.iso8601,
+          outcome: enrolment.outcome
         }
       }
     end

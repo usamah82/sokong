@@ -18,6 +18,6 @@ This tree is the product memory. Read it before planning or coding. Write back b
 | `knowledge/how-to/` | Procedures worth repeating. |
 | `knowledge/postmortems/` | What broke, why, and what changed. |
 
-The enrolment spec (F01–F05) is approved again in `requirements/features/enrolment/spec.md`. Status is in that feature's README. The verification visit (F06 and F07) spec and plan are approved in `requirements/features/verification-visit/`. Status is `plan-approved`. No application code for that feature yet. The catalog is `product/master-feature-list.md`. The Rails API has locality claim, enrolment records, `POST /enrolments`, `GET /localities/suggestion`, one invitation queued when an email is submitted, and `POST /accounts`, which creates an unconfirmed submitter and returns no token. `GET /up` still returns success.
+The enrolment spec (F01–F05) is approved again in `requirements/features/enrolment/spec.md`. Status is in that feature's README. The verification visit (F06 and F07) is done in `requirements/features/verification-visit/`. It is on `main`. The catalog is `product/master-feature-list.md`. The Rails API has locality claim, enrolment records, `POST /enrolments`, `GET /localities/suggestion`, one invitation queued when an email is submitted, and `POST /accounts`, which creates an unconfirmed submitter and returns no token. `GET /up` still returns success.
 
 Agents follow `.cursor/skills/repo-workflow/SKILL.md`.

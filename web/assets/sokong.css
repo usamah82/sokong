@@ -102,7 +102,12 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="tel"],
-textarea {
+input[type="datetime-local"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+textarea,
+select {
   width: 100%;
   min-height: 44px;
   margin-top: 8px;
@@ -149,6 +154,10 @@ button.block {
   list-style: none;
 }
 
+.cases .case-line {
+  display: block;
+}
+
 .cases a {
   display: block;
   padding: 12px 0;
@@ -166,6 +175,29 @@ button.block {
 .look p, .worker { margin: 0 0 4px; }
 
 .look time { color: var(--muted); font-size: 14px; }
+
+.stages, .person-tabs {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.stages li, .person-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.stages li { margin: 0 0 8px; }
+
+.stages button, .person-tabs button {
+  flex: 1 1 12em;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.stage-status { color: var(--muted); font-size: 14px; }
 
 .actions {
   display: flex;
